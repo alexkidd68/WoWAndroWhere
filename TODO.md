@@ -11,6 +11,8 @@ Only work that's left. Shipped items move to DONE.md, rejected ones to DROPPED.m
 Daniel picked 3.3.5a (WotLK, build 12340). Modern-client servers are out (see DROPPED.md).
 
 1. **Launch spike** (in progress). A branch that launches a client folder Daniel provides through the x86 path (FEX/wowbox64 WoW64) instead of the ARM64EC path. Daniel checks on his device whether it reaches the login screen. Open risk: 3.3.5a is 32-bit x86 D3D9 and the bundled DXVK is aarch64 only, so rendering is unverified. If it doesn't draw, stop here.
+   - Built in the spike PR: Settings → Private server (test) picks the folder and realmlist and launches in a separate `wow_legacy` container. Renderer (GameNative's downloadable DXVK for D3D9, WineD3D, or OpenGL) and x86 emulator (FEX or Box64) are switchable, so one test build covers every combination. Build read from `Wow.exe`'s version resource.
+   - Test: install the `test-build` pre-release, try DXVK + FEX first, then the others, and note which reach the login screen and how they run.
 2. **Private server version** (only if the spike works). A "Private server" entry under Settings → Game version: pick a client folder, enter a realmlist, build detected from `Wow.exe`. The app writes `realmlist.wtf` and the D3D9 config and launches with the x86 container. No CDN install, game updater, Battle.net sign-in or CurseForge browser for it; addons install from a link or zip.
 
 ## Controller support on 3.3.5a: ConsolePortLK
