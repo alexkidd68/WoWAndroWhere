@@ -1,0 +1,85 @@
+package app.gamenative.wow.legacy
+
+import java.io.File
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.nio.file.Files
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class LegacyClientTest {
+
+    private fun exeWithVersion(major: Int, minor: Int, patch: Int, build: Int): ByteArray =
+        ByteBuffer.allocate(512).order(ByteOrder.LITTLE_ENDIAN).apply {
+            position(300)
+            putInt(0xFEEF04BD.toInt())
+            putInt(0x00010000)
+            putInt((major shl 16) or minor)
+            putInt((patch shl 16) or build)
+        }.array()
+
+    @Test
+    fun readsWotlkBuildFromVersionResource() {
+        assertEquals(ClientBuild(3, 3, 5, 12340), LegacyClient.parseBuild(exeWithVersion(3, 3, 5, 12340)))
+        assertEquals("1.12.1.5875", LegacyClient.parseBuild(exeWithVersion(1, 12, 1, 5875)).toString())
+    }
+
+    @Test
+    fun noVersionResourceMeansUnknownBuild() {
+        assertNull(LegacyClient.parseBuild(ByteArray(256)))
+    }
+
+    @Test
+    fun newConfigForcesRealmAndRendererAndAddsDefaults() {
+        val lines = LegacyClient.buildConfigWtf(null, LegacySettings(realmlist = " logon.example.com "), "1920x1080", "enGB")
+        assertTrue("SET realmList \"logon.example.com\"" in lines)
+        assertTrue("SET gxApi \"d3d9\"" in lines)
+        assertTrue("SET gxResolution \"1920x1080\"" in lines)
+        assertTrue("SET locale \"enGB\"" in lines)
+        assertTrue("SET movie \"0\"" in lines)
+    }
+
+    @Test
+    fun existingConfigKeepsPlayerChoicesButReplacesForcedKeys() {
+        val existing = listOf("SET realmList \"old.server\"", "SET gxApi \"opengl\"", "SET movie \"1\"", "SET farclip \"777\"")
+        val lines = LegacyClient.buildConfigWtf(existing, LegacySettings(realmlist = "new.server"), "1280x720", "enUS")
+        assertTrue("SET realmList \"new.server\"" in lines)
+        assertTrue("SET gxApi \"d3d9\"" in lines)
+        assertTrue("SET movie \"1\"" in lines)
+        assertTrue("SET farclip \"777\"" in lines)
+        assertEquals(1, lines.count { it.startsWith("SET realmList ") })
+        assertEquals(1, lines.count { it.startsWith("SET gxApi ") })
+    }
+
+    @Test
+    fun openGlRendererWritesOpenGlApi() {
+        val lines = LegacyClient.buildConfigWtf(null, LegacySettings(realmlist = "x", renderer = LegacyRenderer.OPENGL), "1280x720", "enUS")
+        assertTrue("SET gxApi \"opengl\"" in lines)
+    }
+
+    @Test
+    fun applyConfigWritesRealmlistIntoEveryLocale() {
+        val root = Files.createTempDirectory("legacy").toFile()
+        File(root, "Data/enUS").mkdirs()
+        File(root, "Data/deDE").mkdirs()
+        File(root, "Data/patches").mkdirs()
+        LegacyClient.applyConfig(root, LegacySettings(realmlist = "logon.example.com"), "1280x720")
+        assertEquals("set realmlist logon.example.com\n", File(root, "Data/enUS/realmlist.wtf").readText())
+        assertEquals("set realmlist logon.example.com\n", File(root, "Data/deDE/realmlist.wtf").readText())
+        assertTrue(!File(root, "Data/patches/realmlist.wtf").exists())
+        assertTrue("SET locale \"deDE\"" in File(root, "WTF/Config.wtf").readLines())
+        root.deleteRecursively()
+    }
+
+    @Test
+    fun findsRootOneLevelDown() {
+        val parent = Files.createTempDirectory("legacy").toFile()
+        val client = File(parent, "WoW 3.3.5a").apply { mkdirs() }
+        File(client, "Wow.exe").writeBytes(ByteArray(1))
+        File(client, "Data").mkdirs()
+        assertEquals(client, LegacyClient.findRoot(parent))
+        parent.deleteRecursively()
+    }
+}

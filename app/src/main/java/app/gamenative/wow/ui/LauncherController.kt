@@ -22,8 +22,12 @@ import app.gamenative.wow.install.InstallRequest
 import app.gamenative.wow.install.InstallUiState
 import app.gamenative.ui.screen.wow.isPermissionDenied
 import app.gamenative.ui.screen.wow.prepareLaunch
+import app.gamenative.ui.screen.wow.prepareLegacyLaunch
 import app.gamenative.utils.AppUpdater
 import app.gamenative.utils.StorageUtils
+import app.gamenative.wow.legacy.ClientBuild
+import app.gamenative.wow.legacy.LegacyClient
+import app.gamenative.wow.legacy.LegacySettings
 import app.gamenative.wow.product.GameInstall
 import app.gamenative.wow.product.GameVersion
 import app.gamenative.wow.product.GameVersions
@@ -104,6 +108,11 @@ class LauncherController(
 
     /** Launch-version product is live and this install only has the beta. */
     var canConvertToLaunch by mutableStateOf(false)
+        private set
+
+    var legacy by mutableStateOf(LegacyClient.load(context))
+        private set
+    var legacyBuild by mutableStateOf<ClientBuild?>(null)
         private set
 
     private var launchJob: Job? = null
@@ -210,6 +219,37 @@ class LauncherController(
             needsStoragePermission = true
             return
         }
+        launch { screenSize, onStatus -> prepareLaunch(context, File(gamePath), product, gpu, screenSize, onStatus) }
+    }
+
+    /** Private-server spike: launches the legacy client from [legacy]. */
+    fun launchLegacy(confirmedUnsupported: Boolean = false) {
+        if (isLaunching) return
+        if (!supportedGpu && !confirmedUnsupported) {
+            unsupportedDeviceWarning = true
+            return
+        }
+        val settings = legacy
+        launch { screenSize, onStatus -> prepareLegacyLaunch(context, settings, gpu, screenSize, onStatus) }
+    }
+
+    fun updateLegacy(settings: LegacySettings) {
+        val rootChanged = settings.root != legacy.root
+        legacy = settings
+        LegacyClient.save(context, settings)
+        if (rootChanged) detectLegacyBuild()
+    }
+
+    fun detectLegacyBuild() {
+        val root = legacy.root
+        scope.launch {
+            legacyBuild = withContext(Dispatchers.IO) {
+                root.takeIf { it.isNotBlank() }?.let { LegacyClient.detectBuild(File(it, LegacyClient.EXE)) }
+            }
+        }
+    }
+
+    private fun launch(prepare: (screenSize: String, onStatus: (String) -> Unit) -> String) {
         isLaunching = true
         errorMessage = null
         statusText = "Preparing components..."
@@ -217,9 +257,7 @@ class LauncherController(
             try {
                 val screenSize = fitScreenSizeToWindow(context, gpu.screenSize)
                 val containerId = withContext(Dispatchers.IO) {
-                    prepareLaunch(context, File(gamePath), product, gpu, screenSize) { msg ->
-                        scope.launch(Dispatchers.Main) { statusText = msg }
-                    }
+                    prepare(screenSize) { msg -> scope.launch(Dispatchers.Main) { statusText = msg } }
                 }
                 statusText = "Booting into World of Warcraft..."
                 onLaunch(containerId)

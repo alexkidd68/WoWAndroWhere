@@ -1,0 +1,117 @@
+package app.gamenative.wow.legacy
+
+import android.content.Context
+import java.io.File
+import java.io.RandomAccessFile
+
+/** A pre-CASC 32-bit client (1.12, 2.4.3, 3.3.5a) for private servers. Players supply the folder. */
+data class ClientBuild(val major: Int, val minor: Int, val patch: Int, val build: Int) {
+    override fun toString() = "$major.$minor.$patch.$build"
+}
+
+enum class LegacyRenderer(val label: String, val dxwrapper: String, val gxApi: String, val execArgs: String) {
+    DXVK("DXVK (D3D9)", "dxvk", "d3d9", ""),
+    WINED3D("WineD3D (D3D9)", "wined3d", "d3d9", ""),
+    OPENGL("OpenGL", "wined3d", "opengl", "-opengl"),
+}
+
+enum class LegacyEmulator(val label: String, val containerValue: String) {
+    FEX("FEX", "FEXCore"),
+    BOX64("Box64", "Box64"),
+}
+
+data class LegacySettings(
+    val root: String = "",
+    val realmlist: String = "",
+    val renderer: LegacyRenderer = LegacyRenderer.DXVK,
+    val emulator: LegacyEmulator = LegacyEmulator.FEX,
+)
+
+object LegacyClient {
+    const val EXE = "Wow.exe"
+    private const val PREFS = "wow_legacy"
+    private const val FIXED_FILE_INFO_SIGNATURE = 0xFEEF04BDL
+    private val LOCALE = Regex("[a-z]{2}[A-Z]{2}")
+
+    fun load(context: Context): LegacySettings {
+        val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        return LegacySettings(
+            root = p.getString("root", "").orEmpty(),
+            realmlist = p.getString("realmlist", "").orEmpty(),
+            renderer = LegacyRenderer.entries.firstOrNull { it.name == p.getString("renderer", null) } ?: LegacyRenderer.DXVK,
+            emulator = LegacyEmulator.entries.firstOrNull { it.name == p.getString("emulator", null) } ?: LegacyEmulator.FEX,
+        )
+    }
+
+    fun save(context: Context, settings: LegacySettings) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putString("root", settings.root)
+            .putString("realmlist", settings.realmlist)
+            .putString("renderer", settings.renderer.name)
+            .putString("emulator", settings.emulator.name)
+            .apply()
+    }
+
+    /** The folder holding [EXE] and `Data/`, searching [dir] and one level below it. */
+    fun findRoot(dir: File): File? =
+        sequenceOf(dir).plus(dir.listFiles()?.filter { it.isDirectory }.orEmpty())
+            .firstOrNull { File(it, EXE).isFile && File(it, "Data").isDirectory }
+
+    fun detectBuild(exe: File): ClientBuild? = runCatching {
+        RandomAccessFile(exe, "r").use { file ->
+            val bytes = ByteArray(minOf(file.length(), MAX_EXE_BYTES).toInt())
+            file.readFully(bytes)
+            parseBuild(bytes)
+        }
+    }.getOrNull()
+
+    /** Reads `VS_FIXEDFILEINFO.dwFileVersion` from the PE version resource. */
+    internal fun parseBuild(bytes: ByteArray): ClientBuild? {
+        for (i in bytes.size - 16 downTo 0) {
+            if (u32(bytes, i) != FIXED_FILE_INFO_SIGNATURE) continue
+            val ms = u32(bytes, i + 8)
+            val ls = u32(bytes, i + 12)
+            return ClientBuild((ms ushr 16).toInt(), (ms and 0xFFFF).toInt(), (ls ushr 16).toInt(), (ls and 0xFFFF).toInt())
+        }
+        return null
+    }
+
+    private fun u32(b: ByteArray, i: Int): Long =
+        (b[i].toLong() and 0xFF) or ((b[i + 1].toLong() and 0xFF) shl 8) or
+            ((b[i + 2].toLong() and 0xFF) shl 16) or ((b[i + 3].toLong() and 0xFF) shl 24)
+
+    fun locales(root: File): List<String> =
+        File(root, "Data").listFiles()?.filter { it.isDirectory && LOCALE.matches(it.name) }?.map { it.name }?.sorted().orEmpty()
+
+    /** Writes `realmlist.wtf` into every locale folder and the realm keys into `WTF/Config.wtf`. */
+    fun applyConfig(root: File, settings: LegacySettings, screenSize: String) {
+        val locales = locales(root)
+        locales.forEach { File(root, "Data/$it/realmlist.wtf").writeText(realmlistText(settings.realmlist)) }
+        val config = File(root, "WTF/Config.wtf")
+        val lines = buildConfigWtf(config.takeIf { it.isFile }?.readLines(), settings, screenSize, locales.firstOrNull() ?: "enUS")
+        config.parentFile?.mkdirs()
+        config.writeText(lines.joinToString("\n", postfix = "\n"))
+    }
+
+    internal fun realmlistText(realmlist: String) = "set realmlist ${realmlist.trim()}\n"
+
+    /** Realm, renderer and resolution are always enforced; the rest is only a first-boot default so in-game changes stick. */
+    internal fun buildConfigWtf(existing: List<String>?, settings: LegacySettings, screenSize: String, locale: String): List<String> {
+        val forced = linkedMapOf(
+            "realmList" to settings.realmlist.trim(),
+            "gxApi" to settings.renderer.gxApi,
+            "gxResolution" to screenSize,
+        )
+        val defaults = linkedMapOf(
+            "locale" to locale,
+            "gxWindow" to "1",
+            "gxMaximize" to "1",
+            "movie" to "0",
+        )
+        val lines = existing.orEmpty().filter { line -> forced.keys.none { line.startsWith("SET $it ", ignoreCase = true) } }
+        val missing = defaults.filterKeys { key -> lines.none { it.startsWith("SET $key ", ignoreCase = true) } }
+        return lines + (forced + missing).map { "SET ${it.key} \"${it.value}\"" }
+    }
+
+    private const val MAX_EXE_BYTES = 64L * 1024 * 1024
+}

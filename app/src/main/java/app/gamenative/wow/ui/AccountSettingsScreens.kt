@@ -90,7 +90,12 @@ fun AccountScreen(launcher: LauncherController, onBack: () -> Unit, onEditLogin:
 }
 
 @Composable
-fun SettingsScreen(launcher: LauncherController, onBack: () -> Unit, onVersionChanged: () -> Unit = {}) {
+fun SettingsScreen(
+    launcher: LauncherController,
+    onBack: () -> Unit,
+    onVersionChanged: () -> Unit = {},
+    onOpenPrivateServer: () -> Unit = {},
+) {
     FwPage("Settings", onBack) {
         FwSection("App") {
             Text("WoW Foreverywhere v${BuildConfig.VERSION_NAME}", style = Fw.Text)
@@ -110,6 +115,10 @@ fun SettingsScreen(launcher: LauncherController, onBack: () -> Unit, onVersionCh
             }
         }
         GameVersionSection(launcher, onVersionChanged)
+        FwSection("Private server (test)") {
+            Text("Try a 3.3.5a private server client you provide. Test build: it may not start at all.", style = Fw.Secondary)
+            FwButton("Open private server test", onOpenPrivateServer, kind = FwButtonKind.Ghost, enabled = !launcher.busy)
+        }
         FwSection("Support Foreverywhere") {
             val context = LocalContext.current
             Text("Foreverywhere is free and open source. If it saves you some time, you can support its development on Ko-fi.", style = Fw.Text)
