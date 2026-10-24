@@ -80,22 +80,26 @@ object AppUpdater {
         null
     }.getOrNull()
 
+    /** A test build is also offered a release newer than the version it was built from, which takes it off the test channel. */
     suspend fun check(currentVersion: String = BuildConfig.VERSION_NAME): Release? = withContext(Dispatchers.IO) {
-        runCatching {
-            val request = Request.Builder()
-                .url(if (testBuildNumber(currentVersion) != null) TEST_RELEASE_URL else RELEASES_URL)
-                .header("User-Agent", AppName.FILE)
-                .header("Accept", "application/vnd.github+json")
-                .build()
-            Net.http.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) return@withContext null
-                val body = response.body?.string() ?: return@withContext null
-                parseRelease(body, currentVersion)
-            }
-        }.getOrElse {
-            Timber.w(it, "AppUpdater check failed")
-            null
+        if (testBuildNumber(currentVersion) == null) return@withContext fetch(RELEASES_URL, currentVersion)
+        fetch(RELEASES_URL, currentVersion.substringBefore("-test.")) ?: fetch(TEST_RELEASE_URL, currentVersion)
+    }
+
+    private fun fetch(url: String, currentVersion: String): Release? = runCatching {
+        val request = Request.Builder()
+            .url(url)
+            .header("User-Agent", AppName.FILE)
+            .header("Accept", "application/vnd.github+json")
+            .build()
+        Net.http.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return null
+            val body = response.body?.string() ?: return null
+            parseRelease(body, currentVersion)
         }
+    }.getOrElse {
+        Timber.w(it, "AppUpdater check failed")
+        null
     }
 
     suspend fun download(
