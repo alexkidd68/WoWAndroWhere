@@ -39,7 +39,11 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
         val path = StorageUtils.getPathFromTreeUri(context, uri) ?: return@rememberLauncherForActivityResult
         val root = LegacyClient.findRoot(File(path))
         folderError = if (root == null) "No ${LegacyClient.EXE} with a Data folder in $path." else null
-        root?.let { launcher.updateLegacy(settings.copy(root = it.absolutePath)) }
+        root?.let {
+            val existing = LegacyClient.readRealmlist(it)
+            if (existing != null) realmlist = existing
+            launcher.updateLegacy(settings.copy(root = it.absolutePath, realmlist = existing ?: settings.realmlist))
+        }
     }
 
     FwPage("Private server (test)", onBack) {

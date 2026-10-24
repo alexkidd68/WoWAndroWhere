@@ -32,6 +32,7 @@ object LegacyClient {
     private const val PREFS = "wow_legacy"
     private const val FIXED_FILE_INFO_SIGNATURE = 0xFEEF04BDL
     private val LOCALE = Regex("[a-z]{2}[A-Z]{2}")
+    private val REALMLIST_LINE = Regex("set\\s+realmlist\\s+(.*)", RegexOption.IGNORE_CASE)
 
     fun load(context: Context): LegacySettings {
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -83,17 +84,32 @@ object LegacyClient {
     fun locales(root: File): List<String> =
         File(root, "Data").listFiles()?.filter { it.isDirectory && LOCALE.matches(it.name) }?.map { it.name }?.sorted().orEmpty()
 
-    /** Writes `realmlist.wtf` into every locale folder and the realm keys into `WTF/Config.wtf`. */
+    /** The realm the client is already set to, from the first `realmlist.wtf` found. */
+    fun readRealmlist(root: File): String? =
+        (locales(root).map { File(root, "Data/$it/realmlist.wtf") } + File(root, "realmlist.wtf"))
+            .firstOrNull { it.isFile }
+            ?.readLines()
+            ?.firstNotNullOfOrNull { REALMLIST_LINE.matchEntire(it.trim())?.groupValues?.get(1)?.trim('"', ' ') }
+            ?.takeIf { it.isNotBlank() }
+
+    /** Sets the realm in every locale's `realmlist.wtf`, keeping its other lines, and in `WTF/Config.wtf`. */
     fun applyConfig(root: File, settings: LegacySettings, screenSize: String) {
         val locales = locales(root)
-        locales.forEach { File(root, "Data/$it/realmlist.wtf").writeText(realmlistText(settings.realmlist)) }
+        locales.forEach {
+            val file = File(root, "Data/$it/realmlist.wtf")
+            file.writeText(updateRealmlist(file.takeIf { f -> f.isFile }?.readText(), settings.realmlist))
+        }
         val config = File(root, "WTF/Config.wtf")
         val lines = buildConfigWtf(config.takeIf { it.isFile }?.readLines(), settings, screenSize, locales.firstOrNull() ?: "enUS")
         config.parentFile?.mkdirs()
         config.writeText(lines.joinToString("\n", postfix = "\n"))
     }
 
-    internal fun realmlistText(realmlist: String) = "set realmlist ${realmlist.trim()}\n"
+    internal fun updateRealmlist(existing: String?, realmlist: String): String {
+        val line = "set realmlist ${realmlist.trim()}"
+        val others = existing.orEmpty().lines().map { it.trimEnd('\r') }.filter { it.isNotBlank() && !REALMLIST_LINE.matches(it.trim()) }
+        return (listOf(line) + others).joinToString("\n", postfix = "\n")
+    }
 
     /** Realm, renderer and resolution are always enforced; the rest is only a first-boot default so in-game changes stick. */
     internal fun buildConfigWtf(existing: List<String>?, settings: LegacySettings, screenSize: String, locale: String): List<String> {

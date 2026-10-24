@@ -74,6 +74,23 @@ class LegacyClientTest {
     }
 
     @Test
+    fun updatingRealmlistKeepsOtherLines() {
+        val updated = LegacyClient.updateRealmlist("set realmlist old.server\r\nset patchlist patch.server\r\n", "new.server")
+        assertEquals("set realmlist new.server\nset patchlist patch.server\n", updated)
+        assertEquals("set realmlist new.server\n", LegacyClient.updateRealmlist(null, " new.server "))
+    }
+
+    @Test
+    fun readsExistingRealmlist() {
+        val root = Files.createTempDirectory("legacy").toFile()
+        File(root, "Data/enUS").mkdirs()
+        assertNull(LegacyClient.readRealmlist(root))
+        File(root, "Data/enUS/realmlist.wtf").writeText("SET realmlist \"logon.example.com\"\r\nset patchlist x\r\n")
+        assertEquals("logon.example.com", LegacyClient.readRealmlist(root))
+        root.deleteRecursively()
+    }
+
+    @Test
     fun findsRootOneLevelDown() {
         val parent = Files.createTempDirectory("legacy").toFile()
         val client = File(parent, "WoW 3.3.5a").apply { mkdirs() }
