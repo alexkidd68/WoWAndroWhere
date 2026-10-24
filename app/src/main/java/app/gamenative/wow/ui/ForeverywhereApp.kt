@@ -174,7 +174,7 @@ fun ForeverywhereApp(onLaunch: (appId: String) -> Unit) {
                 message = "The log from this launch shows why the client did or didn't start. Share opens the share sheet so you choose where it goes. The app sends nothing on its own, and the next launch replaces this log.",
                 confirm = "Share",
                 onConfirm = { launcher.shareLegacyLog(context) },
-                onDismiss = { launcher.legacyLogToShare = null },
+                onDismiss = launcher::dismissLegacyLog,
                 dismiss = "Not now",
             )
         }

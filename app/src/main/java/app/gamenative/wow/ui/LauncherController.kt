@@ -236,8 +236,7 @@ class LauncherController(
             return
         }
         val settings = legacy
-        LegacyClient.markLogPending(context, PrefManager.enableWineDebug)
-        PrefManager.enableWineDebug = true
+        LegacyClient.setLogWaiting(context, true)
         legacyLogToShare = null
         listOf(wineLog(), sharedLegacyLog(), File(settings.root, LegacyClient.LOG)).forEach { it.delete() }
         launch { screenSize, onStatus -> prepareLegacyLaunch(context, settings, gpu, screenSize, onStatus) }
@@ -248,12 +247,13 @@ class LauncherController(
 
     /**
      * Copies the last legacy launch's Wine log to the client folder and to the share cache, then asks the
-     * player whether to share it. Restores the debug setting. The previous log was deleted at launch.
-     * The launcher is rebuilt while the game runs, so this also runs when it comes back.
+     * player whether to share it. The previous log was deleted at launch. The launcher is rebuilt while the
+     * game runs, so this runs both when it comes back and when the game ends; the copy is redone each time
+     * until the player answers, so a copy taken mid-game is replaced by the full log.
      */
     private fun saveLegacyLog() {
-        val previous = LegacyClient.takePendingLog(context) ?: return
-        PrefManager.enableWineDebug = previous
+        if (LegacyClient.clearLeftoverDebug(context)) PrefManager.enableWineDebug = false
+        if (!LegacyClient.isLogWaiting(context)) return
         val log = wineLog()
         val root = legacy.root
         scope.launch(Dispatchers.IO) {
@@ -267,10 +267,15 @@ class LauncherController(
         }
     }
 
+    fun dismissLegacyLog() {
+        legacyLogToShare = null
+        LegacyClient.setLogWaiting(context, false)
+    }
+
     /** Opens the share sheet for the last legacy log. Only called after the player said yes. */
     fun shareLegacyLog(activity: Context) {
         val file = legacyLogToShare ?: return
-        legacyLogToShare = null
+        dismissLegacyLog()
         val uri = FileProvider.getUriForFile(activity, "${activity.packageName}.fileprovider", file)
         val send = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"

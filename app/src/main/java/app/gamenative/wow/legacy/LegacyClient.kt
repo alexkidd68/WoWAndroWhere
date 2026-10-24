@@ -28,8 +28,8 @@ object LegacyClient {
     /** The bundled 32-bit emulator. FEX's WoW64 DLL isn't bundled, so only Box64 (wowbox64) can run x86 code. */
     const val EMULATOR = "Box64"
     private const val PREFS = "wow_legacy"
-    private const val PENDING_LOG = "log_pending_previous_debug"
-    private const val LOG_FLAG_MIGRATED = "log_flag_migrated"
+    private const val DEBUG_CLEARED = "leftover_debug_cleared"
+    private const val LOG_WAITING = "log_waiting"
     private const val FIXED_FILE_INFO_SIGNATURE = 0xFEEF04BDL
     private val LOCALE = Regex("[a-z]{2}[A-Z]{2}")
     private val REALMLIST_LINE = Regex("set\\s+realmlist\\s+(.*)", RegexOption.IGNORE_CASE)
@@ -52,27 +52,22 @@ object LegacyClient {
     }
 
     /**
-     * Remembers, across the launcher being rebuilt while the game runs, that a legacy launch turned on Wine
-     * logging and what the setting was before.
+     * Test builds 12 to 18 turned the global Wine debug setting on for legacy launches and could leave it on.
+     * The app has no other switch for it, so turn it off once. The legacy container now logs on its own.
      */
-    fun markLogPending(context: Context, previousDebug: Boolean) {
+    fun clearLeftoverDebug(context: Context): Boolean {
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        if (!p.contains(PENDING_LOG)) p.edit().putBoolean(PENDING_LOG, previousDebug).apply()
+        if (p.getBoolean(DEBUG_CLEARED, false)) return false
+        p.edit().putBoolean(DEBUG_CLEARED, true).remove("log_pending_previous_debug").remove("log_flag_migrated").apply()
+        return true
     }
 
-    /** The Wine debug setting from before the last legacy launch, or null when no launch is waiting. Clears it. */
-    fun takePendingLog(context: Context): Boolean? {
-        val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        // Test builds before this kept the flag in memory, lost it, and left Wine logging on; the app has no
-        // other switch for it, so turn it off once.
-        if (!p.getBoolean(LOG_FLAG_MIGRATED, false)) {
-            p.edit().putBoolean(LOG_FLAG_MIGRATED, true).apply()
-            if (!p.contains(PENDING_LOG)) return false
-        }
-        if (!p.contains(PENDING_LOG)) return null
-        val previous = p.getBoolean(PENDING_LOG, false)
-        p.edit().remove(PENDING_LOG).apply()
-        return previous
+    /** Whether a legacy launch's log is waiting for the player to share or dismiss it. Survives the launcher being rebuilt. */
+    fun isLogWaiting(context: Context) =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(LOG_WAITING, false)
+
+    fun setLogWaiting(context: Context, waiting: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(LOG_WAITING, waiting).apply()
     }
 
     /** The folder holding [EXE] and `Data/`, searching [dir] and one level below it. */

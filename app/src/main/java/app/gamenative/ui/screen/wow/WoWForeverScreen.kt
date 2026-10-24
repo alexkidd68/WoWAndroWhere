@@ -1014,6 +1014,7 @@ internal fun prepareLegacyLaunch(
         "Container creation failed. Check system storage and logs."
     }
     legacy.putExtra("skipWinHandler", "1")
+    legacy.putExtra("wineLog", "1")
     legacy.saveData()
     return LEGACY_CONTAINER_ID
 }
