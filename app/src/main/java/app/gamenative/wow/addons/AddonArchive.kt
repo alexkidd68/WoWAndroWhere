@@ -88,13 +88,28 @@ object AddonArchive {
         if (tocs.isEmpty() || tocs.any { it.name.dropLast(4).equals(dir.name, ignoreCase = true) }) return dir
         val matching = interfaces?.let { range -> tocs.filter { toc -> tocInterface(toc)?.let { it in range } == true } }.orEmpty()
         val target = File(dir.parentFile, matching.ifEmpty { tocs }.minBy { it.name.length }.name.dropLast(4))
-        return if (!target.exists() && dir.renameTo(target)) target else dir
+        return if (!target.exists() && runCatching { move(dir, target, "rename") }.isSuccess) target else dir
     }
 
     private val interfaceLine = Regex("""^\uFEFF?##\s*Interface:\s*(\d+)""", RegexOption.MULTILINE)
 
     private fun tocInterface(toc: File): Int? =
         runCatching { interfaceLine.find(toc.readText())?.groupValues?.get(1)?.toInt() }.getOrNull()
+
+    /**
+     * Renames [from] to [to], copying when the rename is refused: Android's shared storage can refuse to
+     * rename a large folder (Questie's 3.3.5a branch) that it moves file by file.
+     */
+    private fun move(from: File, to: File, what: String) {
+        if (from.renameTo(to)) return
+        try {
+            from.copyRecursively(to)
+        } catch (e: Exception) {
+            to.deleteRecursively()
+            throw IOException("cannot $what ${from.name}: ${e.message}", e)
+        }
+        from.deleteRecursively()
+    }
 
     private fun swapIn(folders: List<File>, addonsDir: File) {
         val nonce = System.nanoTime()
@@ -105,16 +120,16 @@ object AddonArchive {
                 var backup: File? = null
                 if (target.exists()) {
                     backup = File(addonsDir, ".${folder.name}.old-$nonce")
-                    if (!target.renameTo(backup)) throw IOException("cannot move aside ${target.name}")
+                    move(target, backup, "move aside")
                 }
                 done += target to backup
-                if (!folder.renameTo(target)) throw IOException("cannot move ${folder.name} into place")
+                move(folder, target, "move into place")
             }
         } catch (e: IOException) {
             for ((target, backup) in done.asReversed()) {
                 if (backup != null) {
                     target.deleteRecursively()
-                    backup.renameTo(target)
+                    runCatching { move(backup, target, "restore") }
                 } else {
                     target.deleteRecursively()
                 }
