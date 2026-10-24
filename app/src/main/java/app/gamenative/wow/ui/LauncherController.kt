@@ -18,6 +18,7 @@ import app.gamenative.ui.screen.wow.WoWLauncherState
 import app.gamenative.ui.screen.wow.WowClientDownloader
 import app.gamenative.ui.screen.wow.fitScreenSizeToWindow
 import app.gamenative.ui.screen.wow.installLocale
+import app.gamenative.wow.addons.CurseForgeAccess
 import app.gamenative.wow.install.GameInstaller
 import app.gamenative.wow.install.InstallController
 import app.gamenative.wow.install.InstallProgress
@@ -122,6 +123,10 @@ class LauncherController(
         private set
 
     var hasServerPassword by mutableStateOf(LegacyClient.hasServerPassword(context))
+        private set
+
+    /** The player's own CurseForge key or proxy from Settings; CurseForge is off without one. */
+    var curseForge by mutableStateOf(CurseForgeAccess.load(context))
         private set
 
     /** The Wine log of the last legacy launch, waiting for the player to agree to share it. */
@@ -250,6 +255,17 @@ class LauncherController(
     fun forgetServerPassword() {
         LegacyClient.forgetServerPassword(context)
         hasServerPassword = false
+    }
+
+    fun saveCurseForgeKey(key: String): Boolean =
+        CurseForgeAccess.saveKey(context, key).also { curseForge = CurseForgeAccess.load(context) }
+
+    fun saveCurseForgeProxy(url: String): Boolean =
+        CurseForgeAccess.saveProxy(context, url).also { curseForge = CurseForgeAccess.load(context) }
+
+    fun forgetCurseForge() {
+        CurseForgeAccess.clear(context)
+        curseForge = CurseForgeAccess.load(context)
     }
 
     /** Launches the player's private server client from [legacy]. */

@@ -47,8 +47,8 @@ fun ForeverywhereApp(onLaunch: (appId: String) -> Unit) {
     val launcher = remember { LauncherController(context, scope, onLaunch) }
     val nav = rememberNavController()
     var showLoginDialog by remember { mutableStateOf(false) }
-    val addonsNow = remember(launcher.version, launcher.gamePath, launcher.files.product, launcher.legacy.root) {
-        if (launcher.isPrivate) legacyAddonsControllerFor(launcher.legacy.root, scope) else addonsControllerFor(launcher.gamePath, launcher.files.product, scope)
+    val addonsNow = remember(launcher.version, launcher.gamePath, launcher.files.product, launcher.legacy.root, launcher.curseForge) {
+        if (launcher.isPrivate) legacyAddonsControllerFor(launcher.legacy.root, scope) else addonsControllerFor(launcher.gamePath, launcher.files.product, scope, launcher.curseForge)
     }
     LaunchedEffect(addonsNow) { addonsNow?.refreshInstalled() }
     // The nav graph is built once, so destinations read this state instead of capturing a stale value.

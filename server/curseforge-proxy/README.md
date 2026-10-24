@@ -1,6 +1,6 @@
 # CurseForge proxy
 
-The app's CurseForge requests go through this proxy, which adds the API key so the key is never part of the APK. It only forwards the World of Warcraft requests the app makes, rate-limits each device, and caches nothing.
+A small server you can run yourself so the app reaches CurseForge without the API key on the device. It adds your key, only forwards the World of Warcraft requests the app makes, rate-limits each device, and caches nothing. The app has no default proxy: enter this one's address in Settings → CurseForge → Your proxy.
 
 ## Run
 
@@ -9,7 +9,7 @@ On a server with Docker, where the proxy's hostname points at the server and por
 ```bash
 cp .env.example .env    # then put the key between the single quotes
 docker compose up -d --build
-curl https://cf.yorudev.com/health
+curl https://your.host/health
 ```
 
-Caddy gets and renews the HTTPS certificate on its own. To use another hostname, set `PROXY_HOST` in `.env` and build the app with `-PCURSEFORGE_PROXY=https://your.host`.
+Set `PROXY_HOST` in `.env` to the proxy's hostname. Caddy gets and renews the HTTPS certificate on its own. Then enter `https://your.host` in the app's Settings.

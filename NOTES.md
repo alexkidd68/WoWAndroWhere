@@ -2,6 +2,10 @@
 
 Why things are the way they are, newest first.
 
+## 2026-10-24: CurseForge is bring-your-own
+
+Daniel didn't want CurseForge searches going through upstream's `cf.yorudev.com`, and didn't want to run a shared proxy either. So there's no default: Settings, CurseForge takes the player's own API key or the address of a proxy they run, and CurseForge stays off without one (Addons says so; Wago, WoWInterface and GitHub are unaffected). The key is sealed with `LoginVault` in its own prefs, same as the server password, and is only sent as `x-api-key` to `api.curseforge.com`, never to a proxy; with a proxy the app sends no key. Proxy addresses must be https with no login, query or fragment. Saving one clears the other. The `CURSEFORGE_API_KEY` and `CURSEFORGE_PROXY` build settings are gone and `release.yml` no longer writes the key, so a key can't end up in the APK by accident. Trade-off: a player's key sits on their device, so someone with root on that phone could read it; that's the player's own key, not a shared one.
+
 ## 2026-10-24: Tap where you touch already exists
 
 Daniel asked for taps to click at the finger instead of at the cursor on 3.3.5a. That's upstream's Touchscreen mode in the in-game menu (Back, then Touchscreen mode), which the legacy container already has and saves per container, so nothing was built. It's not on by default for 3.3.5a because it hides the cursor (Touch gestures can show it again), and the right stick moves the cursor for ConsolePortLK.
@@ -50,7 +54,7 @@ The launcher is rebuilt while the game runs, so state held in memory is gone whe
 
 ## 2026-10-24: Renamed to WoW AndroWhere, but only what people see
 
-The name lives in `wow/AppName.kt` and `app_name` (no longer translated, since the translations still said GameNative). The package id `app.wowforeverywhere`, the Keystore alias `foreverywhere_battle_net_v2` and the on-disk files (`.foreverywhere-install.json`, `.foreverywhere-addons.json`) keep the old name: changing them would break updates, drop the saved login, or make the app forget installs and addons. Kotlin names like `ForeverywhereApp` stay so upstream merges stay clean. Ko-fi links still go to upstream's author and say so, since the fork takes no donations. The user agent sent to CurseForge's proxy and GitHub is now `WoW-AndroWhere`.
+The name lives in `wow/AppName.kt` and `app_name` (no longer translated, since the translations still said GameNative). The package id `app.wowforeverywhere`, the Keystore alias `foreverywhere_battle_net_v2` and the on-disk files (`.foreverywhere-install.json`, `.foreverywhere-addons.json`) keep the old name: changing them would break updates, drop the saved login, or make the app forget installs and addons. Kotlin names like `ForeverywhereApp` stay so upstream merges stay clean. Ko-fi links still go to upstream's author and say so, since the fork takes no donations. The user agent sent to CurseForge and GitHub is now `WoW-AndroWhere`.
 
 ## 2026-10-24: Claude releases by a manual run, not a tag push
 
@@ -58,7 +62,7 @@ Claude's container can only push its own working branch, not tags. So a release 
 
 ## 2026-10-24: Release builds can bake the CurseForge key into the APK
 
-`release.yml` writes the `CURSEFORGE_API_KEY` secret into `local.properties`, and `app/build.gradle.kts` calls CurseForge directly with the key whenever it is set. So adding that secret to the fork would ship the key in every APK. Leave it unset; release builds then use the proxy. Without `-PCURSEFORGE_PROXY`, that proxy is upstream's `cf.yorudev.com`, so CurseForge searches from the fork pass through a server Daniel doesn't run. It sees which addons a device searches for and its IP, nothing more.
+`release.yml` writes the `CURSEFORGE_API_KEY` secret into `local.properties`, and `app/build.gradle.kts` calls CurseForge directly with the key whenever it is set. So adding that secret to the fork would ship the key in every APK. Leave it unset; release builds then use the proxy. Without `-PCURSEFORGE_PROXY`, that proxy is upstream's `cf.yorudev.com`, so CurseForge searches from the fork pass through a server Daniel doesn't run. It sees which addons a device searches for and its IP, nothing more. (Superseded: CurseForge is now bring-your-own, see above.)
 
 ## 2026-10-24: The fork has its own signing key and update channel
 

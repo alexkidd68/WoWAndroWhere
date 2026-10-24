@@ -16,5 +16,3 @@ Measured on the Odin 3 (2026-10-24): DXVK, 30-50 fps, GPU load 26-32%, so the pr
 ## Proposed by Claude, not agreed yet
 
 - **Keyboard on the 3.3.5a login screen.** Addons can't run on the login, code and character screens, so typing there means Back, then Keyboard. Either open the keyboard by itself when the client starts, or map a controller button to it for the private server container.
-
-- **Own the CurseForge proxy.** Release builds without a key send every CurseForge request to `cf.yorudev.com`, upstream's server. Either run `server/curseforge-proxy` with Daniel's own key and build with `-PCURSEFORGE_PROXY=...`, or accept upstream's server and say so in NOTES.md.
