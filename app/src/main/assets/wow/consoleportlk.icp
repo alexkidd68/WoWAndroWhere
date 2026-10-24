@@ -1,0 +1,114 @@
+{
+ "id": 0,
+ "name": "ConsolePortLK",
+ "cursorSpeed": 1,
+ "elements": [],
+ "controllers": [
+  {
+   "id": "*",
+   "name": "Wildcard Controller",
+   "controllerBindings": [
+    {
+     "keyCode": 96,
+     "binding": "KEY_F1"
+    },
+    {
+     "keyCode": 97,
+     "binding": "KEY_F2"
+    },
+    {
+     "keyCode": 99,
+     "binding": "KEY_F3"
+    },
+    {
+     "keyCode": 100,
+     "binding": "KEY_F4"
+    },
+    {
+     "keyCode": 19,
+     "binding": "KEY_F5"
+    },
+    {
+     "keyCode": 20,
+     "binding": "KEY_F6"
+    },
+    {
+     "keyCode": 21,
+     "binding": "KEY_F7"
+    },
+    {
+     "keyCode": 22,
+     "binding": "KEY_F8"
+    },
+    {
+     "keyCode": 102,
+     "binding": "KEY_F9"
+    },
+    {
+     "keyCode": 103,
+     "binding": "KEY_F10"
+    },
+    {
+     "keyCode": 109,
+     "binding": "KEY_F11"
+    },
+    {
+     "keyCode": 108,
+     "binding": "KEY_F12"
+    },
+    {
+     "keyCode": 104,
+     "binding": "KEY_SHIFT_L"
+    },
+    {
+     "keyCode": 105,
+     "binding": "KEY_CTRL_L"
+    },
+    {
+     "keyCode": 106,
+     "binding": "MOUSE_LEFT_BUTTON"
+    },
+    {
+     "keyCode": 107,
+     "binding": "MOUSE_RIGHT_BUTTON"
+    },
+    {
+     "keyCode": 110,
+     "binding": "OPEN_NAVIGATION_MENU"
+    },
+    {
+     "keyCode": -3,
+     "binding": "KEY_W"
+    },
+    {
+     "keyCode": -4,
+     "binding": "KEY_S"
+    },
+    {
+     "keyCode": -1,
+     "binding": "KEY_A"
+    },
+    {
+     "keyCode": -2,
+     "binding": "KEY_D"
+    },
+    {
+     "keyCode": -7,
+     "binding": "MOUSE_MOVE_UP"
+    },
+    {
+     "keyCode": -8,
+     "binding": "MOUSE_MOVE_DOWN"
+    },
+    {
+     "keyCode": -5,
+     "binding": "MOUSE_MOVE_LEFT"
+    },
+    {
+     "keyCode": -6,
+     "binding": "MOUSE_MOVE_RIGHT"
+    }
+   ]
+  }
+ ]
+}

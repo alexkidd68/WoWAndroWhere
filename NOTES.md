@@ -2,6 +2,10 @@
 
 Why things are the way they are, newest first.
 
+## 2026-10-24: ConsolePortLK gets keys, not a gamepad
+
+3.3.5a has no gamepad API, and the `wow_legacy` container skips winhandler, so no XInput reaches the game either. ConsolePortLK expects a mapper (WoWpadX on PC) to turn buttons into keys and calibrates once in game. `wow/legacy/ConsolePortLK.kt` installs the `ConsolePortLK` input profile (`assets/wow/consoleportlk.icp`) under a free id the first time it's needed and sets it as the container's `profileId` while `Interface/AddOns/ConsolePort` exists, unless the player picked another profile. Mapping: face buttons, D-pad, LB, RB, Back and Start to F1-F12; LT and RT to Shift and Ctrl, the addon's two modifiers; L3 and R3 to left and right click; left stick to WASD; right stick to the mouse; Guide still opens the app's menu. F-keys because numpad keys change meaning with Num Lock under Wine. The profile is written once and not overwritten, so edits made in Edit controls stick, but a later change to the shipped mapping needs a migration. The addon is downloaded from GitHub at install time, not bundled (Artistic License 2.0).
+
 ## 2026-10-24: Private server (3.3.5a) is a game version without a Blizzard product
 
 `GameVersion.PRIVATE_335` has no products, so the launcher treats it apart: no CDN install, update check, Battle.net login or auto-launch; Play runs `launchLegacy`, Game files is the Client and server screen, Account is Server login. Addons go to `<client>/Interface/AddOns`. CurseForge and Wago are off for it because their "Wrath" files are for Blizzard's 3.4 Classic and mostly break on 3.3.5a; WoWInterface entries marked 3.3 and GitHub links are used instead.
