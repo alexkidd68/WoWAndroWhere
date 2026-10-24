@@ -38,7 +38,7 @@ jobs:
         run: tools/fetch_components.sh
       - run: echo "sdk.dir=$ANDROID_HOME" > local.properties
       - name: Unit tests
-        run: ./gradlew --no-daemon testModernDebugUnitTest --tests "app.gamenative.wow.legacy.*" --tests "app.gamenative.ui.screen.wow.*"
+        run: ./gradlew --no-daemon testModernDebugUnitTest --tests "app.gamenative.wow.legacy.*" --tests "app.gamenative.ui.screen.wow.*" --tests "app.gamenative.utils.AppUpdaterTest"
       - name: Build
         run: ./gradlew --no-daemon assembleModernDebug
 
