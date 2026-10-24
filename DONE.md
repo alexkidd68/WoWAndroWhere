@@ -10,6 +10,7 @@ What the app does, by area, with the version each feature came in. Versions up t
 - Handheld graphics defaults and gamepad mode on in Config.wtf (base)
 - Warning before launching on a device without an Adreno GPU (0.2.0)
 - Stall watchdog writes what blocked the main thread to `crash_logs/` (0.3.0)
+- Touchscreen mode in the in-game menu: a tap clicks where the finger is, two fingers right-click, three fingers open the keyboard, pinch scrolls; saved per game (base)
 
 ## Installing and updating the game
 
