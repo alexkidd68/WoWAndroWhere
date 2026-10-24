@@ -2,7 +2,6 @@ package app.gamenative.wow.legacy
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -16,7 +15,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -30,12 +28,12 @@ import com.winlator.container.Container
  * after login it would sit over the game; the quick menu item stays for later logins.
  */
 @Composable
-fun BoxScope.PasswordButton(container: Container?, hidden: Boolean) {
+fun PasswordButton(container: Container?, hidden: Boolean, modifier: Modifier = Modifier) {
     if (container?.getExtra(LegacyClient.TYPE_PASSWORD_EXTRA) != "1") return
     val context = LocalContext.current
     var used by rememberSaveable { mutableStateOf(false) }
     if (used || hidden) return
-    Box(Modifier.align(Alignment.TopEnd).padding(16.dp)) {
+    Box(modifier.padding(16.dp)) {
         OutlinedButton(
             onClick = {
                 used = true
