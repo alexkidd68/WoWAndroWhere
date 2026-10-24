@@ -95,7 +95,6 @@ fun SettingsScreen(
     launcher: LauncherController,
     onBack: () -> Unit,
     onVersionChanged: () -> Unit = {},
-    onOpenPrivateServer: () -> Unit = {},
 ) {
     FwPage("Settings", onBack) {
         FwSection("App") {
@@ -115,7 +114,7 @@ fun SettingsScreen(
                 }
             }
         }
-        GameVersionSection(launcher, onVersionChanged, onOpenPrivateServer)
+        GameVersionSection(launcher, onVersionChanged)
         FwSection("Support WoW Foreverywhere") {
             val context = LocalContext.current
             Text("${AppName.FULL} is built on WoW Foreverywhere, a free and open source project. If it saves you some time, you can support its development on Ko-fi.", style = Fw.Text)
@@ -144,7 +143,7 @@ fun SettingsScreen(
 
 /** Settings, Game version: WoW Forever or one of the experimental official versions. */
 @Composable
-private fun GameVersionSection(launcher: LauncherController, onVersionChanged: () -> Unit, onOpenPrivateServer: () -> Unit) {
+private fun GameVersionSection(launcher: LauncherController, onVersionChanged: () -> Unit) {
     val install by InstallController.state.collectAsState()
     val downloading = install is InstallUiState.Running || install is InstallUiState.Paused
     var pending by remember { mutableStateOf<GameVersion?>(null) }
@@ -172,11 +171,6 @@ private fun GameVersionSection(launcher: LauncherController, onVersionChanged: (
                     if (v.isExperimental) Text("Experimental", style = Fw.Data.copy(color = Fw.Ash))
                     if (current) Text("Selected", style = Fw.Data.copy(color = Fw.Brass))
                 }
-            }
-            FwRow(selected = false, onClick = { if (!downloading && !launcher.busy) onOpenPrivateServer() }) {
-                Box(Modifier.size(24.dp))
-                Text("Private server (3.3.5a)", style = Fw.Text, modifier = Modifier.weight(1f))
-                Text("Test", style = Fw.Data.copy(color = Fw.Ash))
             }
         }
         when {

@@ -120,9 +120,17 @@ class AddonManager(
         val repo = GitHubProvider.fromUrl(url)
         if (repo != null) {
             val github = providers.firstOrNull { it.id == ProviderIds.GITHUB } ?: GitHubProvider(http)
-            val remote = github.get(repo) ?: throw IOException("no release found for $repo")
-            return@withLock installLocked(remote, mutableSetOf())
+            github.get(repo)?.let { return@withLock installLocked(it, mutableSetOf()) }
+            // Most 3.3.5a addons live in plain repos without releases: take the default branch instead.
+            if (target.main.branchZips) {
+                return@withLock installUrlLocked("https://github.com/$repo/archive/HEAD.zip")
+            }
+            throw IOException("no release found for $repo")
         }
+        installUrlLocked(url)
+    }
+
+    private suspend fun installUrlLocked(url: String): InstalledAddon {
         val trimmed = url.trim()
         require(trimmed.startsWith("https://", ignoreCase = true) || trimmed.startsWith("http://", ignoreCase = true)) {
             "not a URL: $url"
@@ -138,7 +146,7 @@ class AddonManager(
             source = SourceRef(ProviderIds.URL, trimmed),
             installedAt = System.currentTimeMillis(),
         )
-        commit(record)
+        return commit(record)
     }
 
     // --- browsing -------------------------------------------------------------------------------

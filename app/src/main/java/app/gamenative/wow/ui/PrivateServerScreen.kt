@@ -5,7 +5,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,7 +28,7 @@ import app.gamenative.wow.ui.components.FwChip
 import app.gamenative.wow.ui.theme.Fw
 import java.io.File
 
-/** Private-server spike: pick a 3.3.5a client folder and realmlist, choose how it runs, and launch. */
+/** Private server "Game files": the player's 3.3.5a client folder, its realmlist and how it runs. */
 @Composable
 fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
     val context = LocalContext.current
@@ -45,10 +48,10 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
         }
     }
 
-    FwPage("Private server (test)", onBack) {
+    FwPage("Client and server", onBack) {
         FwSection("Client") {
             Text(
-                "Point the app at your own 3.3.5a client folder, the one with ${LegacyClient.EXE} and Data. This is a test build to see whether old clients run on this device.",
+                "Point the app at your own 3.3.5a client folder, the one with ${LegacyClient.EXE} and Data. The app never downloads or changes the client beyond its realmlist and settings.",
                 style = Fw.Secondary,
             )
             if (settings.root.isBlank()) {
@@ -83,14 +86,54 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
             }
         }
 
-        FwSection("Play") {
-            if (launcher.isLaunching) Text(launcher.statusText, style = Fw.Text)
+        FwSection("Logs") {
             launcher.errorMessage?.let { Text(it, style = Fw.Secondary.copy(color = Fw.Warn)) }
             Text("Each launch saves a Wine log as ${LegacyClient.LOG} in the client folder and replaces the last one. When the game closes, the app asks whether to share it.", style = Fw.Secondary)
-            FwButton(
-                "Launch",
-                { launcher.launchLegacy() },
-                enabled = !launcher.busy && settings.root.isNotBlank() && settings.realmlist.isNotBlank(),
+        }
+    }
+}
+
+/** Private server "Account": the saved password that the in-game menu's Type password enters. */
+@Composable
+fun ServerLoginScreen(launcher: LauncherController, onBack: () -> Unit) {
+    var password by remember { mutableStateOf("") }
+    FwPage("Server login", onBack) {
+        FwSection("Password") {
+            Text(
+                if (launcher.hasServerPassword) {
+                    "Your server password is saved on this device, encrypted with the Android keystore. On the login screen, open the menu with Back and choose Type password."
+                } else {
+                    "Save your server password to enter it from the in-game menu instead of typing it each time. The client remembers your account name itself."
+                },
+                style = Fw.Text,
+            )
+            OutlinedTextField(
+                password,
+                { password = it },
+                singleLine = true,
+                label = { Text(if (launcher.hasServerPassword) "New password" else "Password") },
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                textStyle = Fw.Text,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                FwButton(
+                    "Save password",
+                    {
+                        launcher.saveServerPassword(password)
+                        password = ""
+                    },
+                    enabled = password.isNotEmpty(),
+                )
+                if (launcher.hasServerPassword) FwButton("Forget password", launcher::forgetServerPassword, kind = FwButtonKind.Danger)
+            }
+            launcher.errorMessage?.let { Text(it, style = Fw.Secondary.copy(color = Fw.Warn)) }
+        }
+        FwSection("How it works") {
+            Text(
+                "The password never goes into the game folder. Type password presses its keys and Enter in the game, so use it only when the password box is selected. Security codes your server emails you are still typed by hand.",
+                style = Fw.Secondary,
             )
         }
     }

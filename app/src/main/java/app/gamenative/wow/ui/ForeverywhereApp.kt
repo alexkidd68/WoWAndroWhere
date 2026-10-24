@@ -21,6 +21,7 @@ import app.gamenative.ui.screen.wow.BattleNetCredentialDialog
 import app.gamenative.wow.AppName
 import app.gamenative.wow.ui.addons.AddonsRoute
 import app.gamenative.wow.ui.addons.addonsControllerFor
+import app.gamenative.wow.ui.addons.legacyAddonsControllerFor
 import app.gamenative.wow.ui.components.FwDialog
 import app.gamenative.wow.ui.theme.Fw
 import app.gamenative.wow.ui.theme.ForeverywhereTheme
@@ -36,7 +37,6 @@ object Routes {
     const val SETTINGS = "settings"
     const val FIRST_RUN = "firstrun"
     const val INSTALL = "install"
-    const val PRIVATE_SERVER = "privateserver"
 }
 
 /** The app's own screens. Hosted by upstream's NavHost in place of `WoWForeverScreen`. */
@@ -47,19 +47,21 @@ fun ForeverywhereApp(onLaunch: (appId: String) -> Unit) {
     val launcher = remember { LauncherController(context, scope, onLaunch) }
     val nav = rememberNavController()
     var showLoginDialog by remember { mutableStateOf(false) }
-    val addonsNow = remember(launcher.gamePath, launcher.files.product) { addonsControllerFor(launcher.gamePath, launcher.files.product, scope) }
+    val addonsNow = remember(launcher.version, launcher.gamePath, launcher.files.product, launcher.legacy.root) {
+        if (launcher.isPrivate) legacyAddonsControllerFor(launcher.legacy.root, scope) else addonsControllerFor(launcher.gamePath, launcher.files.product, scope)
+    }
     LaunchedEffect(addonsNow) { addonsNow?.refreshInstalled() }
     // The nav graph is built once, so destinations read this state instead of capturing a stale value.
     val addonsState = rememberUpdatedState(addonsNow)
 
     // Decided once: recomputing it would rebuild the graph and drop first-run mid-way when an install appears.
     val startRoute = remember {
-        if (launcher.registry.active() == null && launcher.filesMissing) Routes.FIRST_RUN else Routes.HOME
+        if (!launcher.isPrivate && launcher.registry.active() == null && launcher.filesMissing) Routes.FIRST_RUN else Routes.HOME
     }
     var appUpdateDismissed by remember { mutableStateOf(false) }
     // After a game version switch: that version's Home, or its first run when it has no install yet.
     val onVersionChanged = {
-        val route = if (launcher.registry.active() == null && launcher.filesMissing) Routes.FIRST_RUN else Routes.HOME
+        val route = if (!launcher.isPrivate && launcher.registry.active() == null && launcher.filesMissing) Routes.FIRST_RUN else Routes.HOME
         nav.navigate(route) { popUpTo(nav.graph.id) { inclusive = true } }
     }
 
@@ -92,19 +94,21 @@ fun ForeverywhereApp(onLaunch: (appId: String) -> Unit) {
                         onOpenSettings = { nav.navigate(Routes.SETTINGS) },
                     )
                 }
-                composable(Routes.GAME) { GameFilesScreen(launcher, onBack = { nav.popBackStack() }, onInstall = { nav.navigate(Routes.INSTALL) }) }
+                composable(Routes.GAME) {
+                    if (launcher.isPrivate) {
+                        PrivateServerScreen(launcher, onBack = { nav.popBackStack() })
+                    } else {
+                        GameFilesScreen(launcher, onBack = { nav.popBackStack() }, onInstall = { nav.navigate(Routes.INSTALL) })
+                    }
+                }
                 composable(Routes.ACCOUNT) {
-                    AccountScreen(launcher, onBack = { nav.popBackStack() }, onEditLogin = { showLoginDialog = true })
+                    if (launcher.isPrivate) {
+                        ServerLoginScreen(launcher, onBack = { nav.popBackStack() })
+                    } else {
+                        AccountScreen(launcher, onBack = { nav.popBackStack() }, onEditLogin = { showLoginDialog = true })
+                    }
                 }
-                composable(Routes.SETTINGS) {
-                    SettingsScreen(
-                        launcher,
-                        onBack = { nav.popBackStack() },
-                        onVersionChanged = onVersionChanged,
-                        onOpenPrivateServer = { nav.navigate(Routes.PRIVATE_SERVER) },
-                    )
-                }
-                composable(Routes.PRIVATE_SERVER) { PrivateServerScreen(launcher, onBack = { nav.popBackStack() }) }
+                composable(Routes.SETTINGS) { SettingsScreen(launcher, onBack = { nav.popBackStack() }, onVersionChanged = onVersionChanged) }
                 composable(Routes.ADDONS) { AddonsRoute(launcher, addonsState.value, onBack = { nav.popBackStack() }) }
                 composable(Routes.INSTALL) {
                     val back = { nav.popBackStack(); Unit }

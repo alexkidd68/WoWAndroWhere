@@ -28,23 +28,24 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 /** UI state for the addon browser, bound to one install's `Interface/AddOns` folder. */
-class AddonsController(gameRoot: File, product: WowProduct, private val scope: CoroutineScope) {
+class AddonsController(val addonsDir: File, val version: GameVersion, private val scope: CoroutineScope) {
     enum class Mode { INSTALLED, BROWSE }
 
-    val addonsDir = File(gameRoot, "${product.flavorDir}/Interface/AddOns")
-    val version = GameVersion.of(product)
+    constructor(gameRoot: File, product: WowProduct, scope: CoroutineScope) :
+        this(File(gameRoot, "${product.flavorDir}/Interface/AddOns"), GameVersion.of(product), scope)
+
     private val target = version.addonTarget()
     private val manager = AddonManager(
         addonsDir = addonsDir,
         db = AddonDb.forAddonsDir(addonsDir),
-        providers = listOf(
+        providers = listOfNotNull(
             CurseForgeProvider(
                 BuildConfig.CURSEFORGE_API_KEY,
                 apiBase = BuildConfig.CURSEFORGE_API_BASE,
                 proxy = BuildConfig.CURSEFORGE_API_KEY.isBlank(),
                 target = target,
-            ),
-            WagoProvider(BuildConfig.WAGO_API_KEY, target = target),
+            ).takeUnless { version.isPrivateServer },
+            WagoProvider(BuildConfig.WAGO_API_KEY, target = target).takeUnless { version.isPrivateServer },
             WowInterfaceProvider(target = target),
             GitHubProvider(target = target),
         ),

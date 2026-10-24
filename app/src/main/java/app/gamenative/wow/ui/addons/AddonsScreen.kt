@@ -387,3 +387,9 @@ private fun compact(n: Long) = when {
 
 internal fun addonsControllerFor(root: String, product: app.gamenative.wow.product.WowProduct?, scope: kotlinx.coroutines.CoroutineScope): AddonsController? =
     product?.let { AddonsController(File(root), it, scope) }
+
+/** The private server client's own `Interface/AddOns`, once a client folder is chosen. */
+internal fun legacyAddonsControllerFor(root: String, scope: kotlinx.coroutines.CoroutineScope): AddonsController? =
+    root.takeIf { it.isNotBlank() }?.let {
+        AddonsController(File(it, "Interface/AddOns"), app.gamenative.wow.product.GameVersion.PRIVATE_335, scope)
+    }

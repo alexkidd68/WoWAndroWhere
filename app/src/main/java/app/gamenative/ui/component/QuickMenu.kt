@@ -49,6 +49,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Gamepad
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Mouse
 import androidx.compose.material.icons.filled.QueryStats
@@ -120,6 +121,7 @@ object QuickMenuAction {
     const val SHOOTER_MODE = 9
     const val RADIAL_MENU = 10
     const val GYRO = 11
+    const val TYPE_PASSWORD = 101
 }
 
 private object QuickMenuTab {
@@ -350,6 +352,7 @@ fun QuickMenu(
     // Kept here rather than plumbed through XServerScreen: that composable sits at the
     // dex verifier's register limit and extra locals can produce invalid bytecode.
     val gyroMenu = remember(container?.id) { container?.let(::GyroQuickMenuState) }
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     val controllerItems = buildList {
         add(
@@ -368,6 +371,16 @@ fun QuickMenu(
                 accentColor = PluviaTheme.colors.accentPurple,
             )
         )
+        if (container?.getExtra(app.gamenative.wow.legacy.LegacyClient.TYPE_PASSWORD_EXTRA) == "1") {
+            add(
+                QuickMenuItem(
+                    id = QuickMenuAction.TYPE_PASSWORD,
+                    icon = Icons.Default.Key,
+                    labelResId = R.string.androwhere_type_password,
+                    accentColor = PluviaTheme.colors.accentPurple,
+                )
+            )
+        }
         add(
             QuickMenuItem(
                 id = QuickMenuAction.INPUT_CONTROLS,
@@ -797,6 +810,9 @@ fun QuickMenu(
                                                     onClick = {
                                                         if (item.id == QuickMenuAction.GYRO && gyroMenu != null) {
                                                             gyroMenu.setEnabled(!gyroEnabled)
+                                                        } else if (item.id == QuickMenuAction.TYPE_PASSWORD) {
+                                                            onDismiss()
+                                                            app.gamenative.wow.legacy.LegacyClient.typeServerPassword(context)
                                                         } else if (onItemSelected(item.id)) {
                                                             onDismiss()
                                                         }

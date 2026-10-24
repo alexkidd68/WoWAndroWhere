@@ -1015,6 +1015,7 @@ internal fun prepareLegacyLaunch(
     }
     legacy.putExtra("skipWinHandler", "1")
     legacy.putExtra("wineLog", "1")
+    legacy.putExtra(LegacyClient.TYPE_PASSWORD_EXTRA, if (LegacyClient.hasServerPassword(context)) "1" else null)
     legacy.saveData()
     return LEGACY_CONTAINER_ID
 }

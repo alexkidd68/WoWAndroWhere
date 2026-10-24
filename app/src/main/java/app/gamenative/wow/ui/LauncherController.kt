@@ -118,17 +118,26 @@ class LauncherController(
     var legacyBuild by mutableStateOf<ClientBuild?>(null)
         private set
 
+    var hasServerPassword by mutableStateOf(LegacyClient.hasServerPassword(context))
+        private set
+
     /** The Wine log of the last legacy launch, waiting for the player to agree to share it. */
     var legacyLogToShare by mutableStateOf<File?>(null)
 
     private var launchJob: Job? = null
     private var pendingInstallPermission = false
 
-    val filesMissing get() = !(files.dataExists && files.buildInfoExists)
-    val canPlay get() = !isLaunching && !isUpdating && !filesMissing && !files.isWrongGame
+    /** The private server version runs the player's own client from [legacy]: no Blizzard install, updates or login. */
+    val isPrivate get() = version.isPrivateServer
+    val filesMissing get() = if (isPrivate) legacy.root.isBlank() else !(files.dataExists && files.buildInfoExists)
+    val canPlay get() = !isLaunching && !isUpdating && !filesMissing && if (isPrivate) legacy.realmlist.isNotBlank() else !files.isWrongGame
     val busy get() = isLaunching || isUpdating
 
     fun checkFiles(): Boolean {
+        if (isPrivate) {
+            files = GamePath.Status()
+            return !filesMissing
+        }
         files = GamePath.status(context, gamePath)
         if (files.isWrongGame) errorMessage = "This folder holds ${files.productCode}, not ${version.displayName}."
         return files.isReady
@@ -152,6 +161,7 @@ class LauncherController(
         canConvertToLaunch = false
         gamePath = registry.active()?.root ?: GamePath.load(context)
         if (checkFiles()) checkVersionStatus()
+        if (isPrivate) detectLegacyBuild()
         return true
     }
 
@@ -204,7 +214,7 @@ class LauncherController(
     }
 
     fun checkVersionStatus() {
-        if (!File(gamePath, WowClientDownloader.BUILD_INFO).exists()) return
+        if (isPrivate || !File(gamePath, WowClientDownloader.BUILD_INFO).exists()) return
         scope.launch { fetchVersionStatus() }
     }
 
@@ -215,6 +225,7 @@ class LauncherController(
     }
 
     fun launchGame(confirmedUnsupported: Boolean = false) {
+        if (isPrivate) return launchLegacy(confirmedUnsupported)
         val product = files.product
         if (isLaunching || product == null) return
         if (!supportedGpu && !confirmedUnsupported) {
@@ -228,7 +239,17 @@ class LauncherController(
         launch { screenSize, onStatus -> prepareLaunch(context, File(gamePath), product, gpu, screenSize, onStatus) }
     }
 
-    /** Private-server spike: launches the legacy client from [legacy]. */
+    fun saveServerPassword(password: String) {
+        hasServerPassword = LegacyClient.saveServerPassword(context, password)
+        if (!hasServerPassword) errorMessage = "Couldn't save the password on this device."
+    }
+
+    fun forgetServerPassword() {
+        LegacyClient.forgetServerPassword(context)
+        hasServerPassword = false
+    }
+
+    /** Launches the player's private server client from [legacy]. */
     fun launchLegacy(confirmedUnsupported: Boolean = false) {
         if (isLaunching) return
         if (!supportedGpu && !confirmedUnsupported) {
@@ -452,7 +473,7 @@ class LauncherController(
 
     fun onResume() {
         // An install may have finished in the background service while another screen was showing.
-        registry.active()?.root?.takeIf { it != gamePath && !files.isReady }?.let { useGameRoot(it) }
+        if (!isPrivate) registry.active()?.root?.takeIf { it != gamePath && !files.isReady }?.let { useGameRoot(it) }
         checkFiles()
         isLaunching = false
         statusText = READY
@@ -481,10 +502,10 @@ class LauncherController(
         val ready = checkFiles()
         if (!files.hasStorageAccess && (files.dataExists || files.buildInfoExists)) needsStoragePermission = true
         when {
-            !ready || !hasSavedLogin -> {
+            isPrivate || !ready || !hasSavedLogin -> {
                 WoWLauncherState.shouldAutoLaunch = false
                 PluviaApp.events.emit(AndroidEvent.ClearBootingSplash)
-                if (ready) {
+                if (ready || isPrivate) {
                     checkVersionStatus()
                     checkAppUpdate()
                 }
@@ -512,6 +533,7 @@ class LauncherController(
     // Read the install before the first frame, so screens built from this state never start out empty.
     init {
         checkFiles()
+        if (isPrivate) detectLegacyBuild()
         saveLegacyLog()
     }
 

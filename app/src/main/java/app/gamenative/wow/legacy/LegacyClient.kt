@@ -1,6 +1,10 @@
 package app.gamenative.wow.legacy
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
+import app.gamenative.PluviaApp
+import app.gamenative.wow.LoginVault
 import java.io.File
 import java.io.RandomAccessFile
 
@@ -30,6 +34,11 @@ object LegacyClient {
     private const val PREFS = "wow_legacy"
     private const val DEBUG_CLEARED = "leftover_debug_cleared"
     private const val LOG_WAITING = "log_waiting"
+    private const val VAULT = "legacy_server_vault"
+    private const val TYPE_DELAY_MS = 400L
+
+    /** Container extra: the in-game menu offers Type password. */
+    const val TYPE_PASSWORD_EXTRA = "typePassword"
     private const val FIXED_FILE_INFO_SIGNATURE = 0xFEEF04BDL
     private val LOCALE = Regex("[a-z]{2}[A-Z]{2}")
     private val REALMLIST_LINE = Regex("set\\s+realmlist\\s+(.*)", RegexOption.IGNORE_CASE)
@@ -68,6 +77,30 @@ object LegacyClient {
 
     fun setLogWaiting(context: Context, waiting: Boolean) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(LOG_WAITING, waiting).apply()
+    }
+
+    /**
+     * The private server password, sealed like the Battle.net login (see [LoginVault]) in its own prefs.
+     * The 3.3.5a client can't take a password from outside, so the in-game menu's Type password enters it
+     * as keystrokes when the player asks; nothing types it on a timer.
+     */
+    fun hasServerPassword(context: Context): Boolean = runCatching { serverPassword(context) != null }.getOrDefault(false)
+
+    fun saveServerPassword(context: Context, password: String): Boolean =
+        runCatching { LoginVault(context, VAULT).save("", password) }.isSuccess
+
+    fun forgetServerPassword(context: Context) {
+        LoginVault(context, VAULT).clear()
+    }
+
+    private fun serverPassword(context: Context): String? = LoginVault(context, VAULT).load()?.second?.takeIf { it.isNotEmpty() }
+
+    /** Types the saved password and Enter into the game. Called from the in-game menu. */
+    fun typeServerPassword(context: Context) {
+        val password = runCatching { serverPassword(context) }.getOrNull() ?: return
+        val receiver = PluviaApp.imeInputReceiver ?: return
+        // After the menu closes, so the keys reach the game window rather than the menu.
+        Handler(Looper.getMainLooper()).postDelayed({ receiver.typeText(password + "\n") }, TYPE_DELAY_MS)
     }
 
     /** The folder holding [EXE] and `Data/`, searching [dir] and one level below it. */
