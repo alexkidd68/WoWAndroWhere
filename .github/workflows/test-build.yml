@@ -9,10 +9,10 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Instead of building: hide (draft) or show (publish) this release, e.g. v0.4.1"
+        description: "Instead of building: hide (draft), show (publish) or promote (republish its APK as the next test build) this release, e.g. v0.5.0"
         default: ""
       release_action:
-        description: "hide or show"
+        description: "hide, show or promote"
         default: "hide"
 
 permissions:
@@ -48,7 +48,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Hide or show the release
+      - name: Hide, show or promote the release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.release_tag }}
@@ -57,7 +57,15 @@ jobs:
           case "$ACTION" in
             hide) gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=true ;;
             show) gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest ;;
-            *) echo "::error::release_action must be hide or show"; exit 1 ;;
+            # Test builds only follow the test-build pre-release until they have the release's updater.
+            promote)
+              gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern WoW-AndroWhere.apk --dir dist
+              mv dist/WoW-AndroWhere.apk dist/WoW-AndroWhere-test.apk
+              gh release delete test-build --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes || true
+              gh release create test-build dist/WoW-AndroWhere-test.apk --repo "$GITHUB_REPOSITORY" --prerelease --target "$GITHUB_SHA" \
+                --title "Test build ${{ github.run_number }} (release $TAG)" \
+                --notes "The $TAG release APK, so test builds update to it. Later updates come from releases." ;;
+            *) echo "::error::release_action must be hide, show or promote"; exit 1 ;;
           esac
 
   publish:

@@ -2,6 +2,10 @@
 
 Why things are the way they are, newest first.
 
+## 2026-10-24: 0.5.0 and moving test builds onto releases
+
+Test builds up to 47 only check the `test-build` pre-release, so they can't see 0.5.0 on their own. After the release was published, `test-build.yml` with `release_action=promote` republished the 0.5.0 release APK as the next test build; installing it puts the phone on 0.5.0 and the release channel. From 0.5.0 on, a test build checks releases first (against the version it was built from) and then the test channel. 0.4.1, hidden as a draft during testing, was published again so the release history stays complete.
+
 ## 2026-10-24: Immersion is driven by the ConsolePortLK setup addon
 
 Immersion-WotLK (the 3.3.5a backport, in the 3.3.5a catalog) still has upstream's ConsolePort code in `Logic/Controller.lua`, but its TOC doesn't load that file, so with ConsolePortLK the face buttons kept their game bindings (jump, attack) while a quest or gossip window was open. Loading the file by editing Immersion's TOC was ruled out: it's retail code (Azerite and friends) that the backport's author left out, it can't be tried without the phone, and the edit would be lost on every update. Instead `!ConsolePortLK_AndroWhere` hooks Immersion's own `SetPropagateKeyboardInput` and `ClearKeyboardInput`, which it calls when its window takes and releases the keyboard. In between, priority override bindings send the pad's F-keys to a hidden button that calls Immersion's frame directly: A accepts, continues or clicks the highlighted option, B, Back and Start close, X repeats the text, D-pad up and down move the highlight, left and right cycle reward choices. ConsolePortLK's hint bar shows A and B. Nothing is bound in combat, same as Immersion. There's no separate install card: Immersion is in Browse already, and a second GitHub record would fight the catalog's entry over updates.
