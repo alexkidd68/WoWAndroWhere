@@ -113,6 +113,7 @@ fun AddonsScreen(c: AddonsController, onBack: () -> Unit) {
             items(AddonCategory.entries) { cat -> FwChip(cat.label, c.category == cat, { c.selectCategory(cat) }) }
             if (!wideBar) item { FwButton("From link", { showUrlDialog = true }, kind = FwButtonKind.Ghost) }
         }
+        ConsolePortCard(c)
         (c.working ?: c.message)?.let {
             Text(it, style = Fw.Secondary.copy(color = if (c.working != null) Fw.Brass else Fw.Ash), modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
         }

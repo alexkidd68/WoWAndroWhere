@@ -1,7 +1,6 @@
 {
   "_readme": "3.3.5a addons for the private server game version. Most 3.3.5a backports have no releases, so the 'Addon catalog 3.3.5a' workflow snapshots each repo's branch (the default one, or 'branch') and only keeps repos whose TOC says Interface 303xx. Sources mostly from github.com/NoM0Re/WoW-3.3.5a-Addons.",
   "addons": [
-    { "repo": "leoaviana/ConsolePortLK", "name": "ConsolePortLK", "category": "INTERFACE", "summary": "Play with a controller: button prompts, radial menus and cursor support." },
     { "repo": "Aldori15/Questie", "branch": "335", "name": "Questie", "category": "QUESTS", "summary": "Shows quest givers, objectives and turn-ins on your map and minimap." },
     { "repo": "ErebusAres/ZygorGuidesRemaster-3.3.5a_WOTLK", "name": "Zygor Guides", "category": "QUESTS", "summary": "Step-by-step leveling guides with waypoints." },
     { "repo": "anzz1/Carbonite-3.3.5", "name": "Carbonite", "category": "MAP", "summary": "Map, quest helper and minimap replacement in one." },
