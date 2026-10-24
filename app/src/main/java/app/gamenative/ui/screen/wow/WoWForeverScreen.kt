@@ -51,6 +51,8 @@ import app.gamenative.wow.product.WowProduct
 import app.gamenative.wow.product.GameVersion
 import app.gamenative.wow.product.GameVersions
 import app.gamenative.wow.product.detectProduct
+import app.gamenative.wow.legacy.LegacyClient
+import app.gamenative.wow.legacy.LegacySettings
 import com.winlator.container.Container
 import com.winlator.container.ContainerManager
 import com.winlator.contents.ContentProfile
@@ -973,26 +975,77 @@ internal fun prepareLaunch(
     return CONTAINER_ID
 }
 
-private fun containerConfig(gameRoot: File, product: WowProduct, gpu: GpuProfile, screenSize: String): JSONObject {
+/** Private-server spike: a 32-bit 3.3.5a-era client in its own container, run through WoW64 emulation. */
+internal fun prepareLegacyLaunch(
+    context: Context,
+    settings: LegacySettings,
+    gpu: GpuProfile,
+    screenSize: String,
+    onStatus: (String) -> Unit,
+): String {
+    installBundledComponents(context, onStatus)
+    val root = File(settings.root)
+    check(File(root, LegacyClient.EXE).isFile) { "No ${LegacyClient.EXE} in ${settings.root}." }
+    check(settings.realmlist.isNotBlank()) { "Enter the server's realmlist address." }
+    try {
+        LegacyClient.applyConfig(root, settings, screenSize)
+    } catch (e: Exception) {
+        if (e.isPermissionDenied()) throw StorageAccessDeniedException(e)
+        throw e
+    }
+
+    onStatus("Configuring legacy container...")
+    val config = baseContainerConfig(LEGACY_CONTAINER_ID, "WoW Private Server", root, gpu, screenSize).apply {
+        put("dxwrapper", settings.renderer.dxwrapper)
+        put("dxwrapperConfig", Container.DEFAULT_DXWRAPPERCONFIG)
+        put("executablePath", "G:\\${LegacyClient.EXE}")
+        put("execArgs", settings.renderer.execArgs)
+        put("emulator", LegacyClient.EMULATOR)
+    }
+    val containerManager = ContainerManager(context)
+    val container = containerManager.getContainerById(LEGACY_CONTAINER_ID)
+    if (container == null) {
+        onStatus("Creating prefix environment (first boot)...")
+        containerManager.createContainer(LEGACY_CONTAINER_ID, config)
+    } else {
+        container.loadData(config)
+    }
+    val legacy = checkNotNull(containerManager.getContainerById(LEGACY_CONTAINER_ID)) {
+        "Container creation failed. Check system storage and logs."
+    }
+    legacy.putExtra("skipWinHandler", "1")
+    legacy.putExtra("wineLog", "1")
+    legacy.putExtra(LegacyClient.TYPE_PASSWORD_EXTRA, if (LegacyClient.hasServerPassword(context)) "1" else null)
+    legacy.saveData()
+    return LEGACY_CONTAINER_ID
+}
+
+private const val LEGACY_CONTAINER_ID = "wow_legacy"
+
+private fun containerConfig(gameRoot: File, product: WowProduct, gpu: GpuProfile, screenSize: String): JSONObject =
+    baseContainerConfig(CONTAINER_ID, "WoW Forever", gameRoot, gpu, screenSize).apply {
+        put("dxwrapper", "dxvk-$DXVK_VERSION-1")
+        put("dxwrapperConfig", "version=$DXVK_VERSION-1")
+        put("executablePath", "G:\\${product.flavorDir}\\${product.armExe}")
+        put("execArgs", "-d3d11")
+    }
+
+private fun baseContainerConfig(id: String, name: String, gameRoot: File, gpu: GpuProfile, screenSize: String): JSONObject {
     val samsungEnv = if (Build.MANUFACTURER.equals("samsung", ignoreCase = true)) " FD_DEV_FEATURES=enable_tp_ubwc_flag_hint=1" else ""
     val envVars = "WRAPPER_MAX_IMAGE_COUNT=0 ZINK_DESCRIPTORS=lazy ZINK_DEBUG=compact,deck_emu MESA_SHADER_CACHE_DISABLE=false MESA_SHADER_CACHE_MAX_SIZE=512MB mesa_glthread=true WINEESYNC=0 MESA_VK_WSI_PRESENT_MODE=mailbox TU_DEBUG=${gpu.tuDebug} VKD3D_SHADER_MODEL=6_0 PULSE_LATENCY_MSEC=144$samsungEnv"
     return JSONObject().apply {
-        put("id", CONTAINER_ID)
-        put("name", "WoW Forever")
+        put("id", id)
+        put("name", name)
         put("screenSize", screenSize)
         put("envVars", envVars)
         put("graphicsDriver", "Wrapper")
         put("graphicsDriverVersion", gpu.driver)
         put("graphicsDriverConfig", "version=${gpu.driver},adrenotoolsTurnip=1,resourceType=buffer,bcnEmulation=auto,quality=high")
         put("displayRenderer", "vulkan")
-        put("dxwrapper", "dxvk-$DXVK_VERSION-1")
-        put("dxwrapperConfig", "version=$DXVK_VERSION-1")
         put("wineVersion", "$PROTON_VERSION-1")
         put("containerVariant", "bionic")
         put("fexcoreVersion", "2609-0")
         put("drives", "D:/storage/emulated/0/DownloadE:/data/data/${BuildConfig.APPLICATION_ID}/storageG:${gameRoot.path}")
-        put("executablePath", "G:\\${product.flavorDir}\\${product.armExe}")
-        put("execArgs", "-d3d11")
         put("showFPS", true)
         put("startupSelection", Container.STARTUP_SELECTION_AGGRESSIVE.toInt())
         put("wow64Mode", true)

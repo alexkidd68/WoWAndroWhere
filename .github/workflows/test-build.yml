@@ -7,6 +7,13 @@ name: Test build
 on:
   pull_request:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Instead of building: hide (draft) or show (publish) this release, e.g. v0.4.1"
+        default: ""
+      release_action:
+        description: "hide or show"
+        default: "hide"
 
 permissions:
   contents: read
@@ -31,12 +38,30 @@ jobs:
         run: tools/fetch_components.sh
       - run: echo "sdk.dir=$ANDROID_HOME" > local.properties
       - name: Unit tests
-        run: ./gradlew --no-daemon testModernDebugUnitTest --tests "app.gamenative.wow.legacy.*" --tests "app.gamenative.ui.screen.wow.*"
+        run: ./gradlew --no-daemon testModernDebugUnitTest --tests "app.gamenative.wow.legacy.*" --tests "app.gamenative.ui.screen.wow.*" --tests "app.gamenative.utils.AppUpdaterTest" --tests "app.gamenative.wow.addons.AddonArchiveTest" --tests "app.gamenative.wow.addons.AddonTargetTest"
       - name: Build
         run: ./gradlew --no-daemon assembleModernDebug
 
+  release-visibility:
+    if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Hide or show the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.release_tag }}
+          ACTION: ${{ inputs.release_action }}
+        run: |
+          case "$ACTION" in
+            hide) gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=true ;;
+            show) gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest ;;
+            *) echo "::error::release_action must be hide or show"; exit 1 ;;
+          esac
+
   publish:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.release_tag == ''
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
@@ -76,6 +101,8 @@ jobs:
             echo "keyPassword=$KEYSTORE_PASSWORD"
           } > app/keystores/keystore.properties
           echo "sdk.dir=$ANDROID_HOME" > local.properties
+      - name: Mark the version as a test build
+        run: sed -i -E 's/versionName = "([^"]+)"/versionName = "\1-test.${{ github.run_number }}"/' app/build.gradle.kts && grep versionName app/build.gradle.kts
       - name: Build
         run: ./gradlew --no-daemon assembleModernRelease
       - name: Publish the test pre-release
@@ -86,7 +113,7 @@ jobs:
           cp app/build/outputs/apk/modern/release/app-modern-release.apk dist/WoW-AndroWhere-test.apk
           gh release delete test-build --cleanup-tag --yes || true
           gh release create test-build dist/WoW-AndroWhere-test.apk --prerelease --target "$GITHUB_SHA" \
-            --title "Test build ($(git rev-parse --short HEAD), ${{ github.ref_name }})" \
+            --title "Test build ${{ github.run_number }} ($(git rev-parse --short HEAD), ${{ github.ref_name }})" \
             --notes "Test APK from ${{ github.ref_name }}. Not a release; the app never offers it as an update."
       - name: Remove signing material
         if: always()

@@ -91,7 +91,11 @@ fun AccountScreen(launcher: LauncherController, onBack: () -> Unit, onEditLogin:
 }
 
 @Composable
-fun SettingsScreen(launcher: LauncherController, onBack: () -> Unit, onVersionChanged: () -> Unit = {}) {
+fun SettingsScreen(
+    launcher: LauncherController,
+    onBack: () -> Unit,
+    onVersionChanged: () -> Unit = {},
+) {
     FwPage("Settings", onBack) {
         FwSection("App") {
             Text("${AppName.FULL} v${BuildConfig.VERSION_NAME}", style = Fw.Text)

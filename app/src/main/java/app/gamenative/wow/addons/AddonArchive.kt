@@ -26,7 +26,7 @@ object AddonArchive {
         try {
             extract(zip, staging)
             val root = unwrap(staging)
-            val folders = addonFolders(root)
+            val folders = addonFolders(root).map(::nameAfterToc)
             if (folders.isEmpty()) throw IOException("no addon folders in ${zip.name}")
             swapIn(folders, addonsDir)
             return folders.map { it.name }.sorted()
@@ -76,6 +76,17 @@ object AddonArchive {
     }
 
     private fun addonFolders(root: File): List<File> = childDirs(root)
+
+    /**
+     * A folder whose TOCs don't match its name (a branch zip's `pfQuest-wotlk-master`) is renamed to its
+     * shortest TOC name, since the game only loads `<Folder>/<Folder>.toc`.
+     */
+    private fun nameAfterToc(dir: File): File {
+        val bases = dir.listFiles().orEmpty().filter { it.isFile && it.name.endsWith(".toc", ignoreCase = true) }.map { it.name.dropLast(4) }
+        if (bases.isEmpty() || bases.any { it.equals(dir.name, ignoreCase = true) }) return dir
+        val target = File(dir.parentFile, bases.minBy { it.length })
+        return if (!target.exists() && dir.renameTo(target)) target else dir
+    }
 
     private fun swapIn(folders: List<File>, addonsDir: File) {
         val nonce = System.nanoTime()

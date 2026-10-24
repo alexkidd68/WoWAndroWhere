@@ -41,6 +41,8 @@ class FlavorSpec(
     val interfaces: IntRange,
     /** Generic TOC suffixes the client also loads, after its own (`_Classic` on every Classic client but Era, which names it already). */
     val extraTocNames: List<String> = emptyList(),
+    /** Whether a GitHub repo without releases installs from its default branch (old clients' addons are rarely packaged). */
+    val branchZips: Boolean = false,
     /** Whether a WoWInterface compatibility entry (`12.1.0`, "Curse of Ulatek") is this version. */
     val wowInterface: (major: Int, minor: Int, name: String) -> Boolean,
 ) {
@@ -59,6 +61,12 @@ class FlavorSpec(
         val ANNIVERSARY = FlavorSpec(73246, "bc", "bcc", listOf("bcc", "tbc"), 20000..29999, listOf("classic")) { major, _, _ -> major == 2 }
         val MISTS = FlavorSpec(79434, "mop", "mists", listOf("mists", "mop"), 50000..59999, listOf("classic")) { major, _, _ -> major == 5 }
         val RETAIL = FlavorSpec(517, "retail", "mainline", listOf("mainline", "retail"), 100000..999999) { major, _, _ -> major >= 10 }
+
+        /**
+         * The 3.3.5a client loads only `<Folder>.toc`, so no suffix names; the interface number decides.
+         * CurseForge and Wago list Blizzard's 3.4 Wrath Classic, not 3.3.5a, so they aren't used for it.
+         */
+        val WOTLK_335 = FlavorSpec(0, "", "wotlk335", emptyList(), 30300..30399, branchZips = true) { major, minor, _ -> major == 3 && minor == 3 }
     }
 }
 
@@ -78,6 +86,7 @@ fun GameVersion.addonTarget(): AddonTarget = when (this) {
     GameVersion.ANNIVERSARY -> AddonTarget(FlavorSpec.ANNIVERSARY, null)
     GameVersion.MISTS -> AddonTarget(FlavorSpec.MISTS, null)
     GameVersion.RETAIL -> AddonTarget(FlavorSpec.RETAIL, null)
+    GameVersion.PRIVATE_335 -> AddonTarget(FlavorSpec.WOTLK_335, null)
 }
 
 object FlavorRules {

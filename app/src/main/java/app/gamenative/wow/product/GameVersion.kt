@@ -12,9 +12,13 @@ enum class GameVersion(val key: String, val displayName: String, val products: L
     ANNIVERSARY("anniversary", "Burning Crusade Anniversary", listOf(WowProduct.ANNIVERSARY), "World of Warcraft"),
     MISTS("mists", "Mists of Pandaria Classic", listOf(WowProduct.MISTS), "World of Warcraft"),
     RETAIL("retail", "Retail", listOf(WowProduct.RETAIL), "World of Warcraft"),
+
+    /** A 3.3.5a client the player brings, for private servers. No Blizzard product: see `wow/legacy`. */
+    PRIVATE_335("private_335", "Private server (3.3.5a)", emptyList(), ""),
     ;
 
     val isExperimental get() = this != FOREVER
+    val isPrivateServer get() = products.isEmpty()
 
     companion object {
         fun of(product: WowProduct): GameVersion = entries.first { product in it.products }

@@ -120,4 +120,21 @@ class AddonArchiveTest {
         assertThrows(IOException::class.java) { AddonArchive.install(zip(TestZips.text("readme.txt" to "hi")), addons) }
         assertNoLeftovers()
     }
+
+    @Test
+    fun branchZipFolderIsRenamedAfterItsToc() {
+        val folders = AddonArchive.install(zip(TestZips.text("pfQuest-wotlk-master/pfQuest-wotlk.toc" to "## Interface: 30300")), addons)
+        assertEquals(listOf("pfQuest-wotlk"), folders)
+        assertTrue(File(addons, "pfQuest-wotlk/pfQuest-wotlk.toc").isFile)
+        assertNoLeftovers()
+    }
+
+    @Test
+    fun branchZipWithSeveralAddonsKeepsTheirFolders() {
+        val folders = AddonArchive.install(
+            zip(TestZips.text("Pack-main/Foo/Foo.toc" to "## Interface: 30300", "Pack-main/Bar/Bar.toc" to "## Interface: 30300")),
+            addons,
+        )
+        assertEquals(listOf("Bar", "Foo"), folders)
+    }
 }

@@ -24,8 +24,8 @@ import org.json.JSONObject
  * The game itself still needs the password in plain text at launch (see `BattleNetSignIn`), so this
  * protects the saved copy, not that hand-off.
  */
-class LoginVault(context: Context) {
-    private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+class LoginVault(context: Context, prefsName: String = PREFS) {
+    private val prefs = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
 
     fun load(): Pair<String, String>? {
         val sealed = prefs.getString(KEY_SEALED, null) ?: return null

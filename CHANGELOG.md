@@ -5,6 +5,10 @@ Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which thi
 ## Unreleased
 
 - **The app is now called WoW AndroWhere.** The new name shows on the home screen, in the app drawer and in Settings, in every language. The app ID is unchanged, so this installs as a normal update and keeps your settings, saved login, game files and addons. The release download is now **WoW-AndroWhere.apk**.
+- **Private servers (3.3.5a).** Settings → Game version → Private server (3.3.5a) runs your own Wrath of the Lich King 3.3.5a client. Choose its folder and enter your server's realmlist in **Client and server**, then press Play. The home screen, Play and Addons work for it like for the other versions. It's experimental.
+- **3.3.5a addons.** Addons lists WoWInterface addons made for 3.3, and **Install from link** takes a GitHub repository even when it has no releases.
+- **Server password.** Save your private server password under **Server login**. On the game's login screen, press Back and choose **Type password** to enter it. It's stored encrypted on the device and never goes into the game folder.
+- **Wine logs for private servers.** After a private server game closes, the app asks whether to share its log, which helps track down launch problems. Nothing is sent unless you choose where to share it.
 
 ## 0.4.1
 

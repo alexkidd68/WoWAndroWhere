@@ -24,6 +24,10 @@ What the app does, by area, with the version each feature came in. Versions up t
 
 - Settings → Game version: Classic Era, Burning Crusade Anniversary, Mists of Pandaria Classic and Retail, experimental, with a warning (0.4.0)
 - Each version keeps its own install, addons and addon database; launch, first run and detection follow the selected version (0.4.0)
+- Private server (3.3.5a) game version: your own client folder and realmlist, its own home screen, Play, and Client and server screen (0.5.0)
+- 3.3.5a clients run through Box64 WoW64, started directly instead of through winhandler; DXVK, WineD3D or OpenGL renderer (0.5.0)
+- Saved, encrypted private server password and a Type password item in the in-game menu (0.5.0)
+- Private server launches save a Wine log and offer to share it when the game closes (0.5.0)
 
 ## Addons
 
@@ -36,6 +40,7 @@ What the app does, by area, with the version each feature came in. Versions up t
 - Open addon pages on their source site, Ko-fi support links (0.2.0)
 - CurseForge source through a key-holding proxy (0.3.0)
 - Addon sources follow the selected game version (0.4.0)
+- 3.3.5a addons: WoWInterface filtered to 3.3, GitHub links without releases install from the default branch and get renamed after their TOC (0.5.0)
 
 ## Sign-in and security
 

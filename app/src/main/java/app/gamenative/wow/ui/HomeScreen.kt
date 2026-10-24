@@ -122,6 +122,7 @@ private fun Header(launcher: LauncherController) {
         }
         val version = launcher.versionStatus
         val (text, color) = when {
+            launcher.isPrivate -> (if (launcher.filesMissing) "Client not set up" else launcher.legacyBuild?.let { "Client $it" } ?: "Client 3.3.5a") to Fw.Ash
             launcher.filesMissing -> "Game not installed" to Fw.Ash
             launcher.isCheckingVersion || !launcher.versionChecked -> "Checking for game updates…" to Fw.Ash
             version == null -> "Game version unknown (offline?)" to Fw.Ash
@@ -138,7 +139,7 @@ private fun PlayTile(launcher: LauncherController, onOpenGame: () -> Unit, modif
     val files = launcher.files
     val version = launcher.versionStatus
     FwTile(
-        title = if (launcher.filesMissing) "Install" else "Play",
+        title = if (!launcher.filesMissing) "Play" else if (launcher.isPrivate) "Set up" else "Install",
         modifier = modifier,
         art = ForeverArt.KEY_ART,
         titleStyle = Fw.Hero,
@@ -152,18 +153,24 @@ private fun PlayTile(launcher: LauncherController, onOpenGame: () -> Unit, modif
         },
         onClick = {
             when {
-                launcher.filesMissing -> onOpenGame()
+                launcher.filesMissing || (launcher.isPrivate && !launcher.canPlay && !launcher.busy) -> onOpenGame()
                 version?.isOutdated == true -> launcher.performUpdate()
                 launcher.canPlay -> launcher.launchGame()
             }
         },
     ) {
         Text(
-            files.product?.let { listOfNotNull(it.displayName, version?.localVersion).joinToString(" · ") } ?: "Set up ${launcher.version.displayName} to start",
+            when {
+                launcher.isPrivate && !launcher.filesMissing -> launcher.legacy.realmlist.ifBlank { "No server set" }
+                else -> files.product?.let { listOfNotNull(it.displayName, version?.localVersion).joinToString(" · ") } ?: "Set up ${launcher.version.displayName} to start"
+            },
             style = Fw.Data,
         )
         when {
             launcher.busy -> Text(if (launcher.isUpdating) launcher.updateStatusText else launcher.statusText, style = Fw.Text)
+            launcher.isPrivate && launcher.filesMissing -> Text("Choose your 3.3.5a client folder and enter your server's realmlist.", style = Fw.Secondary)
+            launcher.isPrivate && launcher.legacy.realmlist.isBlank() -> Text("Enter your server's realmlist in Client and server.", style = Fw.Secondary.copy(color = Fw.Warn))
+            launcher.isPrivate -> Text(if (launcher.hasServerPassword) "Password saved: Back, then Type password on the login screen." else "Log in inside the game.", style = Fw.Secondary)
             launcher.filesMissing -> Text("Download the game, or find the copy already on this device.", style = Fw.Secondary)
             version?.isOutdated == true -> {
                 Text("Live servers need ${version.remoteVersion}. Press A to update.", style = Fw.Secondary.copy(color = Fw.Warn))
@@ -197,14 +204,22 @@ private fun SmallTiles(
                     style = Fw.Secondary,
                 )
             }
-            FwTile("Game files", Modifier.weight(1f).fillMaxHeight(), art = ForeverArt.ASHENVALE, onClick = onOpenGame) {
-                Text(if (launcher.filesMissing) "Not installed" else launcher.files.product?.displayName.orEmpty(), style = Fw.Secondary)
+            FwTile(if (launcher.isPrivate) "Client and server" else "Game files", Modifier.weight(1f).fillMaxHeight(), art = ForeverArt.ASHENVALE, onClick = onOpenGame) {
+                Text(
+                    when {
+                        launcher.isPrivate -> if (launcher.filesMissing) "Not set up" else launcher.legacy.realmlist.ifBlank { "No server set" }
+                        launcher.filesMissing -> "Not installed"
+                        else -> launcher.files.product?.displayName.orEmpty()
+                    },
+                    style = Fw.Secondary,
+                )
                 if (launcher.canConvertToLaunch) Text("Launch version available", style = Fw.Secondary.copy(color = Fw.Brass))
             }
         }
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            FwTile("Account", Modifier.weight(1f).fillMaxHeight(), art = ForeverArt.SKYBORNE, onClick = onOpenAccount) {
-                Text(if (launcher.hasSavedLogin) "Login saved on this device" else "No login saved", style = Fw.Secondary)
+            FwTile(if (launcher.isPrivate) "Server login" else "Account", Modifier.weight(1f).fillMaxHeight(), art = ForeverArt.SKYBORNE, onClick = onOpenAccount) {
+                val saved = if (launcher.isPrivate) launcher.hasServerPassword else launcher.hasSavedLogin
+                Text(if (saved) "${if (launcher.isPrivate) "Password" else "Login"} saved on this device" else "No ${if (launcher.isPrivate) "password" else "login"} saved", style = Fw.Secondary)
             }
             FwTile(
                 "Settings",

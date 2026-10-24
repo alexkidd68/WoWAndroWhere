@@ -102,4 +102,14 @@ class AddonTargetTest {
         File(folder, "Bar_TBC.toc").writeText("## Interface: 20506\n## Title: Bar\n")
         assertEquals("Bar_TBC.toc", FlavorRules.pickToc(folder, GameVersion.ANNIVERSARY.addonTarget())!!.fileName)
     }
+
+    @Test
+    fun privateServerTargetsOnly335() {
+        val target = GameVersion.PRIVATE_335.addonTarget()
+        val wotlk = TocParser.parse("Foo", "Foo.toc", "## Interface: 30300\n")
+        val classic = TocParser.parse("Foo", "Foo.toc", "## Interface: 30400\n")
+        assertEquals(AddonFlavor.MAIN, FlavorRules.classify(listOf(wotlk), target))
+        assertEquals(AddonFlavor.OTHER, FlavorRules.classify(listOf(classic), target))
+        assertTrue(target.main.branchZips)
+    }
 }

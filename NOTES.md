@@ -2,6 +2,22 @@
 
 Why things are the way they are, newest first.
 
+## 2026-10-24: Private server (3.3.5a) is a game version without a Blizzard product
+
+`GameVersion.PRIVATE_335` has no products, so the launcher treats it apart: no CDN install, update check, Battle.net login or auto-launch; Play runs `launchLegacy`, Game files is the Client and server screen, Account is Server login. Addons go to `<client>/Interface/AddOns`. CurseForge and Wago are off for it because their "Wrath" files are for Blizzard's 3.4 Classic and mostly break on 3.3.5a; WoWInterface entries marked 3.3 and GitHub links are used instead.
+
+## 2026-10-24: Why the 3.3.5a client starts without winhandler
+
+Upstream starts every non-ARM64 exe through `winhandler.exe`, which is x64 and needs FEX's `libarm64ecfex.dll`. The app doesn't ship that DLL, so the first 3.3.5a launches died with c0000135 before `Wow.exe` loaded. The `wow_legacy` container sets `skipWinHandler` and `Wow.exe` is started directly (WoW64 with wowbox64). FEX's `libwow64fex.dll` isn't bundled either, so Box64 is the only x86 emulator.
+
+## 2026-10-24: The private server password is typed, not passed
+
+The 3.3.5a client has no way to take a password from outside, and addons can't run on the login screen. So the password sits in its own `LoginVault` (AES-GCM, Android Keystore) and the in-game menu's Type password sends it as key presses plus Enter. It only types when the player picks it, never on a timer, so it can't land in chat if the login screen is slow. Trade-off: whatever has focus when the player picks it receives the password.
+
+## 2026-10-24: Wine logs come from the legacy container, and sharing is opt-in
+
+The launcher is rebuilt while the game runs, so state held in memory is gone when the player comes back. The `wow_legacy` container carries a `wineLog` extra that makes XServerScreen write the Wine log, without touching the global debug setting, and a "log waiting" pref survives until the player shares or dismisses it. Sharing goes through Android's share sheet: an automatic upload would need a GitHub token in the APK, which anyone could extract, and the logs would be public on the repo.
+
 ## 2026-10-24: Renamed to WoW AndroWhere, but only what people see
 
 The name lives in `wow/AppName.kt` and `app_name` (no longer translated, since the translations still said GameNative). The package id `app.wowforeverywhere`, the Keystore alias `foreverywhere_battle_net_v2` and the on-disk files (`.foreverywhere-install.json`, `.foreverywhere-addons.json`) keep the old name: changing them would break updates, drop the saved login, or make the app forget installs and addons. Kotlin names like `ForeverywhereApp` stay so upstream merges stay clean. Ko-fi links still go to upstream's author and say so, since the fork takes no donations. The user agent sent to CurseForge's proxy and GitHub is now `WoW-AndroWhere`.

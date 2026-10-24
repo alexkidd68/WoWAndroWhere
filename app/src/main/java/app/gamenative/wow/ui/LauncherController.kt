@@ -1,11 +1,14 @@
 package app.gamenative.wow.ui
 
 import android.content.Context
+import android.content.Intent
 import androidx.compose.runtime.getValue
+import androidx.core.content.FileProvider
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import app.gamenative.PluviaApp
+import app.gamenative.PrefManager
 import app.gamenative.events.AndroidEvent
 import app.gamenative.ui.screen.wow.BattleNetSignIn
 import app.gamenative.ui.screen.wow.GamePath
@@ -22,8 +25,12 @@ import app.gamenative.wow.install.InstallRequest
 import app.gamenative.wow.install.InstallUiState
 import app.gamenative.ui.screen.wow.isPermissionDenied
 import app.gamenative.ui.screen.wow.prepareLaunch
+import app.gamenative.ui.screen.wow.prepareLegacyLaunch
 import app.gamenative.utils.AppUpdater
 import app.gamenative.utils.StorageUtils
+import app.gamenative.wow.legacy.ClientBuild
+import app.gamenative.wow.legacy.LegacyClient
+import app.gamenative.wow.legacy.LegacySettings
 import app.gamenative.wow.product.GameInstall
 import app.gamenative.wow.product.GameVersion
 import app.gamenative.wow.product.GameVersions
@@ -106,14 +113,31 @@ class LauncherController(
     var canConvertToLaunch by mutableStateOf(false)
         private set
 
+    var legacy by mutableStateOf(LegacyClient.load(context))
+        private set
+    var legacyBuild by mutableStateOf<ClientBuild?>(null)
+        private set
+
+    var hasServerPassword by mutableStateOf(LegacyClient.hasServerPassword(context))
+        private set
+
+    /** The Wine log of the last legacy launch, waiting for the player to agree to share it. */
+    var legacyLogToShare by mutableStateOf<File?>(null)
+
     private var launchJob: Job? = null
     private var pendingInstallPermission = false
 
-    val filesMissing get() = !(files.dataExists && files.buildInfoExists)
-    val canPlay get() = !isLaunching && !isUpdating && !filesMissing && !files.isWrongGame
+    /** The private server version runs the player's own client from [legacy]: no Blizzard install, updates or login. */
+    val isPrivate get() = version.isPrivateServer
+    val filesMissing get() = if (isPrivate) legacy.root.isBlank() else !(files.dataExists && files.buildInfoExists)
+    val canPlay get() = !isLaunching && !isUpdating && !filesMissing && if (isPrivate) legacy.realmlist.isNotBlank() else !files.isWrongGame
     val busy get() = isLaunching || isUpdating
 
     fun checkFiles(): Boolean {
+        if (isPrivate) {
+            files = GamePath.Status()
+            return !filesMissing
+        }
         files = GamePath.status(context, gamePath)
         if (files.isWrongGame) errorMessage = "This folder holds ${files.productCode}, not ${version.displayName}."
         return files.isReady
@@ -137,6 +161,7 @@ class LauncherController(
         canConvertToLaunch = false
         gamePath = registry.active()?.root ?: GamePath.load(context)
         if (checkFiles()) checkVersionStatus()
+        if (isPrivate) detectLegacyBuild()
         return true
     }
 
@@ -189,7 +214,7 @@ class LauncherController(
     }
 
     fun checkVersionStatus() {
-        if (!File(gamePath, WowClientDownloader.BUILD_INFO).exists()) return
+        if (isPrivate || !File(gamePath, WowClientDownloader.BUILD_INFO).exists()) return
         scope.launch { fetchVersionStatus() }
     }
 
@@ -200,6 +225,7 @@ class LauncherController(
     }
 
     fun launchGame(confirmedUnsupported: Boolean = false) {
+        if (isPrivate) return launchLegacy(confirmedUnsupported)
         val product = files.product
         if (isLaunching || product == null) return
         if (!supportedGpu && !confirmedUnsupported) {
@@ -210,6 +236,94 @@ class LauncherController(
             needsStoragePermission = true
             return
         }
+        launch { screenSize, onStatus -> prepareLaunch(context, File(gamePath), product, gpu, screenSize, onStatus) }
+    }
+
+    fun saveServerPassword(password: String) {
+        hasServerPassword = LegacyClient.saveServerPassword(context, password)
+        if (!hasServerPassword) errorMessage = "Couldn't save the password on this device."
+    }
+
+    fun forgetServerPassword() {
+        LegacyClient.forgetServerPassword(context)
+        hasServerPassword = false
+    }
+
+    /** Launches the player's private server client from [legacy]. */
+    fun launchLegacy(confirmedUnsupported: Boolean = false) {
+        if (isLaunching) return
+        if (!supportedGpu && !confirmedUnsupported) {
+            unsupportedDeviceWarning = true
+            return
+        }
+        val settings = legacy
+        LegacyClient.setLogWaiting(context, true)
+        legacyLogToShare = null
+        listOf(wineLog(), sharedLegacyLog(), File(settings.root, LegacyClient.LOG)).forEach { it.delete() }
+        launch { screenSize, onStatus -> prepareLegacyLaunch(context, settings, gpu, screenSize, onStatus) }
+    }
+
+    private fun wineLog() = File(context.getExternalFilesDir(null), "wine_logs/wine_debug.log")
+    private fun sharedLegacyLog() = File(context.externalCacheDir, "legacy_logs/${LegacyClient.LOG}")
+
+    /**
+     * Copies the last legacy launch's Wine log to the client folder and to the share cache, then asks the
+     * player whether to share it. The previous log was deleted at launch. The launcher is rebuilt while the
+     * game runs, so this runs both when it comes back and when the game ends; the copy is redone each time
+     * until the player answers, so a copy taken mid-game is replaced by the full log.
+     */
+    private fun saveLegacyLog() {
+        if (LegacyClient.clearLeftoverDebug(context)) PrefManager.enableWineDebug = false
+        if (!LegacyClient.isLogWaiting(context)) return
+        val log = wineLog()
+        val root = legacy.root
+        scope.launch(Dispatchers.IO) {
+            runCatching {
+                if (!log.isFile) return@runCatching
+                if (root.isNotBlank()) log.copyTo(File(root, LegacyClient.LOG), overwrite = true)
+                val shared = sharedLegacyLog().apply { parentFile?.mkdirs() }
+                LegacyClient.trimLog(log, shared)
+                legacyLogToShare = shared
+            }.onFailure { Timber.w(it, "Couldn't copy the Wine log") }
+        }
+    }
+
+    fun dismissLegacyLog() {
+        legacyLogToShare = null
+        LegacyClient.setLogWaiting(context, false)
+    }
+
+    /** Opens the share sheet for the last legacy log. Only called after the player said yes. */
+    fun shareLegacyLog(activity: Context) {
+        val file = legacyLogToShare ?: return
+        dismissLegacyLog()
+        val uri = FileProvider.getUriForFile(activity, "${activity.packageName}.fileprovider", file)
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            putExtra(Intent.EXTRA_SUBJECT, LegacyClient.LOG)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        activity.startActivity(Intent.createChooser(send, "Share Wine log"))
+    }
+
+    fun updateLegacy(settings: LegacySettings) {
+        val rootChanged = settings.root != legacy.root
+        legacy = settings
+        LegacyClient.save(context, settings)
+        if (rootChanged) detectLegacyBuild()
+    }
+
+    fun detectLegacyBuild() {
+        val root = legacy.root
+        scope.launch {
+            legacyBuild = withContext(Dispatchers.IO) {
+                root.takeIf { it.isNotBlank() }?.let { LegacyClient.detectBuild(File(it, LegacyClient.EXE)) }
+            }
+        }
+    }
+
+    private fun launch(prepare: (screenSize: String, onStatus: (String) -> Unit) -> String) {
         isLaunching = true
         errorMessage = null
         statusText = "Preparing components..."
@@ -217,9 +331,7 @@ class LauncherController(
             try {
                 val screenSize = fitScreenSizeToWindow(context, gpu.screenSize)
                 val containerId = withContext(Dispatchers.IO) {
-                    prepareLaunch(context, File(gamePath), product, gpu, screenSize) { msg ->
-                        scope.launch(Dispatchers.Main) { statusText = msg }
-                    }
+                    prepare(screenSize) { msg -> scope.launch(Dispatchers.Main) { statusText = msg } }
                 }
                 statusText = "Booting into World of Warcraft..."
                 onLaunch(containerId)
@@ -227,8 +339,10 @@ class LauncherController(
                 throw e
             } catch (_: StorageAccessDeniedException) {
                 resetLaunch()
+                saveLegacyLog()
                 needsStoragePermission = true
             } catch (e: Exception) {
+                saveLegacyLog()
                 Timber.e(e, "Error launching WoW Forever")
                 errorMessage = e.message ?: "Launch failed"
                 statusText = "Launch failed"
@@ -359,7 +473,7 @@ class LauncherController(
 
     fun onResume() {
         // An install may have finished in the background service while another screen was showing.
-        registry.active()?.root?.takeIf { it != gamePath && !files.isReady }?.let { useGameRoot(it) }
+        if (!isPrivate) registry.active()?.root?.takeIf { it != gamePath && !files.isReady }?.let { useGameRoot(it) }
         checkFiles()
         isLaunching = false
         statusText = READY
@@ -379,6 +493,7 @@ class LauncherController(
 
     fun onGameEnded() {
         resetLaunch()
+        saveLegacyLog()
         BattleNetSignIn.removeLoginFile(File(gamePath))
     }
 
@@ -387,10 +502,10 @@ class LauncherController(
         val ready = checkFiles()
         if (!files.hasStorageAccess && (files.dataExists || files.buildInfoExists)) needsStoragePermission = true
         when {
-            !ready || !hasSavedLogin -> {
+            isPrivate || !ready || !hasSavedLogin -> {
                 WoWLauncherState.shouldAutoLaunch = false
                 PluviaApp.events.emit(AndroidEvent.ClearBootingSplash)
-                if (ready) {
+                if (ready || isPrivate) {
                     checkVersionStatus()
                     checkAppUpdate()
                 }
@@ -418,6 +533,8 @@ class LauncherController(
     // Read the install before the first frame, so screens built from this state never start out empty.
     init {
         checkFiles()
+        if (isPrivate) detectLegacyBuild()
+        saveLegacyLog()
     }
 
     private companion object {
