@@ -119,14 +119,4 @@ class AppUpdaterTest {
     fun parseRelease_invalidJson_returnsNull() {
         assertNull(AppUpdater.parseRelease("not-json", "2.1.2"))
     }
-
-    private fun testRelease(title: String) =
-        """{"tag_name":"test-build","name":"$title","body":"","assets":[{"name":"WoW-Foreverywhere-test.apk","browser_download_url":"https://example.com/a.apk","size":1}]}"""
-
-    @Test
-    fun parseRelease_testBuild_offersOnlyNewerTestBuilds() {
-        assertEquals("0.4.1-test.18", AppUpdater.parseRelease(testRelease("Test build 18 (abc, branch)"), "0.4.1-test.17")?.version)
-        assertNull(AppUpdater.parseRelease(testRelease("Test build 17 (abc, branch)"), "0.4.1-test.17"))
-        assertNull(AppUpdater.parseRelease(testRelease("Something else"), "0.4.1-test.17"))
-    }
 }

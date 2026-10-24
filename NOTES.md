@@ -2,6 +2,10 @@
 
 Why things are the way they are, newest first.
 
+## 2026-10-24: Only full releases
+
+Daniel stopped test builds. 0.5.1 removed the `test-build` workflow run, its pre-release and the updater's test channel. Pull requests still run the "Checks" workflow, with unit tests and a debug build. Releases come from `release.yml`, dispatched with `tag=vX.Y.Z`, because tag pushes from Claude's container are refused. At Daniel's request, 0.5.1 was published with `prune=true`, which deleted every other release and its tag once 0.5.1 was confirmed as the latest. A phone still on a test build from before 0.5.0's updater can't see releases and needs the 0.5.1 APK installed by hand once.
+
 ## 2026-10-24: CurseForge is bring-your-own
 
 Daniel didn't want CurseForge searches going through upstream's `cf.yorudev.com`, and didn't want to run a shared proxy either. So there's no default: Settings, CurseForge takes the player's own API key or the address of a proxy they run, and CurseForge stays off without one (Addons says so; Wago, WoWInterface and GitHub are unaffected). The key is sealed with `LoginVault` in its own prefs, same as the server password, and is only sent as `x-api-key` to `api.curseforge.com`, never to a proxy; with a proxy the app sends no key. Proxy addresses must be https with no login, query or fragment. Saving one clears the other. The `CURSEFORGE_API_KEY` and `CURSEFORGE_PROXY` build settings are gone and `release.yml` no longer writes the key, so a key can't end up in the APK by accident. Trade-off: a player's key sits on their device, so someone with root on that phone could read it; that's the player's own key, not a shared one.

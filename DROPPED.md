@@ -9,3 +9,5 @@ Ideas decided against, with the reason. Any of these can come back if its reason
 - **Frame rate cap for 3.3.5a.** A steady 30 or 40 fps through DXVK's `d3d9.maxFrameRate`, for smoothness and battery. Daniel passed on it. (2026-10-24)
 - **A shared CurseForge proxy.** Upstream's `cf.yorudev.com` was the default, and running one for everyone was the other option. Daniel wants each player to bring their own key or proxy, so no searches pass through a server he doesn't run and no shared key's quota or terms are his to look after. Comes back if he decides to host one. (2026-10-24)
 - **Back up WTF and SavedVariables before addon changes.** A copy plus a restore button, so ConsolePort setups and keybinds survive a bad install. Daniel passed on it. (2026-10-24)
+
+- **Test builds** (a release-signed APK published as a `test-build` pre-release, with its own in-app update channel). Daniel, 2026-10-24: stop with test builds and ship full releases instead. Removed in 0.5.1, along with the old releases.

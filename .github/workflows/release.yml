@@ -12,6 +12,10 @@ on:
       tag:
         description: "Tag to build and publish (for example v0.2.0); created on the run's commit if missing"
         required: true
+      prune:
+        description: "After publishing, delete every other release and its tag"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -101,6 +105,16 @@ jobs:
           files: |
             dist/WoW-AndroWhere.apk
             dist/WoW-AndroWhere.apk.sha256
+
+      - name: Delete the other releases
+        if: github.event_name == 'workflow_dispatch' && inputs.prune
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [ "$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName)" = "$TAG" ] || { echo "::error::$TAG is not the latest release"; exit 1; }
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 200 --json tagName -q '.[].tagName' | while read -r t; do
+            [ "$t" = "$TAG" ] || gh release delete "$t" --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes
+          done
 
       - name: Remove signing material
         if: always()
