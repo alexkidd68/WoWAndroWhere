@@ -51,6 +51,7 @@ import app.gamenative.wow.product.WowProduct
 import app.gamenative.wow.product.GameVersion
 import app.gamenative.wow.product.GameVersions
 import app.gamenative.wow.product.detectProduct
+import app.gamenative.wow.legacy.ConsolePortLK
 import app.gamenative.wow.legacy.LegacyClient
 import app.gamenative.wow.legacy.LegacySettings
 import com.winlator.container.Container
@@ -1017,6 +1018,7 @@ internal fun prepareLegacyLaunch(
     legacy.putExtra("skipWinHandler", "1")
     legacy.putExtra("wineLog", if (settings.saveLog) "1" else null)
     legacy.putExtra(LegacyClient.TYPE_PASSWORD_EXTRA, if (LegacyClient.hasServerPassword(context)) "1" else null)
+    runCatching { ConsolePortLK.applyControls(context, legacy, root) }.onFailure { Timber.w(it, "ConsolePortLK controls") }
     legacy.saveData()
     return LEGACY_CONTAINER_ID
 }
