@@ -49,6 +49,19 @@ class ConsolePortLKTest {
     }
 
     @Test
+    fun setupAddonCalibrationMatchesTheProfile() {
+        val lua = File("src/main/assets/wow/consoleportlk-setup/Setup.lua").readText()
+        val keys = Regex("""(CP_[A-Z0-9_]+) = '(F\d+)'""").findAll(lua).associate { it.groupValues[1] to it.groupValues[2] }
+        val buttons = mapOf(
+            "CP_R_DOWN" to 96, "CP_R_RIGHT" to 97, "CP_R_LEFT" to 99, "CP_R_UP" to 100,
+            "CP_L_UP" to 19, "CP_L_DOWN" to 20, "CP_L_LEFT" to 21, "CP_L_RIGHT" to 22,
+            "CP_T1" to 102, "CP_T2" to 103, "CP_X_LEFT" to 109, "CP_X_RIGHT" to 108,
+        )
+        assertEquals(buttons.keys, keys.keys)
+        buttons.forEach { (button, keyCode) -> assertEquals(button, "KEY_${keys[button]}", bindings[keyCode]) }
+    }
+
+    @Test
     fun installedMeansTheMainFolderHasItsToc() {
         val addons = Files.createTempDirectory("addons").toFile()
         assertFalse(ConsolePortLK.isInstalled(addons))

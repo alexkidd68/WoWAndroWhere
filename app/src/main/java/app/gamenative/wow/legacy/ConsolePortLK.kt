@@ -10,8 +10,8 @@ import org.json.JSONObject
 /**
  * ConsolePortLK, the 3.3.5a backport of ConsolePort. The 3.3.5a client can't read a gamepad, so the addon
  * expects controller buttons to arrive as keys: [applyControls] gives the legacy container a profile that
- * turns the controller into F1-F12, Shift and Ctrl (the addon's two modifiers), WASD and the mouse.
- * The addon then asks the player to press each button once to calibrate.
+ * turns the controller into F1-F12, Shift and Ctrl (the addon's two modifiers), WASD and the mouse, and
+ * a setup addon presets ConsolePortLK's calibration to those keys.
  */
 object ConsolePortLK {
     const val REPO_URL = "https://github.com/leoaviana/ConsolePortLK"
@@ -21,8 +21,6 @@ object ConsolePortLK {
 
     fun isInstalled(addonsDir: File) = File(addonsDir, "$MAIN_FOLDER/$MAIN_FOLDER.toc").isFile
 
-    fun isInstalledIn(clientRoot: File) = isInstalled(File(clientRoot, "Interface/AddOns"))
-
     /**
      * Uses the ConsolePortLK profile while the addon is installed and the player hasn't picked another
      * profile for the container, and goes back to the default profile once the addon is removed.
@@ -31,10 +29,13 @@ object ConsolePortLK {
         val manager = InputControlsManager(context)
         val current = container.getExtra("profileId", "0").toIntOrNull() ?: 0
         val existing = manager.getProfiles(false).firstOrNull { it.name == PROFILE_NAME }
-        if (!isInstalledIn(clientRoot)) {
+        val addonsDir = File(clientRoot, "Interface/AddOns")
+        if (!isInstalled(addonsDir)) {
             if (existing != null && current == existing.id) container.putExtra("profileId", null)
+            File(addonsDir, SETUP_FOLDER).deleteRecursively()
             return
         }
+        writeSetupAddon(context, addonsDir)
         val ours = existing?.id ?: ((manager.getProfiles(false).maxOfOrNull { it.id } ?: 0) + 1)
         writeIfOutdated(context, ours)
         val chosenOther = current != 0 && current != ours && manager.getProfile(current) != null
@@ -56,6 +57,18 @@ object ConsolePortLK {
         prefs.edit().putInt(MAPPING_VERSION, version).apply()
     }
 
+    /**
+     * A tiny addon that loads before ConsolePort and presets its Xbox layout and calibration to the keys
+     * the profile sends, so the player never has to calibrate. Rewritten every launch.
+     */
+    private fun writeSetupAddon(context: Context, addonsDir: File) {
+        val dir = File(addonsDir, SETUP_FOLDER).apply { mkdirs() }
+        File(dir, "$SETUP_FOLDER.toc").writeText(context.assets.open("$SETUP_ASSETS/setup.toc").bufferedReader().use { it.readText() })
+        File(dir, "Setup.lua").writeText(context.assets.open("$SETUP_ASSETS/Setup.lua").bufferedReader().use { it.readText() })
+    }
+
+    const val SETUP_FOLDER = "!ConsolePortLK_AndroWhere"
+    private const val SETUP_ASSETS = "wow/consoleportlk-setup"
     private const val PREFS = "wow_consoleportlk"
     private const val MAPPING_VERSION = "mappingVersion"
 }
