@@ -313,7 +313,7 @@ class AddonManager(
                 if (!response.isSuccessful) throw IOException("download failed: HTTP ${response.code}")
                 tmp.outputStream().use { out -> response.body.byteStream().copyTo(out) }
             }
-            AddonArchive.install(tmp, addonsDir)
+            AddonArchive.install(tmp, addonsDir, target.main.interfaces)
         } finally {
             tmp.delete()
         }

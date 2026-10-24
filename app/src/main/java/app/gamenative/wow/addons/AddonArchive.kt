@@ -19,14 +19,14 @@ object AddonArchive {
      * - A single wrapper folder with no `.toc` whose children have TOCs is unwrapped.
      * - Entries that are absolute or contain `..` throw `IOException("unsafe path")`.
      */
-    fun install(zip: File, addonsDir: File): List<String> {
+    fun install(zip: File, addonsDir: File, interfaces: IntRange? = null): List<String> {
         addonsDir.mkdirs()
         val staging = File(addonsDir, "$TEMP_PREFIX${System.nanoTime()}")
         if (!staging.mkdirs()) throw IOException("cannot create ${staging.path}")
         try {
             extract(zip, staging)
             val root = unwrap(staging)
-            val folders = addonFolders(root).map(::nameAfterToc)
+            val folders = addonFolders(root).map { nameAfterToc(it, interfaces) }
             if (folders.isEmpty()) throw IOException("no addon folders in ${zip.name}")
             swapIn(folders, addonsDir)
             return folders.map { it.name }.sorted()
@@ -79,15 +79,22 @@ object AddonArchive {
     private fun addonFolders(root: File): List<File> = childDirs(root).let { dirs -> dirs.filter(::hasToc).ifEmpty { dirs } }
 
     /**
-     * A folder whose TOCs don't match its name (a branch zip's `pfQuest-wotlk-master`) is renamed to its
-     * shortest TOC name, since the game only loads `<Folder>/<Folder>.toc`.
+     * A folder whose TOCs don't match its name (a branch zip's `pfQuest-wotlk-master`) is renamed after one
+     * of them, since the game only loads `<Folder>/<Folder>.toc`: the shortest TOC for [interfaces] when
+     * there is one (Questie's 3.3.5a fork ships a placeholder `Questie.toc` beside `Questie-335.toc`), else the shortest.
      */
-    private fun nameAfterToc(dir: File): File {
-        val bases = dir.listFiles().orEmpty().filter { it.isFile && it.name.endsWith(".toc", ignoreCase = true) }.map { it.name.dropLast(4) }
-        if (bases.isEmpty() || bases.any { it.equals(dir.name, ignoreCase = true) }) return dir
-        val target = File(dir.parentFile, bases.minBy { it.length })
+    private fun nameAfterToc(dir: File, interfaces: IntRange?): File {
+        val tocs = dir.listFiles().orEmpty().filter { it.isFile && it.name.endsWith(".toc", ignoreCase = true) }
+        if (tocs.isEmpty() || tocs.any { it.name.dropLast(4).equals(dir.name, ignoreCase = true) }) return dir
+        val matching = interfaces?.let { range -> tocs.filter { toc -> tocInterface(toc)?.let { it in range } == true } }.orEmpty()
+        val target = File(dir.parentFile, matching.ifEmpty { tocs }.minBy { it.name.length }.name.dropLast(4))
         return if (!target.exists() && dir.renameTo(target)) target else dir
     }
+
+    private val interfaceLine = Regex("""^\uFEFF?##\s*Interface:\s*(\d+)""", RegexOption.MULTILINE)
+
+    private fun tocInterface(toc: File): Int? =
+        runCatching { interfaceLine.find(toc.readText())?.groupValues?.get(1)?.toInt() }.getOrNull()
 
     private fun swapIn(folders: List<File>, addonsDir: File) {
         val nonce = System.nanoTime()
