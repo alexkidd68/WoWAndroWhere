@@ -1009,9 +1009,12 @@ internal fun prepareLegacyLaunch(
         containerManager.createContainer(LEGACY_CONTAINER_ID, config)
     } else {
         container.loadData(config)
-        container.saveData()
     }
-    check(containerManager.hasContainer(LEGACY_CONTAINER_ID)) { "Container creation failed. Check system storage and logs." }
+    val legacy = checkNotNull(containerManager.getContainerById(LEGACY_CONTAINER_ID)) {
+        "Container creation failed. Check system storage and logs."
+    }
+    legacy.putExtra("skipWinHandler", "1")
+    legacy.saveData()
     return LEGACY_CONTAINER_ID
 }
 

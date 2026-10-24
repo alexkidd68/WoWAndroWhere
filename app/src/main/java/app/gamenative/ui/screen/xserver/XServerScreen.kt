@@ -3839,6 +3839,8 @@ private fun getWineStartCommand(
         return "winhandler.exe \"wfm.exe\""
     }
 
+    // winhandler.exe is x64 and needs FEX's ARM64EC DLL, which the app doesn't bundle; legacy x86 clients start directly.
+    val direct = container.getExtra("skipWinHandler") == "1"
     var gameFolderPath: String? = null
     for (drive in Container.drivesIterator(container.drives)) {
         if (drive[0] == "A") {
@@ -3864,7 +3866,7 @@ private fun getWineStartCommand(
                 guestProgramLauncherComponent.workingDir = hostDir
             }
         }
-        val isArm64 = executablePath.contains("ARM64", ignoreCase = true)
+        val isArm64 = executablePath.contains("ARM64", ignoreCase = true) || direct
         if (isArm64) {
             if (executablePath.contains(" ")) "\"$executablePath\"" else executablePath
         } else {
@@ -3884,7 +3886,7 @@ private fun getWineStartCommand(
         "\"A:\\${normalizedPath}\""
     }
 
-    return if (args.contains("ARM64", ignoreCase = true)) args else "winhandler.exe $args"
+    return if (args.contains("ARM64", ignoreCase = true) || direct) args else "winhandler.exe $args"
 }
 private fun exit(
     winHandler: WinHandler?,
