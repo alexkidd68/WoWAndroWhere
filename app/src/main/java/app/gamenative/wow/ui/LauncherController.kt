@@ -257,9 +257,11 @@ class LauncherController(
             return
         }
         val settings = legacy
-        LegacyClient.setLogWaiting(context, true)
-        legacyLogToShare = null
-        listOf(wineLog(), sharedLegacyLog(), File(settings.root, LegacyClient.LOG)).forEach { it.delete() }
+        if (settings.saveLog) {
+            LegacyClient.setLogWaiting(context, true)
+            legacyLogToShare = null
+            listOf(wineLog(), sharedLegacyLog(), File(settings.root, LegacyClient.LOG)).forEach { it.delete() }
+        }
         launch { screenSize, onStatus -> prepareLegacyLaunch(context, settings, gpu, screenSize, onStatus) }
     }
 
