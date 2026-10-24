@@ -118,4 +118,11 @@ class LegacyClientTest {
         assertTrue(text.contains("[... 1000 bytes cut ...]"))
         dir.deleteRecursively()
     }
+
+    @Test
+    fun perfOverlayOnlyAddsDxvkHudWithDxvk() {
+        assertEquals("", LegacyClient.envVars(LegacySettings()))
+        assertEquals(" ${LegacyClient.PERF_OVERLAY_ENV}", LegacyClient.envVars(LegacySettings(perfOverlay = true)))
+        assertEquals("", LegacyClient.envVars(LegacySettings(perfOverlay = true, renderer = LegacyRenderer.WINED3D)))
+    }
 }

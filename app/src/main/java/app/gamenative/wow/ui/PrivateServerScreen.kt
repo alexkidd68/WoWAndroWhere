@@ -86,9 +86,27 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
             }
         }
 
+        FwSection("Performance") {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FwChip("Overlay off", !settings.perfOverlay, { launcher.updateLegacy(settings.copy(perfOverlay = false)) })
+                FwChip("Overlay on", settings.perfOverlay, { launcher.updateLegacy(settings.copy(perfOverlay = true)) })
+            }
+            Text(
+                "Shows frame rate, frame times and GPU load in the game, with the DXVK renderer only. If GPU load stays well below 100% while the frame rate is low, the processor is the limit and lowering graphics settings that add objects, like view distance and ground clutter, helps most.",
+                style = Fw.Secondary,
+            )
+        }
+
         FwSection("Logs") {
             launcher.errorMessage?.let { Text(it, style = Fw.Secondary.copy(color = Fw.Warn)) }
-            Text("Each launch saves a Wine log as ${LegacyClient.LOG} in the client folder and replaces the last one. When the game closes, the app asks whether to share it.", style = Fw.Secondary)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FwChip("Don't save logs", !settings.saveLog, { launcher.updateLegacy(settings.copy(saveLog = false)) })
+                FwChip("Save a log", settings.saveLog, { launcher.updateLegacy(settings.copy(saveLog = true)) })
+            }
+            Text(
+                "Saving a log slows the game down, so turn it on only to track down a problem. Each launch then saves a Wine log as ${LegacyClient.LOG} in the client folder and replaces the last one, and when the game closes the app asks whether to share it.",
+                style = Fw.Secondary,
+            )
         }
     }
 }

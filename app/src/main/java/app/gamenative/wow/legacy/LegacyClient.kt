@@ -23,6 +23,9 @@ data class LegacySettings(
     val root: String = "",
     val realmlist: String = "",
     val renderer: LegacyRenderer = LegacyRenderer.DXVK,
+    /** Off by default: Wine's warn and fixme output is written line by line and costs frame rate. */
+    val saveLog: Boolean = false,
+    val perfOverlay: Boolean = false,
 )
 
 object LegacyClient {
@@ -41,6 +44,13 @@ object LegacyClient {
     const val TYPE_PASSWORD_EXTRA = "typePassword"
     private const val FIXED_FILE_INFO_SIGNATURE = 0xFEEF04BDL
     private val LOCALE = Regex("[a-z]{2}[A-Z]{2}")
+    /** DXVK's own HUD: GPU load well under 100% while frame times are high means the CPU (Box64) is the limit. */
+    const val PERF_OVERLAY_ENV = "DXVK_HUD=fps,frametimes,gpuload"
+
+    /** The overlay is DXVK's, so it only shows with the DXVK renderer. */
+    fun envVars(settings: LegacySettings): String =
+        if (settings.perfOverlay && settings.renderer == LegacyRenderer.DXVK) " $PERF_OVERLAY_ENV" else ""
+
     private val REALMLIST_LINE = Regex("set\\s+realmlist\\s+(.*)", RegexOption.IGNORE_CASE)
 
     fun load(context: Context): LegacySettings {
@@ -49,6 +59,8 @@ object LegacyClient {
             root = p.getString("root", "").orEmpty(),
             realmlist = p.getString("realmlist", "").orEmpty(),
             renderer = LegacyRenderer.entries.firstOrNull { it.name == p.getString("renderer", null) } ?: LegacyRenderer.DXVK,
+            saveLog = p.getBoolean("save_log", false),
+            perfOverlay = p.getBoolean("perf_overlay", false),
         )
     }
 
@@ -57,6 +69,8 @@ object LegacyClient {
             .putString("root", settings.root)
             .putString("realmlist", settings.realmlist)
             .putString("renderer", settings.renderer.name)
+            .putBoolean("save_log", settings.saveLog)
+            .putBoolean("perf_overlay", settings.perfOverlay)
             .apply()
     }
 

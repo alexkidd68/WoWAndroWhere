@@ -2,6 +2,12 @@
 
 Why things are the way they are, newest first.
 
+## 2026-10-24: 3.3.5a speed: logs off by default, Box64 already on its fastest preset
+
+The legacy container wrote a Wine log on every launch with `WINEDEBUG=+warn,+err,+fixme,+loaddll`. Wine formats those lines inside the emulated process and the app appends each one to a file, opening and closing it per line; if that reader falls behind, the pipe fills and the game blocks on its next write. That was spike tooling, so it is now opt-in (Save a log).
+
+What was checked and left alone: the container gets Box64's Performance preset (`Container` default, BIGBLOCK=3, CALLRET=1, STRONGMEM=0, SAFEFLAGS=1, FASTNAN/FASTROUND=1), so there is no safe Box64 setting left to turn up. Render size on Adreno 8xx is already 1280x720. In WoW64 the 32-bit `d3d9.dll` (DXVK or WineD3D) is x86 code too, so it runs under Box64 like the game; every draw call costs emulated CPU time. That makes 3.3.5a CPU-bound on this path, and object count (view distance, ground clutter, shadows, glow) matters more than resolution. The overlay (`DXVK_HUD=fps,frametimes,gpuload`) is there to confirm that on the device before tuning further.
+
 ## 2026-10-24: Private server (3.3.5a) is a game version without a Blizzard product
 
 `GameVersion.PRIVATE_335` has no products, so the launcher treats it apart: no CDN install, update check, Battle.net login or auto-launch; Play runs `launchLegacy`, Game files is the Client and server screen, Account is Server login. Addons go to `<client>/Interface/AddOns`. CurseForge and Wago are off for it because their "Wrath" files are for Blizzard's 3.4 Classic and mostly break on 3.3.5a; WoWInterface entries marked 3.3 and GitHub links are used instead.
