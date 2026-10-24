@@ -123,6 +123,6 @@ class LegacyClientTest {
     fun perfOverlayOnlyAddsDxvkHudWithDxvk() {
         assertEquals("", LegacyClient.envVars(LegacySettings()))
         assertEquals(" ${LegacyClient.PERF_OVERLAY_ENV}", LegacyClient.envVars(LegacySettings(perfOverlay = true)))
-        assertEquals("", LegacyClient.envVars(LegacySettings(perfOverlay = true, renderer = LegacyRenderer.WINED3D)))
+        assertEquals("", LegacyClient.envVars(LegacySettings(perfOverlay = true, renderer = LegacyRenderer.OPENGL)))
     }
 }

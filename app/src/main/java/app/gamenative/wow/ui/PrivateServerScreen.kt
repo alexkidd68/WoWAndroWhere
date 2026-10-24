@@ -84,6 +84,7 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
                     FwChip(r.label, settings.renderer == r, { launcher.updateLegacy(settings.copy(renderer = r)) })
                 }
             }
+            Text("Use DXVK. OpenGL is much slower and is only a fallback for when DXVK doesn't start.", style = Fw.Secondary)
         }
 
         FwSection("Performance") {

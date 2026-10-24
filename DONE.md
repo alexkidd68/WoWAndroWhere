@@ -25,7 +25,7 @@ What the app does, by area, with the version each feature came in. Versions up t
 - Settings → Game version: Classic Era, Burning Crusade Anniversary, Mists of Pandaria Classic and Retail, experimental, with a warning (0.4.0)
 - Each version keeps its own install, addons and addon database; launch, first run and detection follow the selected version (0.4.0)
 - Private server (3.3.5a) game version: your own client folder and realmlist, its own home screen, Play, and Client and server screen (0.5.0)
-- 3.3.5a clients run through Box64 WoW64, started directly instead of through winhandler; DXVK, WineD3D or OpenGL renderer (0.5.0)
+- 3.3.5a clients run through Box64 WoW64, started directly instead of through winhandler; DXVK renderer, OpenGL as a fallback (0.5.0)
 - Saved, encrypted private server password, typed by an on-screen Type password button on the login screen or the in-game menu item (0.5.0)
 - Private server launches can save a Wine log (off by default, it costs frame rate) and offer to share it when the game closes (0.5.0)
 - Performance overlay for private server launches: DXVK frame rate, frame times and GPU load (0.5.0)

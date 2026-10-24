@@ -15,7 +15,6 @@ data class ClientBuild(val major: Int, val minor: Int, val patch: Int, val build
 
 enum class LegacyRenderer(val label: String, val dxwrapper: String, val gxApi: String, val execArgs: String) {
     DXVK("DXVK (D3D9)", "dxvk", "d3d9", ""),
-    WINED3D("WineD3D (D3D9)", "wined3d", "d3d9", ""),
     OPENGL("OpenGL", "wined3d", "opengl", "-opengl"),
 }
 
