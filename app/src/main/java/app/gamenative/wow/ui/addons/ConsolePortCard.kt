@@ -32,7 +32,7 @@ internal fun ConsolePortCard(c: AddonsController) {
         Column(Modifier.weight(1f)) {
             Text("Controller support", style = Fw.Text)
             Text(
-                "3.3.5a can't use a controller on its own. ConsolePortLK adds it. After installing, start the game and press each button once when the addon asks.",
+                "3.3.5a can't use a controller on its own. ConsolePortLK adds it, already set up for this device. Immersion, from Browse, then works with the controller too.",
                 style = Fw.Secondary,
             )
         }
