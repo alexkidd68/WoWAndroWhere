@@ -1000,7 +1000,7 @@ internal fun prepareLegacyLaunch(
         put("dxwrapperConfig", Container.DEFAULT_DXWRAPPERCONFIG)
         put("executablePath", "G:\\${LegacyClient.EXE}")
         put("execArgs", settings.renderer.execArgs)
-        put("emulator", settings.emulator.containerValue)
+        put("emulator", LegacyClient.EMULATOR)
     }
     val containerManager = ContainerManager(context)
     val container = containerManager.getContainerById(LEGACY_CONTAINER_ID)

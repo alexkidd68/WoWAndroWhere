@@ -18,7 +18,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import app.gamenative.utils.StorageUtils
 import app.gamenative.wow.legacy.LegacyClient
-import app.gamenative.wow.legacy.LegacyEmulator
 import app.gamenative.wow.legacy.LegacyRenderer
 import app.gamenative.wow.ui.components.FwButton
 import app.gamenative.wow.ui.components.FwButtonKind
@@ -84,17 +83,10 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
             }
         }
 
-        FwSection("x86 emulator") {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                LegacyEmulator.entries.forEach { e ->
-                    FwChip(e.label, settings.emulator == e, { launcher.updateLegacy(settings.copy(emulator = e)) })
-                }
-            }
-        }
-
         FwSection("Play") {
             if (launcher.isLaunching) Text(launcher.statusText, style = Fw.Text)
             launcher.errorMessage?.let { Text(it, style = Fw.Secondary.copy(color = Fw.Warn)) }
+            Text("Each launch saves a Wine log as ${LegacyClient.LOG} in the client folder when the game closes.", style = Fw.Secondary)
             FwButton(
                 "Launch",
                 { launcher.launchLegacy() },

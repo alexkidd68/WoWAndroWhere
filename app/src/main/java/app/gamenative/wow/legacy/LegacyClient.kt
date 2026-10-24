@@ -15,20 +15,18 @@ enum class LegacyRenderer(val label: String, val dxwrapper: String, val gxApi: S
     OPENGL("OpenGL", "wined3d", "opengl", "-opengl"),
 }
 
-enum class LegacyEmulator(val label: String, val containerValue: String) {
-    FEX("FEX", "FEXCore"),
-    BOX64("Box64", "Box64"),
-}
-
 data class LegacySettings(
     val root: String = "",
     val realmlist: String = "",
     val renderer: LegacyRenderer = LegacyRenderer.DXVK,
-    val emulator: LegacyEmulator = LegacyEmulator.FEX,
 )
 
 object LegacyClient {
     const val EXE = "Wow.exe"
+    const val LOG = "AndroWhere-wine.log"
+
+    /** The bundled 32-bit emulator. FEX's WoW64 DLL isn't bundled, so only Box64 (wowbox64) can run x86 code. */
+    const val EMULATOR = "Box64"
     private const val PREFS = "wow_legacy"
     private const val FIXED_FILE_INFO_SIGNATURE = 0xFEEF04BDL
     private val LOCALE = Regex("[a-z]{2}[A-Z]{2}")
@@ -40,7 +38,6 @@ object LegacyClient {
             root = p.getString("root", "").orEmpty(),
             realmlist = p.getString("realmlist", "").orEmpty(),
             renderer = LegacyRenderer.entries.firstOrNull { it.name == p.getString("renderer", null) } ?: LegacyRenderer.DXVK,
-            emulator = LegacyEmulator.entries.firstOrNull { it.name == p.getString("emulator", null) } ?: LegacyEmulator.FEX,
         )
     }
 
@@ -49,7 +46,6 @@ object LegacyClient {
             .putString("root", settings.root)
             .putString("realmlist", settings.realmlist)
             .putString("renderer", settings.renderer.name)
-            .putString("emulator", settings.emulator.name)
             .apply()
     }
 

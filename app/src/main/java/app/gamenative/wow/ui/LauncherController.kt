@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import app.gamenative.PluviaApp
+import app.gamenative.PrefManager
 import app.gamenative.events.AndroidEvent
 import app.gamenative.ui.screen.wow.BattleNetSignIn
 import app.gamenative.ui.screen.wow.GamePath
@@ -114,6 +115,7 @@ class LauncherController(
         private set
     var legacyBuild by mutableStateOf<ClientBuild?>(null)
         private set
+    private var legacyLog: Boolean? = null
 
     private var launchJob: Job? = null
     private var pendingInstallPermission = false
@@ -230,7 +232,24 @@ class LauncherController(
             return
         }
         val settings = legacy
+        if (legacyLog == null) {
+            legacyLog = PrefManager.enableWineDebug
+            PrefManager.enableWineDebug = true
+        }
         launch { screenSize, onStatus -> prepareLegacyLaunch(context, settings, gpu, screenSize, onStatus) }
+    }
+
+    /** The Wine log of the last legacy launch, copied where the player can open it. Restores the debug setting. */
+    private fun saveLegacyLog() {
+        val previous = legacyLog ?: return
+        legacyLog = null
+        PrefManager.enableWineDebug = previous
+        val log = File(context.getExternalFilesDir(null), "wine_logs/wine_debug.log")
+        val root = legacy.root
+        scope.launch(Dispatchers.IO) {
+            runCatching { if (log.isFile) log.copyTo(File(root, LegacyClient.LOG), overwrite = true) }
+                .onFailure { Timber.w(it, "Couldn't copy the Wine log") }
+        }
     }
 
     fun updateLegacy(settings: LegacySettings) {
@@ -417,6 +436,7 @@ class LauncherController(
 
     fun onGameEnded() {
         resetLaunch()
+        saveLegacyLog()
         BattleNetSignIn.removeLoginFile(File(gamePath))
     }
 
