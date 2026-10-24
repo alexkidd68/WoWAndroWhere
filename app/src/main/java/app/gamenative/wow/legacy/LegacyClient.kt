@@ -172,6 +172,34 @@ object LegacyClient {
         config.writeText(lines.joinToString("\n", postfix = "\n"))
     }
 
+    /**
+     * Lighter 3.3.5a settings for when the processor is the limit: every draw call runs under Box64,
+     * so these draw fewer objects and effects. Only written when the player asks.
+     */
+    internal val HANDHELD_GRAPHICS = linkedMapOf(
+        "farclip" to "400",
+        "groundEffectDensity" to "16",
+        "groundEffectDist" to "70",
+        "environmentDetail" to "0.5",
+        "particleDensity" to "0.3",
+        "weatherDensity" to "0",
+        "extShadowQuality" to "0",
+        "projectedTextures" to "0",
+        "ffxGlow" to "0",
+        "ffxDeath" to "0",
+    )
+
+    fun applyHandheldGraphics(root: File) {
+        val config = File(root, "WTF/Config.wtf")
+        val lines = withValues(config.takeIf { it.isFile }?.readLines(), HANDHELD_GRAPHICS)
+        config.parentFile?.mkdirs()
+        config.writeText(lines.joinToString("\n", postfix = "\n"))
+    }
+
+    internal fun withValues(existing: List<String>?, values: Map<String, String>): List<String> =
+        existing.orEmpty().filter { line -> values.keys.none { line.startsWith("SET $it ", ignoreCase = true) } } +
+            values.map { "SET ${it.key} \"${it.value}\"" }
+
     internal fun updateRealmlist(existing: String?, realmlist: String): String {
         val line = "set realmlist ${realmlist.trim()}"
         val others = existing.orEmpty().lines().map { it.trimEnd('\r') }.filter { it.isNotBlank() && !REALMLIST_LINE.matches(it.trim()) }

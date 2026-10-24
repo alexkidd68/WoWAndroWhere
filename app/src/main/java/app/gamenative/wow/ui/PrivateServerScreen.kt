@@ -96,6 +96,15 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
                 "Shows frame rate, frame times and GPU load in the game, with the DXVK renderer only. If GPU load stays well below 100% while the frame rate is low, the processor is the limit and lowering graphics settings that add objects, like view distance and ground clutter, helps most.",
                 style = Fw.Secondary,
             )
+            FwButton("Use lighter graphics", launcher::applyHandheldGraphics, kind = FwButtonKind.Ghost, enabled = settings.root.isNotBlank())
+            Text(
+                if (launcher.legacyGraphicsApplied) {
+                    "Lighter graphics set. They take effect the next time the game starts, and you can change any of them in the game's video options."
+                } else {
+                    "Lowers view distance, ground clutter, particles, weather, shadows and full-screen glow in the client's settings, which eases the load on the processor."
+                },
+                style = Fw.Secondary,
+            )
         }
 
         FwSection("Logs") {

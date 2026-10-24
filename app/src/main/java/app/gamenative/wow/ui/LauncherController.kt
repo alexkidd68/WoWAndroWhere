@@ -114,6 +114,9 @@ class LauncherController(
         private set
 
     var legacy by mutableStateOf(LegacyClient.load(context))
+
+    /** Set after Use lighter graphics, so the screen can confirm it. */
+    var legacyGraphicsApplied by mutableStateOf(false)
         private set
     var legacyBuild by mutableStateOf<ClientBuild?>(null)
         private set
@@ -307,6 +310,15 @@ class LauncherController(
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         activity.startActivity(Intent.createChooser(send, "Share Wine log"))
+    }
+
+    fun applyHandheldGraphics() {
+        val root = legacy.root.takeIf { it.isNotBlank() } ?: return
+        scope.launch {
+            val ok = withContext(Dispatchers.IO) { runCatching { LegacyClient.applyHandheldGraphics(File(root)) }.isSuccess }
+            legacyGraphicsApplied = ok
+            if (!ok) errorMessage = "Couldn't write the client's Config.wtf."
+        }
     }
 
     fun updateLegacy(settings: LegacySettings) {
