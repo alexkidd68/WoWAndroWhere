@@ -2,7 +2,7 @@
 
 Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which this fork started from.
 
-## Unreleased
+## 0.5.1
 
 - **CurseForge uses your own key or proxy.** The app no longer sends CurseForge searches through the WoW Foreverywhere project's server. To use CurseForge, open Settings → CurseForge and enter your own CurseForge API key, which is stored encrypted on the device and only sent to CurseForge, or the address of a proxy you run. Without either, CurseForge is off and Addons says so. Wago, WoWInterface and the GitHub catalog work as before.
 

@@ -17,13 +17,6 @@ import timber.log.Timber
 object AppUpdater {
     private const val RELEASES_URL = "https://api.github.com/repos/danielnoam/WoWAndroWhere/releases/latest"
 
-    // Test builds (versionName "x.y.z-test.N") follow the test-build pre-release instead, titled "Test build N (...)".
-    private const val TEST_RELEASE_URL = "https://api.github.com/repos/danielnoam/WoWAndroWhere/releases/tags/test-build"
-    private val TEST_VERSION = Regex("-test\\.(\\d+)$")
-    private val TEST_TITLE = Regex("^Test build (\\d+)")
-
-    fun testBuildNumber(version: String): Int? = TEST_VERSION.find(version)?.groupValues?.get(1)?.toIntOrNull()
-
     data class Release(
         val version: String,
         val name: String,
@@ -52,15 +45,8 @@ object AppUpdater {
 
     fun parseRelease(jsonString: String, currentVersion: String = BuildConfig.VERSION_NAME): Release? = runCatching {
         val json = JSONObject(jsonString)
-        val currentTest = testBuildNumber(currentVersion)
-        val tag = if (currentTest == null) {
-            json.optString("tag_name")
-        } else {
-            val number = TEST_TITLE.find(json.optString("name"))?.groupValues?.get(1)?.toIntOrNull() ?: return null
-            if (number <= currentTest) return null
-            "${currentVersion.substringBefore("-test.")}-test.$number"
-        }
-        if (currentTest == null && !isNewer(tag, currentVersion)) return null
+        val tag = json.optString("tag_name")
+        if (!isNewer(tag, currentVersion)) return null
 
         val assets = json.optJSONArray("assets") ?: return null
         for (i in 0 until assets.length()) {
@@ -80,10 +66,8 @@ object AppUpdater {
         null
     }.getOrNull()
 
-    /** A test build is also offered a release newer than the version it was built from, which takes it off the test channel. */
     suspend fun check(currentVersion: String = BuildConfig.VERSION_NAME): Release? = withContext(Dispatchers.IO) {
-        if (testBuildNumber(currentVersion) == null) return@withContext fetch(RELEASES_URL, currentVersion)
-        fetch(RELEASES_URL, currentVersion.substringBefore("-test.")) ?: fetch(TEST_RELEASE_URL, currentVersion)
+        fetch(RELEASES_URL, currentVersion)
     }
 
     private fun fetch(url: String, currentVersion: String): Release? = runCatching {
