@@ -39,6 +39,9 @@ object LegacyClient {
 
     /** Container extra: the in-game menu offers Type password. */
     const val TYPE_PASSWORD_EXTRA = "typePassword"
+
+    /** Built by the "Addon catalog 3.3.5a" workflow from `catalog/wotlk335.json`. */
+    const val ADDON_CATALOG_URL = "https://raw.githubusercontent.com/danielnoam/WoWAndroWhere/addon-catalog-335/catalog-335.json"
     private const val FIXED_FILE_INFO_SIGNATURE = 0xFEEF04BDL
     private val LOCALE = Regex("[a-z]{2}[A-Z]{2}")
     private val REALMLIST_LINE = Regex("set\\s+realmlist\\s+(.*)", RegexOption.IGNORE_CASE)

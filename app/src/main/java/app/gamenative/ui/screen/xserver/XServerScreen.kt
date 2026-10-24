@@ -2689,6 +2689,8 @@ fun XServerScreen(
             )
         }
 
+        app.gamenative.wow.legacy.PasswordButton(container, hidden = showQuickMenu || isEditMode)
+
         QuickMenu(
             isVisible = showQuickMenu,
             onDismiss = dismissOverlayMenu,

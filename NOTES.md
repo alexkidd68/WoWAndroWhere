@@ -2,6 +2,14 @@
 
 Why things are the way they are, newest first.
 
+## 2026-10-24: The 3.3.5a addon catalog is separate and snapshots branches
+
+Most 3.3.5a backports are plain GitHub repos with no releases, so upstream's catalog (releases with packager files, built on upstream's branch) can't list them. `catalog/wotlk335.json` and the "Addon catalog 3.3.5a" workflow build `catalog-335.json` on this fork's `addon-catalog-335` branch instead: each entry is the latest commit's source zip, the commit is the file id so new commits show as updates, and a repo is dropped when its TOCs don't say Interface 303xx. The list started from NoM0Re's WoW-3.3.5a-Addons page, only taking repos maintained on GitHub, not the re-uploaded zips there. Addons are third-party Lua like any other, run only inside the game, and are not checked beyond the TOC.
+
+## 2026-10-24: The Type password button hides after one tap
+
+The 3.3.5a login screen can't be detected from outside the game, so the on-screen button shows from launch until it's tapped once; after that it would only sit over the game. A second login in the same session (after a disconnect) uses the quick menu item.
+
 ## 2026-10-24: Private server (3.3.5a) is a game version without a Blizzard product
 
 `GameVersion.PRIVATE_335` has no products, so the launcher treats it apart: no CDN install, update check, Battle.net login or auto-launch; Play runs `launchLegacy`, Game files is the Client and server screen, Account is Server login. Addons go to `<client>/Interface/AddOns`. CurseForge and Wago are off for it because their "Wrath" files are for Blizzard's 3.4 Classic and mostly break on 3.3.5a; WoWInterface entries marked 3.3 and GitHub links are used instead.
