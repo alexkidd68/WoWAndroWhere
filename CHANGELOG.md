@@ -9,6 +9,7 @@ Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which thi
 - **3.3.5a addons.** Addons lists WoWInterface addons made for 3.3, and **Install from link** takes a GitHub repository even when it has no releases.
 - **Server password.** Save your private server password under **Server login**. On the game's login screen, press Back and choose **Type password** to enter it. It's stored encrypted on the device and never goes into the game folder.
 - **Wine logs for private servers.** After a private server game closes, the app asks whether to share its log, which helps track down launch problems. Nothing is sent unless you choose where to share it.
+- **Controller support on 3.3.5a.** The 3.3.5a client can't use a controller on its own. Addons now offers **Install ConsolePortLK**, and while it's installed the app maps your controller to the keys the addon expects. The app also sets the addon up for you, Xbox layout included, so there's no calibration to do.
 
 ## 0.4.1
 
