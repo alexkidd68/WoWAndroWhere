@@ -123,6 +123,16 @@ class LegacyClientTest {
     fun perfOverlayOnlyAddsDxvkHudWithDxvk() {
         assertEquals("", LegacyClient.envVars(LegacySettings()))
         assertEquals(" ${LegacyClient.PERF_OVERLAY_ENV}", LegacyClient.envVars(LegacySettings(perfOverlay = true)))
-        assertEquals("", LegacyClient.envVars(LegacySettings(perfOverlay = true, renderer = LegacyRenderer.WINED3D)))
+        assertEquals("", LegacyClient.envVars(LegacySettings(perfOverlay = true, renderer = LegacyRenderer.OPENGL)))
+    }
+
+    @Test
+    fun handheldGraphicsReplaceOnlyTheirKeys() {
+        val existing = listOf("SET farclip \"1277\"", "SET realmList \"logon.example.com\"", "SET ffxGlow \"1\"")
+        val lines = LegacyClient.withValues(existing, LegacyClient.HANDHELD_GRAPHICS)
+        assertTrue("SET realmList \"logon.example.com\"" in lines)
+        assertTrue("SET farclip \"400\"" in lines)
+        assertTrue("SET ffxGlow \"0\"" in lines)
+        assertEquals(1, lines.count { it.startsWith("SET farclip ") })
     }
 }

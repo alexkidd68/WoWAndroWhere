@@ -15,7 +15,6 @@ data class ClientBuild(val major: Int, val minor: Int, val patch: Int, val build
 
 enum class LegacyRenderer(val label: String, val dxwrapper: String, val gxApi: String, val execArgs: String) {
     DXVK("DXVK (D3D9)", "dxvk", "d3d9", ""),
-    WINED3D("WineD3D (D3D9)", "wined3d", "d3d9", ""),
     OPENGL("OpenGL", "wined3d", "opengl", "-opengl"),
 }
 
@@ -172,6 +171,34 @@ object LegacyClient {
         config.parentFile?.mkdirs()
         config.writeText(lines.joinToString("\n", postfix = "\n"))
     }
+
+    /**
+     * Lighter 3.3.5a settings for when the processor is the limit: every draw call runs under Box64,
+     * so these draw fewer objects and effects. Only written when the player asks.
+     */
+    internal val HANDHELD_GRAPHICS = linkedMapOf(
+        "farclip" to "400",
+        "groundEffectDensity" to "16",
+        "groundEffectDist" to "70",
+        "environmentDetail" to "0.5",
+        "particleDensity" to "0.3",
+        "weatherDensity" to "0",
+        "extShadowQuality" to "0",
+        "projectedTextures" to "0",
+        "ffxGlow" to "0",
+        "ffxDeath" to "0",
+    )
+
+    fun applyHandheldGraphics(root: File) {
+        val config = File(root, "WTF/Config.wtf")
+        val lines = withValues(config.takeIf { it.isFile }?.readLines(), HANDHELD_GRAPHICS)
+        config.parentFile?.mkdirs()
+        config.writeText(lines.joinToString("\n", postfix = "\n"))
+    }
+
+    internal fun withValues(existing: List<String>?, values: Map<String, String>): List<String> =
+        existing.orEmpty().filter { line -> values.keys.none { line.startsWith("SET $it ", ignoreCase = true) } } +
+            values.map { "SET ${it.key} \"${it.value}\"" }
 
     internal fun updateRealmlist(existing: String?, realmlist: String): String {
         val line = "set realmlist ${realmlist.trim()}"
