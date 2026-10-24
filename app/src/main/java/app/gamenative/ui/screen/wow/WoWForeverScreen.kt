@@ -1002,6 +1002,7 @@ internal fun prepareLegacyLaunch(
         put("executablePath", "G:\\${LegacyClient.EXE}")
         put("execArgs", settings.renderer.execArgs)
         put("emulator", LegacyClient.EMULATOR)
+        put("envVars", getString("envVars") + LegacyClient.envVars(settings))
     }
     val containerManager = ContainerManager(context)
     val container = containerManager.getContainerById(LEGACY_CONTAINER_ID)
@@ -1015,7 +1016,7 @@ internal fun prepareLegacyLaunch(
         "Container creation failed. Check system storage and logs."
     }
     legacy.putExtra("skipWinHandler", "1")
-    legacy.putExtra("wineLog", "1")
+    legacy.putExtra("wineLog", if (settings.saveLog) "1" else null)
     legacy.putExtra(LegacyClient.TYPE_PASSWORD_EXTRA, if (LegacyClient.hasServerPassword(context)) "1" else null)
     runCatching { ConsolePortLK.applyControls(context, legacy, root) }.onFailure { Timber.w(it, "ConsolePortLK controls") }
     legacy.saveData()
