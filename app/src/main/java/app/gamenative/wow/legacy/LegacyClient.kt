@@ -45,6 +45,7 @@ object LegacyClient {
 
     /** Built by the "Addon catalog 3.3.5a" workflow from `catalog/wotlk335.json`. */
     const val ADDON_CATALOG_URL = "https://raw.githubusercontent.com/danielnoam/WoWAndroWhere/addon-catalog-335/catalog-335.json"
+
     private const val FIXED_FILE_INFO_SIGNATURE = 0xFEEF04BDL
     private val LOCALE = Regex("[a-z]{2}[A-Z]{2}")
     /** DXVK's own HUD: GPU load well under 100% while frame times are high means the CPU (Box64) is the limit. */
