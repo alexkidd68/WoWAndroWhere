@@ -2,6 +2,10 @@
 
 Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which this fork started from.
 
+## Unreleased
+
+- **CurseForge uses your own key or proxy.** The app no longer sends CurseForge searches through the WoW Foreverywhere project's server. To use CurseForge, open Settings → CurseForge and enter your own CurseForge API key, which is stored encrypted on the device and only sent to CurseForge, or the address of a proxy you run. Without either, CurseForge is off and Addons says so. Wago, WoWInterface and the GitHub catalog work as before.
+
 ## 0.5.0
 
 - **The app is now called WoW AndroWhere.** The new name shows on the home screen, in the app drawer and in Settings, in every language. The app ID is unchanged, so this installs as a normal update and keeps your settings, saved login, game files and addons. The release download is now **WoW-AndroWhere.apk**.

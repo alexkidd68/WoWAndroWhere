@@ -17,9 +17,9 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 
 /**
- * CurseForge v1 API (https://docs.curseforge.com). Needs an API key, or [proxy] when [apiBase] is our
- * proxy that adds the key itself; otherwise the provider is disabled. Files are picked per flavor
- * through `latestFilesIndexes[].gameVersionTypeId`.
+ * CurseForge v1 API (https://docs.curseforge.com). Needs an API key, or [proxy] when [apiBase] is a
+ * proxy that adds the key itself (see `CurseForgeAccess`); otherwise the provider is disabled. Files
+ * are picked per flavor through `latestFilesIndexes[].gameVersionTypeId`.
  */
 class CurseForgeProvider(
     private val apiKey: String,

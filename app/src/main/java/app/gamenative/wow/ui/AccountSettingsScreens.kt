@@ -37,7 +37,13 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.LocalCafe
 import androidx.compose.ui.platform.LocalContext
 import app.gamenative.wow.AppName
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import app.gamenative.wow.ui.components.FwButton
+import app.gamenative.wow.ui.components.FwChip
 import app.gamenative.wow.ui.components.Links
 import app.gamenative.wow.ui.components.FwButtonKind
 import app.gamenative.wow.ui.components.FwProgress
@@ -121,12 +127,13 @@ fun SettingsScreen(
             FwButton("Support on Ko-fi", { Links.open(context, Links.KOFI) }, kind = FwButtonKind.Ghost, icon = Icons.Filled.LocalCafe)
         }
         FwSection("Addon sources") {
-            ProviderLine("CurseForge", true)
+            ProviderLine("CurseForge", launcher.curseForge.enabled, offText = "Off: no key or proxy")
             ProviderLine("Wago Addons", BuildConfig.WAGO_API_KEY.isNotBlank())
             ProviderLine("WoWInterface", true)
             ProviderLine("GitHub (addon catalog and links)", true)
             Text("Wago needs an API key built into the app. Builds without one still use the other sources.", style = Fw.Secondary)
         }
+        CurseForgeSection(launcher)
         FwSection("Device") {
             Text("${launcher.gpu.edition} profile · render size ${launcher.gpu.screenSize}", style = Fw.Data)
         }
@@ -190,9 +197,93 @@ private fun GameVersionSection(launcher: LauncherController, onVersionChanged: (
 }
 
 @Composable
-private fun ProviderLine(name: String, enabled: Boolean) {
+private fun ProviderLine(name: String, enabled: Boolean, offText: String = "Off: no API key") {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(name, style = Fw.Text)
-        Text(if (enabled) "On" else "Off: no API key", style = Fw.Data.copy(color = if (enabled) Fw.Ok else Fw.Ash))
+        Text(if (enabled) "On" else offText, style = Fw.Data.copy(color = if (enabled) Fw.Ok else Fw.Ash))
+    }
+}
+
+/** Settings, CurseForge: the player's own API key or proxy. There is no shared one. */
+@Composable
+private fun CurseForgeSection(launcher: LauncherController) {
+    val setup = launcher.curseForge
+    var useProxy by remember { mutableStateOf(setup.usesProxy) }
+    var input by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+    fun pick(proxy: Boolean) {
+        useProxy = proxy
+        input = ""
+        error = null
+    }
+    FwSection("CurseForge") {
+        Text(
+            when {
+                setup.usesKey -> "On, with your API key. It's saved on this device, encrypted with the Android keystore, and only sent to CurseForge."
+                setup.usesProxy -> "On, through your proxy at ${setup.proxyUrl}. The app sends no key to it."
+                else -> "Off. CurseForge needs your own API key or a proxy you run. Wago, WoWInterface and GitHub work without either."
+            },
+            style = Fw.Text,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FwChip("Your API key", !useProxy, { pick(false) })
+            FwChip("Your proxy", useProxy, { pick(true) })
+        }
+        OutlinedTextField(
+            input,
+            {
+                input = it
+                error = null
+            },
+            singleLine = true,
+            label = {
+                Text(
+                    when {
+                        useProxy -> "Proxy address, e.g. https://cf.example.com"
+                        setup.usesKey -> "New API key"
+                        else -> "API key"
+                    },
+                )
+            },
+            visualTransformation = if (useProxy) VisualTransformation.None else PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = if (useProxy) KeyboardType.Uri else KeyboardType.Password),
+            textStyle = Fw.Text,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            FwButton(
+                if (useProxy) "Save proxy" else "Save key",
+                {
+                    val saved = if (useProxy) launcher.saveCurseForgeProxy(input) else launcher.saveCurseForgeKey(input)
+                    error = when {
+                        saved -> null
+                        useProxy -> "Enter an https address, like https://cf.example.com."
+                        else -> "Couldn't save the key on this device."
+                    }
+                    if (saved) input = ""
+                },
+                enabled = input.isNotBlank(),
+            )
+            if (setup.enabled) {
+                FwButton(
+                    if (setup.usesKey) "Forget key" else "Forget proxy",
+                    {
+                        launcher.forgetCurseForge()
+                        input = ""
+                        error = null
+                    },
+                    kind = FwButtonKind.Danger,
+                )
+            }
+        }
+        error?.let { Text(it, style = Fw.Secondary.copy(color = Fw.Warn)) }
+        Text(
+            if (useProxy) {
+                "A proxy keeps the key on a server you run, so it's never on the device. The source code includes one in server/curseforge-proxy. Searches then go through that server."
+            } else {
+                "Apply for a free API key at console.curseforge.com. CurseForge's terms say a key is for its owner only, so don't share it. Saving a key replaces a saved proxy."
+            },
+            style = Fw.Secondary,
+        )
     }
 }

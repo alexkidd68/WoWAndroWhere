@@ -114,6 +114,13 @@ fun AddonsScreen(c: AddonsController, onBack: () -> Unit) {
             if (!wideBar) item { FwButton("From link", { showUrlDialog = true }, kind = FwButtonKind.Ghost) }
         }
         ConsolePortCard(c)
+        if (c.curseForgeOff && c.mode == AddonsController.Mode.BROWSE && (c.source == null || c.source == "curseforge")) {
+            Text(
+                "CurseForge is off. To search it, add your own CurseForge API key or proxy in Settings → CurseForge.",
+                style = Fw.Secondary.copy(color = Fw.Ash),
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+            )
+        }
         (c.working ?: c.message)?.let {
             Text(it, style = Fw.Secondary.copy(color = if (c.working != null) Fw.Brass else Fw.Ash), modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp))
         }
@@ -386,8 +393,12 @@ private fun compact(n: Long) = when {
     else -> n.toString()
 }
 
-internal fun addonsControllerFor(root: String, product: app.gamenative.wow.product.WowProduct?, scope: kotlinx.coroutines.CoroutineScope): AddonsController? =
-    product?.let { AddonsController(File(root), it, scope) }
+internal fun addonsControllerFor(
+    root: String,
+    product: app.gamenative.wow.product.WowProduct?,
+    scope: kotlinx.coroutines.CoroutineScope,
+    curseForge: app.gamenative.wow.addons.CurseForgeSetup,
+): AddonsController? = product?.let { AddonsController(File(root), it, scope, curseForge) }
 
 /** The private server client's own `Interface/AddOns`, once a client folder is chosen. */
 internal fun legacyAddonsControllerFor(root: String, scope: kotlinx.coroutines.CoroutineScope): AddonsController? =

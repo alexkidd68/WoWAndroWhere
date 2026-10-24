@@ -42,6 +42,7 @@ What the app does, by area, with the version each feature came in. Versions up t
 - Keyless GitHub addon catalog with nightly rebuild (0.2.0)
 - Open addon pages on their source site, Ko-fi support links (0.2.0)
 - CurseForge source through a key-holding proxy (0.3.0)
+- CurseForge with your own API key (stored encrypted) or your own proxy, set in Settings; no shared default (unreleased)
 - Addon sources follow the selected game version (0.4.0)
 - 3.3.5a addons: WoWInterface filtered to 3.3, GitHub links without releases install from the default branch and get renamed after their TOC (0.5.0)
 - 3.3.5a addon catalog: over 30 GitHub backports from `catalog/wotlk335.json`, snapshotted nightly by commit and kept only when their TOC says Interface 303xx (0.5.0)

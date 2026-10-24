@@ -10,8 +10,8 @@ import app.gamenative.wow.addons.AddonDb
 import app.gamenative.wow.addons.AddonFlavor
 import app.gamenative.wow.addons.AddonListing
 import app.gamenative.wow.addons.AddonManager
+import app.gamenative.wow.addons.CurseForgeSetup
 import app.gamenative.wow.addons.addonTarget
-import app.gamenative.wow.addons.provider.CurseForgeProvider
 import app.gamenative.wow.addons.provider.GitHubProvider
 import app.gamenative.wow.legacy.LegacyClient
 import app.gamenative.wow.addons.provider.WagoProvider
@@ -29,23 +29,26 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 /** UI state for the addon browser, bound to one install's `Interface/AddOns` folder. */
-class AddonsController(val addonsDir: File, val version: GameVersion, private val scope: CoroutineScope) {
+class AddonsController(
+    val addonsDir: File,
+    val version: GameVersion,
+    private val scope: CoroutineScope,
+    curseForge: CurseForgeSetup = CurseForgeSetup(),
+) {
     enum class Mode { INSTALLED, BROWSE }
 
-    constructor(gameRoot: File, product: WowProduct, scope: CoroutineScope) :
-        this(File(gameRoot, "${product.flavorDir}/Interface/AddOns"), GameVersion.of(product), scope)
+    constructor(gameRoot: File, product: WowProduct, scope: CoroutineScope, curseForge: CurseForgeSetup) :
+        this(File(gameRoot, "${product.flavorDir}/Interface/AddOns"), GameVersion.of(product), scope, curseForge)
+
+    /** CurseForge applies to this version but has no key or proxy set in Settings. */
+    val curseForgeOff = !version.isPrivateServer && !curseForge.enabled
 
     private val target = version.addonTarget()
     private val manager = AddonManager(
         addonsDir = addonsDir,
         db = AddonDb.forAddonsDir(addonsDir),
         providers = listOfNotNull(
-            CurseForgeProvider(
-                BuildConfig.CURSEFORGE_API_KEY,
-                apiBase = BuildConfig.CURSEFORGE_API_BASE,
-                proxy = BuildConfig.CURSEFORGE_API_KEY.isBlank(),
-                target = target,
-            ).takeUnless { version.isPrivateServer },
+            curseForge.provider(target).takeUnless { version.isPrivateServer },
             WagoProvider(BuildConfig.WAGO_API_KEY, target = target).takeUnless { version.isPrivateServer },
             WowInterfaceProvider(target = target),
             GitHubProvider(target = target, catalogUrl = if (version.isPrivateServer) LegacyClient.ADDON_CATALOG_URL else GitHubProvider.CATALOG_URL),

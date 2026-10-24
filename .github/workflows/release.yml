@@ -53,7 +53,6 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
-          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
           WAGO_API_KEY: ${{ secrets.WAGO_API_KEY }}
         run: |
           if [ -z "$KEYSTORE_BASE64" ]; then
@@ -70,7 +69,6 @@ jobs:
           } > app/keystores/keystore.properties
           {
             echo "sdk.dir=$ANDROID_HOME"
-            echo "CURSEFORGE_API_KEY=$CURSEFORGE_API_KEY"
             echo "WAGO_API_KEY=$WAGO_API_KEY"
           } > local.properties
 
