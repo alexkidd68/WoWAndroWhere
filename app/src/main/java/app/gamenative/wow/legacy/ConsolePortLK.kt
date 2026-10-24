@@ -35,16 +35,27 @@ object ConsolePortLK {
             if (existing != null && current == existing.id) container.putExtra("profileId", null)
             return
         }
-        val ours = existing?.id ?: install(context, manager)
+        val ours = existing?.id ?: ((manager.getProfiles(false).maxOfOrNull { it.id } ?: 0) + 1)
+        writeIfOutdated(context, ours)
         val chosenOther = current != 0 && current != ours && manager.getProfile(current) != null
         if (!chosenOther) container.putExtra("profileId", ours.toString())
     }
 
-    private fun install(context: Context, manager: InputControlsManager): Int {
-        val id = (manager.getProfiles(false).maxOfOrNull { it.id } ?: 0) + 1
-        val data = JSONObject(context.assets.open(PROFILE_ASSET).bufferedReader().use { it.readText() })
-        data.put("id", id)
-        ControlsProfile.getProfileFile(context, id).writeText(data.toString())
-        return id
+    /**
+     * Writes the shipped profile under [id] when it's missing or an older mapping was written. The version
+     * lives in prefs because Edit controls rewrites the file without unknown keys.
+     */
+    private fun writeIfOutdated(context: Context, id: Int) {
+        val shipped = JSONObject(context.assets.open(PROFILE_ASSET).bufferedReader().use { it.readText() })
+        val version = shipped.optInt(MAPPING_VERSION)
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val file = ControlsProfile.getProfileFile(context, id)
+        if (file.isFile && prefs.getInt(MAPPING_VERSION, 0) >= version) return
+        shipped.put("id", id)
+        file.writeText(shipped.toString())
+        prefs.edit().putInt(MAPPING_VERSION, version).apply()
     }
+
+    private const val PREFS = "wow_consoleportlk"
+    private const val MAPPING_VERSION = "mappingVersion"
 }

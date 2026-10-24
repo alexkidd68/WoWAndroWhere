@@ -1,6 +1,7 @@
 {
  "id": 0,
  "name": "ConsolePortLK",
+ "mappingVersion": 2,
  "cursorSpeed": 1,
  "elements": [],
  "controllers": [
