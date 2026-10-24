@@ -2,6 +2,10 @@
 
 Why things are the way they are, newest first.
 
+## 2026-10-24: Tap where you touch already exists
+
+Daniel asked for taps to click at the finger instead of at the cursor on 3.3.5a. That's upstream's Touchscreen mode in the in-game menu (Back, then Touchscreen mode), which the legacy container already has and saves per container, so nothing was built. It's not on by default for 3.3.5a because it hides the cursor (Touch gestures can show it again), and the right stick moves the cursor for ConsolePortLK.
+
 ## 2026-10-24: 0.5.0 and moving test builds onto releases
 
 Test builds up to 47 only check the `test-build` pre-release, so they can't see 0.5.0 on their own. After the release was published, `test-build.yml` with `release_action=promote` republished the 0.5.0 release APK as the next test build; installing it puts the phone on 0.5.0 and the release channel. From 0.5.0 on, a test build checks releases first (against the version it was built from) and then the test channel. 0.4.1, hidden as a draft during testing, was published again so the release history stays complete.
