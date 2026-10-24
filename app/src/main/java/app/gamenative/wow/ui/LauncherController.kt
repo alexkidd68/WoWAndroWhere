@@ -259,7 +259,7 @@ class LauncherController(
         scope.launch(Dispatchers.IO) {
             runCatching {
                 if (!log.isFile) return@runCatching
-                log.copyTo(File(root, LegacyClient.LOG), overwrite = true)
+                if (root.isNotBlank()) log.copyTo(File(root, LegacyClient.LOG), overwrite = true)
                 val shared = sharedLegacyLog().apply { parentFile?.mkdirs() }
                 LegacyClient.trimLog(log, shared)
                 legacyLogToShare = shared

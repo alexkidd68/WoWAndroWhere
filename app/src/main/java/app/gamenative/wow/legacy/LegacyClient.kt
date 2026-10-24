@@ -29,6 +29,7 @@ object LegacyClient {
     const val EMULATOR = "Box64"
     private const val PREFS = "wow_legacy"
     private const val PENDING_LOG = "log_pending_previous_debug"
+    private const val LOG_FLAG_MIGRATED = "log_flag_migrated"
     private const val FIXED_FILE_INFO_SIGNATURE = 0xFEEF04BDL
     private val LOCALE = Regex("[a-z]{2}[A-Z]{2}")
     private val REALMLIST_LINE = Regex("set\\s+realmlist\\s+(.*)", RegexOption.IGNORE_CASE)
@@ -62,6 +63,12 @@ object LegacyClient {
     /** The Wine debug setting from before the last legacy launch, or null when no launch is waiting. Clears it. */
     fun takePendingLog(context: Context): Boolean? {
         val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        // Test builds before this kept the flag in memory, lost it, and left Wine logging on; the app has no
+        // other switch for it, so turn it off once.
+        if (!p.getBoolean(LOG_FLAG_MIGRATED, false)) {
+            p.edit().putBoolean(LOG_FLAG_MIGRATED, true).apply()
+            if (!p.contains(PENDING_LOG)) return false
+        }
         if (!p.contains(PENDING_LOG)) return null
         val previous = p.getBoolean(PENDING_LOG, false)
         p.edit().remove(PENDING_LOG).apply()
