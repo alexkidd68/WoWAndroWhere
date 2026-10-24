@@ -7,6 +7,13 @@ name: Test build
 on:
   pull_request:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Instead of building: hide (draft) or show (publish) this release, e.g. v0.4.1"
+        default: ""
+      release_action:
+        description: "hide or show"
+        default: "hide"
 
 permissions:
   contents: read
@@ -35,8 +42,26 @@ jobs:
       - name: Build
         run: ./gradlew --no-daemon assembleModernDebug
 
+  release-visibility:
+    if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Hide or show the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.release_tag }}
+          ACTION: ${{ inputs.release_action }}
+        run: |
+          case "$ACTION" in
+            hide) gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=true ;;
+            show) gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false --latest ;;
+            *) echo "::error::release_action must be hide or show"; exit 1 ;;
+          esac
+
   publish:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.release_tag == ''
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
