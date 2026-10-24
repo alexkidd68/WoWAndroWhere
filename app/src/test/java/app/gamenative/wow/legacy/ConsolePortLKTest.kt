@@ -70,4 +70,14 @@ class ConsolePortLKTest {
         File(addons, "ConsolePort/ConsolePort.toc").writeText("## Interface: 30300\n")
         assertTrue(ConsolePortLK.isInstalled(addons))
     }
+
+    @Test
+    fun immersionControlsUseCalibratedButtons() {
+        val lua = File("src/main/assets/wow/consoleportlk-setup/Setup.lua").readText()
+        val calibrated = Regex("""(CP_[A-Z0-9_]+) = '(F\d+)'""").findAll(lua).map { it.groupValues[1] }.toSet()
+        val actions = lua.substringAfter("local actions = {").substringBefore("\n\t}")
+        val used = Regex("""(CP_[A-Z0-9_]+) =""").findAll(actions).map { it.groupValues[1] }.toSet()
+        assertTrue(used.isNotEmpty())
+        assertTrue("$used", calibrated.containsAll(used))
+    }
 }

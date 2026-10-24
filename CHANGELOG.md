@@ -11,6 +11,7 @@ Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which thi
 - **Wine logs for private servers.** Turn on **Save a log** in **Client and server** to save a log of the next launches; after the game closes, the app asks whether to share it. Logs are off by default because writing them slows the game down. Nothing is sent unless you choose where to share it.
 - **Performance overlay for private servers.** **Client and server** → Performance shows frame rate, frame times and GPU load in the game (DXVK renderer). **Use lighter graphics** lowers view distance, ground clutter, particles, weather, shadows and full-screen glow, which helps when the processor is the limit.
 - **Controller support on 3.3.5a.** The 3.3.5a client can't use a controller on its own. Addons now offers **Install ConsolePortLK**, and while it's installed the app maps your controller to the keys the addon expects. The app also sets the addon up for you, Xbox layout included, so there's no calibration to do.
+- **Immersion with a controller on 3.3.5a.** With ConsolePortLK installed, Immersion's quest and gossip windows now respond to the controller: A accepts, continues or picks the highlighted option, B closes, X repeats the text, D-pad up and down move between options, and left and right pick a quest reward. Before, the buttons kept jumping and attacking while you talked to an NPC.
 
 ## 0.4.1
 
