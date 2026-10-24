@@ -75,7 +75,8 @@ object AddonArchive {
         return if (!hasToc(only) && childDirs(only).any(::hasToc)) only else staging
     }
 
-    private fun addonFolders(root: File): List<File> = childDirs(root)
+    /** Folders with a TOC; a branch zip also carries docs and screenshots folders that aren't addons. */
+    private fun addonFolders(root: File): List<File> = childDirs(root).let { dirs -> dirs.filter(::hasToc).ifEmpty { dirs } }
 
     /**
      * A folder whose TOCs don't match its name (a branch zip's `pfQuest-wotlk-master`) is renamed to its

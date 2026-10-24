@@ -13,6 +13,7 @@ import app.gamenative.wow.addons.AddonManager
 import app.gamenative.wow.addons.addonTarget
 import app.gamenative.wow.addons.provider.CurseForgeProvider
 import app.gamenative.wow.addons.provider.GitHubProvider
+import app.gamenative.wow.legacy.LegacyClient
 import app.gamenative.wow.addons.provider.WagoProvider
 import app.gamenative.wow.addons.provider.WowInterfaceProvider
 import app.gamenative.wow.product.GameVersion
@@ -47,7 +48,7 @@ class AddonsController(val addonsDir: File, val version: GameVersion, private va
             ).takeUnless { version.isPrivateServer },
             WagoProvider(BuildConfig.WAGO_API_KEY, target = target).takeUnless { version.isPrivateServer },
             WowInterfaceProvider(target = target),
-            GitHubProvider(target = target),
+            GitHubProvider(target = target, catalogUrl = if (version.isPrivateServer) LegacyClient.ADDON_CATALOG_URL else GitHubProvider.CATALOG_URL),
         ),
         http = Net.http,
         target = target,

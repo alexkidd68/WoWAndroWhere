@@ -137,4 +137,14 @@ class AddonArchiveTest {
         )
         assertEquals(listOf("Bar", "Foo"), folders)
     }
+
+    @Test
+    fun branchZipSkipsFoldersWithoutToc() {
+        val folders = AddonArchive.install(
+            zip(TestZips.text("Pack-main/Foo/Foo.toc" to "## Interface: 30300", "Pack-main/Screenshots/a.txt" to "x", "Pack-main/README.md" to "hi")),
+            addons,
+        )
+        assertEquals(listOf("Foo"), folders)
+        assertFalse(File(addons, "Screenshots").exists())
+    }
 }

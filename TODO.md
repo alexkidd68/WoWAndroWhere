@@ -6,12 +6,6 @@ Only work that's left. Shipped items move to DONE.md, rejected ones to DROPPED.m
 
 1. **Addon catalog link.** The GitHub addon catalog (`GitHubProvider.CATALOG_URL`) still points at upstream. It can stay on upstream's nightly build (no cost, but it's their branch) or the fork's `addon-catalog` workflow can publish its own.
 
-## Private servers (3.3.5a)
-
-Shipped as a game version (see DONE.md). What's left:
-
-1. **3.3.5a addon list.** The browser only finds 3.3.5a addons on WoWInterface; most live in GitHub repos without releases, which install from a link today. Add a short, checked list of 3.3.5a repos (pfQuest, ElvUI, WeakAuras, DBM-Warmane style backports) to the catalog under a `wotlk335` key so they show up when browsing, installed from the default branch.
-
 ## 3.3.5a speed on the Odin 3
 
 Logs off by default and a DXVK overlay shipped (see DONE.md). Next steps depend on what the overlay shows:
