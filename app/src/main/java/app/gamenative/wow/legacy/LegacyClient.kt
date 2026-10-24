@@ -28,6 +28,7 @@ object LegacyClient {
     /** The bundled 32-bit emulator. FEX's WoW64 DLL isn't bundled, so only Box64 (wowbox64) can run x86 code. */
     const val EMULATOR = "Box64"
     private const val PREFS = "wow_legacy"
+    private const val PENDING_LOG = "log_pending_previous_debug"
     private const val FIXED_FILE_INFO_SIGNATURE = 0xFEEF04BDL
     private val LOCALE = Regex("[a-z]{2}[A-Z]{2}")
     private val REALMLIST_LINE = Regex("set\\s+realmlist\\s+(.*)", RegexOption.IGNORE_CASE)
@@ -47,6 +48,24 @@ object LegacyClient {
             .putString("realmlist", settings.realmlist)
             .putString("renderer", settings.renderer.name)
             .apply()
+    }
+
+    /**
+     * Remembers, across the launcher being rebuilt while the game runs, that a legacy launch turned on Wine
+     * logging and what the setting was before.
+     */
+    fun markLogPending(context: Context, previousDebug: Boolean) {
+        val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        if (!p.contains(PENDING_LOG)) p.edit().putBoolean(PENDING_LOG, previousDebug).apply()
+    }
+
+    /** The Wine debug setting from before the last legacy launch, or null when no launch is waiting. Clears it. */
+    fun takePendingLog(context: Context): Boolean? {
+        val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        if (!p.contains(PENDING_LOG)) return null
+        val previous = p.getBoolean(PENDING_LOG, false)
+        p.edit().remove(PENDING_LOG).apply()
+        return previous
     }
 
     /** The folder holding [EXE] and `Data/`, searching [dir] and one level below it. */

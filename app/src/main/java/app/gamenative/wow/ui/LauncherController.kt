@@ -117,7 +117,6 @@ class LauncherController(
         private set
     var legacyBuild by mutableStateOf<ClientBuild?>(null)
         private set
-    private var legacyLog: Boolean? = null
 
     /** The Wine log of the last legacy launch, waiting for the player to agree to share it. */
     var legacyLogToShare by mutableStateOf<File?>(null)
@@ -237,10 +236,8 @@ class LauncherController(
             return
         }
         val settings = legacy
-        if (legacyLog == null) {
-            legacyLog = PrefManager.enableWineDebug
-            PrefManager.enableWineDebug = true
-        }
+        LegacyClient.markLogPending(context, PrefManager.enableWineDebug)
+        PrefManager.enableWineDebug = true
         legacyLogToShare = null
         listOf(wineLog(), sharedLegacyLog(), File(settings.root, LegacyClient.LOG)).forEach { it.delete() }
         launch { screenSize, onStatus -> prepareLegacyLaunch(context, settings, gpu, screenSize, onStatus) }
@@ -252,10 +249,10 @@ class LauncherController(
     /**
      * Copies the last legacy launch's Wine log to the client folder and to the share cache, then asks the
      * player whether to share it. Restores the debug setting. The previous log was deleted at launch.
+     * The launcher is rebuilt while the game runs, so this also runs when it comes back.
      */
     private fun saveLegacyLog() {
-        val previous = legacyLog ?: return
-        legacyLog = null
+        val previous = LegacyClient.takePendingLog(context) ?: return
         PrefManager.enableWineDebug = previous
         val log = wineLog()
         val root = legacy.root
@@ -316,8 +313,10 @@ class LauncherController(
                 throw e
             } catch (_: StorageAccessDeniedException) {
                 resetLaunch()
+                saveLegacyLog()
                 needsStoragePermission = true
             } catch (e: Exception) {
+                saveLegacyLog()
                 Timber.e(e, "Error launching WoW Forever")
                 errorMessage = e.message ?: "Launch failed"
                 statusText = "Launch failed"
@@ -508,6 +507,7 @@ class LauncherController(
     // Read the install before the first frame, so screens built from this state never start out empty.
     init {
         checkFiles()
+        saveLegacyLog()
     }
 
     private companion object {
