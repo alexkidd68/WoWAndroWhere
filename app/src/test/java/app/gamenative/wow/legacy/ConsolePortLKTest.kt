@@ -1,6 +1,8 @@
 package app.gamenative.wow.legacy
 
+import android.view.MotionEvent
 import com.winlator.inputcontrols.Binding
+import com.winlator.inputcontrols.ExternalControllerBinding
 import java.io.File
 import java.nio.file.Files
 import org.json.JSONObject
@@ -34,6 +36,16 @@ class ConsolePortLKTest {
         val keys = bindings.values.filter { it.startsWith("KEY_F") }
         assertEquals(12, keys.size)
         assertEquals(keys.size, keys.toSet().size)
+    }
+
+    @Test
+    fun leftStickForwardIsW() {
+        // getKeyCodeForAxis reports Android's negative Y (stick pushed forward) as AXIS_Y_POSITIVE.
+        assertEquals(ExternalControllerBinding.AXIS_Y_POSITIVE.toInt(), ExternalControllerBinding.getKeyCodeForAxis(MotionEvent.AXIS_Y, -1))
+        assertEquals("KEY_W", bindings[ExternalControllerBinding.AXIS_Y_POSITIVE.toInt()])
+        assertEquals("KEY_S", bindings[ExternalControllerBinding.AXIS_Y_NEGATIVE.toInt()])
+        assertEquals("KEY_A", bindings[ExternalControllerBinding.AXIS_X_NEGATIVE.toInt()])
+        assertEquals("KEY_D", bindings[ExternalControllerBinding.AXIS_X_POSITIVE.toInt()])
     }
 
     @Test

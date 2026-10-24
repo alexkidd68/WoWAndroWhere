@@ -78,11 +78,11 @@
     },
     {
      "keyCode": -3,
-     "binding": "KEY_W"
+     "binding": "KEY_S"
     },
     {
      "keyCode": -4,
-     "binding": "KEY_S"
+     "binding": "KEY_W"
     },
     {
      "keyCode": -1,
