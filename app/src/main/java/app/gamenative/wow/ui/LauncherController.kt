@@ -1,7 +1,9 @@
 package app.gamenative.wow.ui
 
 import android.content.Context
+import android.content.Intent
 import androidx.compose.runtime.getValue
+import androidx.core.content.FileProvider
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -116,6 +118,9 @@ class LauncherController(
     var legacyBuild by mutableStateOf<ClientBuild?>(null)
         private set
     private var legacyLog: Boolean? = null
+
+    /** The Wine log of the last legacy launch, waiting for the player to agree to share it. */
+    var legacyLogToShare by mutableStateOf<File?>(null)
 
     private var launchJob: Job? = null
     private var pendingInstallPermission = false
@@ -236,20 +241,47 @@ class LauncherController(
             legacyLog = PrefManager.enableWineDebug
             PrefManager.enableWineDebug = true
         }
+        legacyLogToShare = null
+        listOf(wineLog(), sharedLegacyLog(), File(settings.root, LegacyClient.LOG)).forEach { it.delete() }
         launch { screenSize, onStatus -> prepareLegacyLaunch(context, settings, gpu, screenSize, onStatus) }
     }
 
-    /** The Wine log of the last legacy launch, copied where the player can open it. Restores the debug setting. */
+    private fun wineLog() = File(context.getExternalFilesDir(null), "wine_logs/wine_debug.log")
+    private fun sharedLegacyLog() = File(context.externalCacheDir, "legacy_logs/${LegacyClient.LOG}")
+
+    /**
+     * Copies the last legacy launch's Wine log to the client folder and to the share cache, then asks the
+     * player whether to share it. Restores the debug setting. The previous log was deleted at launch.
+     */
     private fun saveLegacyLog() {
         val previous = legacyLog ?: return
         legacyLog = null
         PrefManager.enableWineDebug = previous
-        val log = File(context.getExternalFilesDir(null), "wine_logs/wine_debug.log")
+        val log = wineLog()
         val root = legacy.root
         scope.launch(Dispatchers.IO) {
-            runCatching { if (log.isFile) log.copyTo(File(root, LegacyClient.LOG), overwrite = true) }
-                .onFailure { Timber.w(it, "Couldn't copy the Wine log") }
+            runCatching {
+                if (!log.isFile) return@runCatching
+                log.copyTo(File(root, LegacyClient.LOG), overwrite = true)
+                val shared = sharedLegacyLog().apply { parentFile?.mkdirs() }
+                LegacyClient.trimLog(log, shared)
+                legacyLogToShare = shared
+            }.onFailure { Timber.w(it, "Couldn't copy the Wine log") }
         }
+    }
+
+    /** Opens the share sheet for the last legacy log. Only called after the player said yes. */
+    fun shareLegacyLog(activity: Context) {
+        val file = legacyLogToShare ?: return
+        legacyLogToShare = null
+        val uri = FileProvider.getUriForFile(activity, "${activity.packageName}.fileprovider", file)
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            putExtra(Intent.EXTRA_SUBJECT, LegacyClient.LOG)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        activity.startActivity(Intent.createChooser(send, "Share Wine log"))
     }
 
     fun updateLegacy(settings: LegacySettings) {

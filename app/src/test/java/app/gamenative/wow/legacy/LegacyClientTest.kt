@@ -99,4 +99,23 @@ class LegacyClientTest {
         assertEquals(client, LegacyClient.findRoot(parent))
         parent.deleteRecursively()
     }
+
+    @Test
+    fun `trimLog keeps small logs whole and cuts the middle of big ones`() {
+        val dir = Files.createTempDirectory("legacy").toFile()
+        val small = File(dir, "small").apply { writeText("loaddll\nerr\n") }
+        val out = File(dir, "out")
+        LegacyClient.trimLog(small, out)
+        assertEquals("loaddll\nerr\n", out.readText())
+
+        val big = File(dir, "big")
+        val size = (LegacyClient.LOG_HEAD + LegacyClient.LOG_TAIL + 1000).toInt()
+        big.writeBytes(ByteArray(size) { if (it == 0) 'S'.code.toByte() else if (it == size - 1) 'E'.code.toByte() else 'x'.code.toByte() })
+        LegacyClient.trimLog(big, out)
+        val text = out.readText()
+        assertTrue(text.startsWith("S"))
+        assertTrue(text.endsWith("E"))
+        assertTrue(text.contains("[... 1000 bytes cut ...]"))
+        dir.deleteRecursively()
+    }
 }

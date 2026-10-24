@@ -86,7 +86,7 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
         FwSection("Play") {
             if (launcher.isLaunching) Text(launcher.statusText, style = Fw.Text)
             launcher.errorMessage?.let { Text(it, style = Fw.Secondary.copy(color = Fw.Warn)) }
-            Text("Each launch saves a Wine log as ${LegacyClient.LOG} in the client folder when the game closes.", style = Fw.Secondary)
+            Text("Each launch saves a Wine log as ${LegacyClient.LOG} in the client folder and replaces the last one. When the game closes, the app asks whether to share it.", style = Fw.Secondary)
             FwButton(
                 "Launch",
                 { launcher.launchLegacy() },

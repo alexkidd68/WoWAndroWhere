@@ -126,4 +126,34 @@ object LegacyClient {
     }
 
     private const val MAX_EXE_BYTES = 64L * 1024 * 1024
+
+    /** Logs over this size keep their start (DLL loading) and their end (the crash) so they stay shareable. */
+    const val LOG_HEAD = 1L shl 20
+    const val LOG_TAIL = 3L shl 20
+
+    fun trimLog(source: File, target: File) {
+        val size = source.length()
+        if (size <= LOG_HEAD + LOG_TAIL) {
+            source.copyTo(target, overwrite = true)
+            return
+        }
+        RandomAccessFile(source, "r").use { input ->
+            target.outputStream().buffered().use { out ->
+                val buffer = ByteArray(64 shl 10)
+                fun copy(from: Long, length: Long) {
+                    input.seek(from)
+                    var left = length
+                    while (left > 0) {
+                        val read = input.read(buffer, 0, minOf(buffer.size.toLong(), left).toInt())
+                        if (read < 0) break
+                        out.write(buffer, 0, read)
+                        left -= read
+                    }
+                }
+                copy(0, LOG_HEAD)
+                out.write("\n[... ${size - LOG_HEAD - LOG_TAIL} bytes cut ...]\n".toByteArray())
+                copy(size - LOG_TAIL, LOG_TAIL)
+            }
+        }
+    }
 }

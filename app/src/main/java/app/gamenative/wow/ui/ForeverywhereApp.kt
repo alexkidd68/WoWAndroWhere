@@ -168,6 +168,16 @@ fun ForeverywhereApp(onLaunch: (appId: String) -> Unit) {
                 onDismiss = { launcher.unsupportedDeviceWarning = false },
             )
         }
+        if (launcher.legacyLogToShare != null) {
+            FwDialog(
+                title = "Share the Wine log?",
+                message = "The log from this launch shows why the client did or didn't start. Share opens the share sheet so you choose where it goes. The app sends nothing on its own, and the next launch replaces this log.",
+                confirm = "Share",
+                onConfirm = { launcher.shareLegacyLog(context) },
+                onDismiss = { launcher.legacyLogToShare = null },
+                dismiss = "Not now",
+            )
+        }
         if (launcher.needsInstallPermission) {
             FwDialog(
                 title = "Allow app installs",
