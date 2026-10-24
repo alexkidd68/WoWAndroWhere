@@ -20,7 +20,7 @@ import urllib.request
 
 API = "https://api.github.com"
 KEY = "wotlk335"
-INTERFACE = re.compile(r"^##\s*Interface:\s*303\d\d\b", re.MULTILINE)
+INTERFACE = re.compile(r"^\ufeff?##\s*Interface:\s*303\d\d\b", re.MULTILINE)
 
 
 def fetch(url, accept="application/vnd.github+json"):
@@ -37,18 +37,12 @@ def get(url):
 
 
 def addon_tocs(paths):
-    """The TOCs the game would load from the zip, following AddonArchive: a TOC at the top makes the
-    repo one addon, otherwise each top-level folder is one."""
+    """The TOCs the app would name the installed folders after, following AddonArchive: TOCs at the top
+    make the repo one addon, otherwise each top-level folder with TOCs is one. The app prefers a 303xx
+    TOC among them, so one is enough."""
     tocs = [p for p in paths if p.lower().endswith(".toc")]
     top = [p for p in tocs if "/" not in p]
-    if top:
-        return [min(top, key=len)]
-    by_dir = {}
-    for p in tocs:
-        parts = p.split("/")
-        if len(parts) == 2:
-            by_dir.setdefault(parts[0], []).append(p)
-    return [min(v, key=len) for v in by_dir.values()]
+    return top or [p for p in tocs if p.count("/") == 1]
 
 
 def build_entry(entry):

@@ -147,4 +147,24 @@ class AddonArchiveTest {
         assertEquals(listOf("Foo"), folders)
         assertFalse(File(addons, "Screenshots").exists())
     }
+
+    @Test
+    fun branchZipPrefersTheTocForTheClient() {
+        val folders = AddonArchive.install(
+            zip(TestZips.text("Questie-335/Questie.toc" to "## Interface: 00000", "Questie-335/Questie-335.toc" to "\uFEFF## Interface: 30300")),
+            addons,
+            30300..30399,
+        )
+        assertEquals(listOf("Questie-335"), folders)
+    }
+
+    @Test
+    fun branchZipFolderGetsRenamedToTheClientsToc() {
+        val folders = AddonArchive.install(
+            zip(TestZips.text("Questie-abc123/Questie.toc" to "## Interface: 00000", "Questie-abc123/Questie-335.toc" to "## Interface: 30300")),
+            addons,
+            30300..30399,
+        )
+        assertEquals(listOf("Questie-335"), folders)
+    }
 }
