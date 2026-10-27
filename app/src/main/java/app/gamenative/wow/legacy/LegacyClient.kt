@@ -1,9 +1,6 @@
 package app.gamenative.wow.legacy
 
 import android.content.Context
-import android.os.Handler
-import android.os.Looper
-import app.gamenative.PluviaApp
 import app.gamenative.wow.LoginVault
 import java.io.File
 import java.io.RandomAccessFile
@@ -29,6 +26,8 @@ data class LegacySettings(
     val fastLogin: Boolean = false,
     /** With [fastLogin], the login screen also presses Log in once per game start. */
     val autoLogin: Boolean = false,
+    /** The selected one of [LegacyServers]; [realmlist] is its realmlist. */
+    val serverId: String = LegacyServers.MAIN,
 )
 
 object LegacyClient {
@@ -40,11 +39,6 @@ object LegacyClient {
     private const val PREFS = "wow_legacy"
     private const val DEBUG_CLEARED = "leftover_debug_cleared"
     private const val LOG_WAITING = "log_waiting"
-    private const val VAULT = "legacy_server_vault"
-    private const val TYPE_DELAY_MS = 400L
-
-    /** Container extra: the in-game menu offers Type password. */
-    const val TYPE_PASSWORD_EXTRA = "typePassword"
 
     /** Built by the "Addon catalog 3.3.5a" workflow from `catalog/wotlk335.json`. */
     const val ADDON_CATALOG_URL = "https://raw.githubusercontent.com/danielnoam/WoWAndroWhere/addon-catalog-335/catalog-335.json"
@@ -70,6 +64,7 @@ object LegacyClient {
             perfOverlay = p.getBoolean("perf_overlay", false),
             fastLogin = p.getBoolean("fast_login", false),
             autoLogin = p.getBoolean("auto_login", false),
+            serverId = p.getString("server_id", null) ?: LegacyServers.MAIN,
         )
     }
 
@@ -82,6 +77,7 @@ object LegacyClient {
             .putBoolean("perf_overlay", settings.perfOverlay)
             .putBoolean("fast_login", settings.fastLogin)
             .putBoolean("auto_login", settings.autoLogin)
+            .putString("server_id", settings.serverId)
             .apply()
     }
 
@@ -106,27 +102,19 @@ object LegacyClient {
 
     /**
      * The private server password, sealed like the Battle.net login (see [LoginVault]) in its own prefs.
-     * The 3.3.5a client can't take a password from outside, so the in-game menu's Type password enters it
-     * as keystrokes when the player asks; nothing types it on a timer.
+     * With Fill in password, AndroWhere Login carries it to the login screen for one launch (see [app.gamenative.wow.legacy.mods.FastLogin]).
      */
     fun hasServerPassword(context: Context): Boolean = runCatching { serverPassword(context) != null }.getOrDefault(false)
 
     fun saveServerPassword(context: Context, password: String): Boolean =
-        runCatching { LoginVault(context, VAULT).save("", password) }.isSuccess
+        runCatching { LegacyServers.vault(context, load(context).serverId).save("", password) }.isSuccess
 
     fun forgetServerPassword(context: Context) {
-        LoginVault(context, VAULT).clear()
+        LegacyServers.vault(context, load(context).serverId).clear()
     }
 
-    internal fun serverPassword(context: Context): String? = LoginVault(context, VAULT).load()?.second?.takeIf { it.isNotEmpty() }
-
-    /** Types the saved password and Enter into the game. Called from the in-game menu. */
-    fun typeServerPassword(context: Context) {
-        val password = runCatching { serverPassword(context) }.getOrNull() ?: return
-        val receiver = PluviaApp.imeInputReceiver ?: return
-        // After the menu closes, so the keys reach the game window rather than the menu.
-        Handler(Looper.getMainLooper()).postDelayed({ receiver.typeText(password + "\n") }, TYPE_DELAY_MS)
-    }
+    /** The selected server's saved password. */
+    internal fun serverPassword(context: Context): String? = LegacyServers.password(context, load(context).serverId)
 
     /** The folder holding [EXE] and `Data/`, searching [dir] and one level below it. */
     fun findRoot(dir: File): File? =

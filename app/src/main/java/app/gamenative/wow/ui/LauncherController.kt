@@ -31,6 +31,8 @@ import app.gamenative.utils.AppUpdater
 import app.gamenative.utils.StorageUtils
 import app.gamenative.wow.legacy.ClientBuild
 import app.gamenative.wow.legacy.LegacyClient
+import app.gamenative.wow.legacy.LegacyServer
+import app.gamenative.wow.legacy.LegacyServers
 import app.gamenative.wow.legacy.LegacySettings
 import app.gamenative.wow.legacy.mods.FastLogin
 import app.gamenative.wow.product.GameInstall
@@ -125,6 +127,12 @@ class LauncherController(
 
     var hasServerPassword by mutableStateOf(LegacyClient.hasServerPassword(context))
         private set
+
+    /** The private servers saved in the app; the selected one is [legacy]'s serverId. */
+    var servers by mutableStateOf(LegacyServers.load(context, legacy))
+        private set
+
+    val selectedServer get() = servers.firstOrNull { it.id == legacy.serverId } ?: servers.first()
 
     /** The player's own CurseForge key or proxy from Settings; CurseForge is off without one. */
     var curseForge by mutableStateOf(CurseForgeAccess.load(context))
@@ -259,6 +267,34 @@ class LauncherController(
         FastLogin.wipe(context)
     }
 
+    fun selectServer(id: String) {
+        val server = servers.firstOrNull { it.id == id } ?: return
+        updateLegacy(legacy.copy(serverId = id, realmlist = server.realmlist))
+        hasServerPassword = LegacyClient.hasServerPassword(context)
+    }
+
+    fun updateServer(server: LegacyServer) {
+        servers = servers.map { if (it.id == server.id) server else it }
+        LegacyServers.save(context, servers)
+        if (server.id == legacy.serverId) updateLegacy(legacy.copy(realmlist = server.realmlist))
+    }
+
+    fun addServer() {
+        val server = LegacyServers.newServer(servers.size)
+        servers = servers + server
+        LegacyServers.save(context, servers)
+        selectServer(server.id)
+    }
+
+    fun removeServer(id: String) {
+        if (servers.size < 2) return
+        LegacyServers.vault(context, id).clear()
+        servers = servers.filterNot { it.id == id }
+        LegacyServers.save(context, servers)
+        if (id == legacy.serverId) selectServer(servers.first().id)
+        FastLogin.wipe(context)
+    }
+
     fun saveCurseForgeKey(key: String): Boolean =
         CurseForgeAccess.saveKey(context, key).also { curseForge = CurseForgeAccess.load(context) }
 
@@ -344,6 +380,10 @@ class LauncherController(
         val fastLoginOff = legacy.fastLogin && !settings.fastLogin
         legacy = settings
         LegacyClient.save(context, settings)
+        LegacyServers.withSelected(servers, settings).takeIf { it != servers }?.let {
+            servers = it
+            LegacyServers.save(context, it)
+        }
         if (fastLoginOff) FastLogin.wipe(context)
         if (rootChanged) detectLegacyBuild()
     }

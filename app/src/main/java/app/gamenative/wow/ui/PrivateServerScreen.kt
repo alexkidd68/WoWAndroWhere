@@ -17,8 +17,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -26,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import app.gamenative.utils.StorageUtils
 import app.gamenative.wow.legacy.LegacyClient
 import app.gamenative.wow.legacy.LegacyRenderer
+import app.gamenative.wow.legacy.mods.AndroWherePatch
+import app.gamenative.wow.ui.addons.ClientModsController
 import app.gamenative.wow.ui.components.FwButton
 import app.gamenative.wow.ui.components.FwButtonKind
 import app.gamenative.wow.ui.components.FwChip
@@ -33,12 +37,11 @@ import app.gamenative.wow.ui.components.FwRow
 import app.gamenative.wow.ui.theme.Fw
 import java.io.File
 
-/** Private server "Game files": the player's 3.3.5a client folder, its realmlist and how it runs. */
+/** Private server "Client and server": the player's 3.3.5a client folder, its servers and password, and how it runs. */
 @Composable
 fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
     val context = LocalContext.current
     val settings = launcher.legacy
-    var realmlist by remember { mutableStateOf(settings.realmlist) }
     var folderError by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) { launcher.detectLegacyBuild() }
 
@@ -48,7 +51,6 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
         folderError = if (root == null) "No ${LegacyClient.EXE} with a Data folder in $path." else null
         root?.let {
             val existing = LegacyClient.readRealmlist(it)
-            if (existing != null) realmlist = existing
             launcher.updateLegacy(settings.copy(root = it.absolutePath, realmlist = existing ?: settings.realmlist))
         }
     }
@@ -69,19 +71,58 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
             FwButton("Choose folder", { picker.launch(null) }, kind = FwButtonKind.Ghost)
         }
 
-        FwSection("Server") {
-            OutlinedTextField(
-                realmlist,
-                {
-                    realmlist = it
-                    launcher.updateLegacy(settings.copy(realmlist = it))
-                },
-                singleLine = true,
-                label = { Text("Realmlist, e.g. logon.example.com") },
-                textStyle = Fw.Text,
-                modifier = Modifier.fillMaxWidth(),
+        FwSection("Servers") {
+            Text(
+                "Play starts on the selected server. With AndroWhere Login installed, L1 and R1 switch between these on the login screen.",
+                style = Fw.Secondary,
             )
+            launcher.servers.forEach { server ->
+                FwRow(selected = server.id == settings.serverId, onClick = { launcher.selectServer(server.id) }) {
+                    Column(Modifier.weight(1f)) {
+                        Text(server.name, style = Fw.Text)
+                        Text(server.realmlist.ifBlank { "No realmlist yet" }, style = Fw.Data)
+                    }
+                    if (server.id == settings.serverId) Text("Selected", style = Fw.Data.copy(color = Fw.Brass))
+                }
+            }
+            val selected = launcher.selectedServer
+            key(selected.id) {
+                var name by remember { mutableStateOf(selected.name) }
+                var realmlist by remember { mutableStateOf(selected.realmlist) }
+                var account by remember { mutableStateOf(selected.account) }
+                LaunchedEffect(settings.realmlist) { if (settings.realmlist != realmlist) realmlist = settings.realmlist }
+                val save = { launcher.updateServer(selected.copy(name = name.ifBlank { "Server" }, realmlist = realmlist.trim(), account = account.trim())) }
+                OutlinedTextField(name, { name = it; save() }, singleLine = true, label = { Text("Name") }, textStyle = Fw.Text, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(
+                    realmlist,
+                    { realmlist = it; save() },
+                    singleLine = true,
+                    label = { Text("Realmlist, e.g. logon.example.com") },
+                    textStyle = Fw.Text,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    account,
+                    { account = it; save() },
+                    singleLine = true,
+                    label = { Text("Account name (optional)") },
+                    textStyle = Fw.Text,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            Text(
+                "The account name fills the login screen's account box for this server. Leave it empty to use the one the game remembers. Each server's password is saved under Password.",
+                style = Fw.Secondary,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                FwButton("Add server", launcher::addServer, kind = FwButtonKind.Ghost)
+                if (launcher.servers.size > 1) {
+                    FwButton("Remove ${selected.name}", { launcher.removeServer(selected.id) }, kind = FwButtonKind.Danger)
+                }
+            }
         }
+
+        if (settings.root.isNotBlank()) LoginSection(launcher, File(settings.root))
 
         FwSection("Renderer") {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -126,73 +167,80 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
     }
 }
 
-/** Private server "Account": the saved password that the in-game menu's Type password enters. */
+/** The saved password that AndroWhere Login fills in on the login screen; until it's installed, only an Install button. */
 @Composable
-fun ServerLoginScreen(launcher: LauncherController, onBack: () -> Unit) {
-    var password by remember { mutableStateOf("") }
-    FwPage("Server login", onBack) {
-        FwSection("Password") {
+private fun LoginSection(launcher: LauncherController, root: File) {
+    val scope = rememberCoroutineScope()
+    val mods = remember(root) { ClientModsController(root, scope) }
+    LaunchedEffect(root) { mods.refresh() }
+    when (mods.ours?.get(AndroWherePatch.LOGIN)) {
+        null -> Unit
+        true -> PasswordSection(launcher)
+        false -> FwSection("Password") {
             Text(
-                if (launcher.hasServerPassword) {
-                    "Your server password is saved on this device, encrypted with the Android keystore. " +
-                        if (launcher.legacy.fastLogin) "On the login screen, press A." else "On the login screen, open the menu with Back and choose Type password."
-                } else {
-                    "Save your server password to enter it from the in-game menu instead of typing it each time. The client remembers your account name itself."
-                },
+                mods.working ?: mods.message
+                    ?: "Saving your password needs AndroWhere Login, which fills it in on the game's login screen so A logs you in.",
                 style = Fw.Text,
             )
-            OutlinedTextField(
-                password,
-                { password = it },
-                singleLine = true,
-                label = { Text(if (launcher.hasServerPassword) "New password" else "Password") },
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                textStyle = Fw.Text,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            val settings = launcher.legacy
-            CheckRow(
-                "Fill in password",
-                "Needs AndroWhere Login from Addons, Client. The login screen fills in this password, so A logs you in. " +
-                    "To do that, the app puts the password in AndroWhere Login's file in the client folder when the game starts, and removes it about 10 seconds after the game opens that file, " +
-                    "or after 3 minutes at most, when the game closes and when the app opens again. While it's there, any app that can read the client folder could read it.",
-                settings.fastLogin,
-            ) { launcher.updateLegacy(settings.copy(fastLogin = !settings.fastLogin)) }
-            CheckRow(
-                "Log in automatically",
-                if (settings.fastLogin) {
-                    "Presses Log in for you once each time the game starts. If that login fails, press A to try again."
-                } else {
-                    "Needs Fill in password."
-                },
-                settings.fastLogin && settings.autoLogin,
-                enabled = settings.fastLogin,
-                modifier = Modifier.padding(start = 24.dp),
-            ) { launcher.updateLegacy(settings.copy(autoLogin = !settings.autoLogin)) }
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                FwButton(
-                    "Save password",
-                    {
-                        launcher.saveServerPassword(password)
-                        password = ""
-                    },
-                    enabled = password.isNotEmpty(),
-                )
-                if (launcher.hasServerPassword) FwButton("Forget password", launcher::forgetServerPassword, kind = FwButtonKind.Danger)
-            }
-            launcher.errorMessage?.let { Text(it, style = Fw.Secondary.copy(color = Fw.Warn)) }
+            FwButton("Install AndroWhere Login", { mods.setInstalled(AndroWherePatch.LOGIN, true) }, enabled = mods.working == null)
         }
-        FwSection("How it works") {
-            Text(
-                if (launcher.legacy.fastLogin) {
-                    "Type password presses the password's keys and Enter in the game, so use it only when the password box is selected. Security codes your server emails you are still typed by hand."
-                } else {
-                    "The password never goes into the game folder. Type password presses its keys and Enter in the game, so use it only when the password box is selected. Security codes your server emails you are still typed by hand."
+    }
+}
+
+@Composable
+private fun PasswordSection(launcher: LauncherController) {
+    var password by remember { mutableStateOf("") }
+    val settings = launcher.legacy
+    FwSection(if (launcher.servers.size > 1) "Password for ${launcher.selectedServer.name}" else "Password") {
+        Text(
+            when {
+                !launcher.hasServerPassword -> "Save your server password so the login screen can fill it in. The client remembers your account name itself."
+                settings.fastLogin -> "Your server password is saved on this device, encrypted with the Android keystore. On the login screen, press A."
+                else -> "Your server password is saved on this device, encrypted with the Android keystore. Tick Fill in password to use it."
+            },
+            style = Fw.Text,
+        )
+        OutlinedTextField(
+            password,
+            { password = it },
+            singleLine = true,
+            label = { Text(if (launcher.hasServerPassword) "New password" else "Password") },
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            textStyle = Fw.Text,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        CheckRow(
+            "Fill in password",
+            "The login screen fills in this password, so A logs you in. " +
+                "To do that, the app puts the password in AndroWhere Login's file in the client folder when the game starts, and removes it about 10 seconds after the game opens that file, " +
+                "or after 3 minutes at most, when the game closes and when the app opens again. While it's there, any app that can read the client folder could read it.",
+            settings.fastLogin,
+        ) { launcher.updateLegacy(settings.copy(fastLogin = !settings.fastLogin)) }
+        CheckRow(
+            "Log in automatically",
+            if (settings.fastLogin) {
+                "Presses Log in for you once each time the game starts. If that login fails, press A to try again."
+            } else {
+                "Needs Fill in password."
+            },
+            settings.fastLogin && settings.autoLogin,
+            enabled = settings.fastLogin,
+            modifier = Modifier.padding(start = 24.dp),
+        ) { launcher.updateLegacy(settings.copy(autoLogin = !settings.autoLogin)) }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            FwButton(
+                "Save password",
+                {
+                    launcher.saveServerPassword(password)
+                    password = ""
                 },
-                style = Fw.Secondary,
+                enabled = password.isNotEmpty(),
             )
+            if (launcher.hasServerPassword) FwButton("Forget password", launcher::forgetServerPassword, kind = FwButtonKind.Danger)
         }
+        Text("Security codes your server emails you are still typed by hand.", style = Fw.Secondary)
+        launcher.errorMessage?.let { Text(it, style = Fw.Secondary.copy(color = Fw.Warn)) }
     }
 }
 

@@ -54,15 +54,42 @@ local function hint(parent, text)
     return line
 end
 
--- Login with A: when the app passed the saved password (AndroWhereLoginData.lua, written only for one launch),
--- the password box is filled and left unfocused, so A reaches the login frame and logs in.
-local password = AndroWhereLoginPassword
+-- Servers and Log in with A. AndroWhereServers.lua carries the servers saved in the app; with Fill in password,
+-- AndroWhereLoginData.lua (written for one launch only) carries their passwords. A filled password box is left
+-- unfocused, so A reaches the login frame and logs in. L1 and R1 switch servers.
+local servers = AndroWhereServers
+local serverIndex = AndroWhereServerIndex or 1
+local passwords = AndroWhereLoginPasswords or {}
 local autoLogin = AndroWhereLoginAuto
-AndroWhereLoginPassword, AndroWhereLoginAuto = nil, nil
+AndroWhereServers, AndroWhereServerIndex, AndroWhereLoginPasswords, AndroWhereLoginAuto = nil, nil, nil, nil
+local password = passwords[serverIndex]
 
 local function fillPassword()
     if password and AccountLoginPasswordEdit:GetText() == "" then
         AccountLoginPasswordEdit:SetText(password)
+    end
+end
+
+local loginHint = hint(AccountLoginUI or AccountLogin, "")
+local serverLine = hint(AccountLoginUI or AccountLogin, "")
+if serverLine then serverLine:SetPoint("TOP", AccountLoginUI or AccountLogin, "TOP", 0, -30) end
+
+local function updateLoginHint()
+    if loginHint then
+        if not password then
+            loginHint:SetText("")
+        elseif AccountLoginAccountEdit:GetText() ~= "" then
+            loginHint:SetText(autoLogin and "Logging in. A  Log in again" or "A  Log in")
+        else
+            loginHint:SetText("Type your account name and press Enter. Tick Remember Account Name to log in with A next time.")
+        end
+    end
+    if serverLine then
+        if servers and #servers > 1 then
+            serverLine:SetText("Server: " .. servers[serverIndex].name .. "       L1 R1  Switch server")
+        else
+            serverLine:SetText("")
+        end
     end
 end
 
@@ -78,6 +105,7 @@ local function tryAutoLogin()
         waited = waited + (elapsed or arg1 or 0)
         if waited < 0.5 then return end
         self:SetScript("OnUpdate", nil)
+        updateLoginHint()
         if AccountLogin:IsShown() and AccountLoginAccountEdit:GetText() ~= "" and TOSAccepted()
             and not GlueDialog:IsShown() and not TOSFrame:IsShown() then
             fillPassword()
@@ -86,39 +114,71 @@ local function tryAutoLogin()
     end)
 end
 
-if password then
-    local focusAccountName = AccountLogin_FocusAccountName
-    AccountLogin_FocusPassword = function()
-        fillPassword()
+-- The login screen gives the account or password box the keyboard as it shows. With a server's account name
+-- and password from the app, both are filled and neither box keeps the keyboard.
+local focusPassword, focusAccountName = AccountLogin_FocusPassword, AccountLogin_FocusAccountName
+local function prepareLogin(focus)
+    local server = servers and servers[serverIndex]
+    if server and server.account ~= "" then
+        AccountLoginAccountEdit:SetText(server.account)
+    end
+    fillPassword()
+    updateLoginHint()
+    if password and AccountLoginAccountEdit:GetText() ~= "" then
         AccountLoginPasswordEdit:ClearFocus()
         AccountLoginAccountEdit:ClearFocus()
         tryAutoLogin()
-    end
-    AccountLogin_FocusAccountName = function()
-        fillPassword()
+    elseif AccountLoginAccountEdit:GetText() == "" then
         focusAccountName()
+    else
+        focus()
     end
 end
+AccountLogin_FocusPassword = function() prepareLogin(focusPassword) end
+AccountLogin_FocusAccountName = function() prepareLogin(focusAccountName) end
 
--- Without the password the box keeps the keyboard, so pad keys only reach this when it isn't focused.
+local function switchServer(step)
+    if not (servers and #servers > 1) then return end
+    serverIndex = serverIndex + step
+    if serverIndex < 1 then serverIndex = #servers elseif serverIndex > #servers then serverIndex = 1 end
+    local server = servers[serverIndex]
+    SetCVar("realmList", server.realmlist)
+    password = passwords[serverIndex]
+    if server.account == "" then AccountLoginAccountEdit:SetText(GetSavedAccountName()) end
+    AccountLoginPasswordEdit:SetText("")
+    prepareLogin(focusPassword)
+end
+
+-- A focused box takes the keyboard, so L1 and R1 are also caught there.
+for _, box in ipairs({ AccountLoginAccountEdit, AccountLoginPasswordEdit }) do
+    local boxKey = box:GetScript("OnKeyDown")
+    box:SetScript("OnKeyDown", function(self, key, ...)
+        local pad = PAD[key or arg1]
+        if pad == "PAD_L1" or pad == "PAD_R1" then
+            local mapped = translate(key or arg1)
+            if mapped then switchServer(mapped == "PAD_L1" and -1 or 1) end
+        elseif boxKey then
+            boxKey(self, key, ...)
+        end
+    end)
+end
+
+-- Without a password the box keeps the keyboard, so pad keys only reach this when it isn't focused.
 -- B does nothing here, so the pad can't quit the game.
 local accountLoginKey = AccountLogin_OnKeyDown
 AccountLogin_OnKeyDown = function(key)
     local mapped = translate(key)
     if not mapped or mapped == "ESCAPE" and PAD[key] then return end
-    if mapped == "ENTER" then fillPassword() end
-    accountLoginKey(mapped)
+    if mapped == "PAD_L1" then
+        switchServer(-1)
+    elseif mapped == "PAD_R1" then
+        switchServer(1)
+    else
+        if mapped == "ENTER" then fillPassword() end
+        accountLoginKey(mapped)
+    end
 end
-
-local loginHint
-if not password then
-    loginHint = "Back, then Type password, to log in"
-elseif GetSavedAccountName() ~= "" then
-    loginHint = autoLogin and "Logging in. A  Log in again" or "A  Log in"
-else
-    loginHint = "Type your account name and press Enter. Tick Remember Account Name to log in with A next time."
-end
-hint(AccountLoginUI or AccountLogin, loginHint)
+updateLoginHint()
 
 -- Character select: the D-pad picks, A enters the world, B goes back, Y changes realm.
 local characterSelectKey = CharacterSelect_OnKeyDown

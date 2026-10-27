@@ -16,8 +16,7 @@ Measured on the Odin 3 (2026-10-24): DXVK, 30-50 fps, GPU load 26-32%, so the pr
 ## Client add-ons (3.3.5a)
 
 1. **Controller without ConsolePortLK.** The pad only sends keys while ConsolePortLK's profile is in use. A small profile for players without it (D-pad as arrows, A as Enter, B as Escape) would let the login screens work on their own.
-2. **Server list on the login screen.** The HD pack's login patch has a 36-server list. Ours would show the servers saved in the app, with L1 and R1 to switch, which needs the app to keep more than one server (realmlist, account and password each). Plan to be shown to Daniel before building, since it changes the Client and server screen.
-3. **The HD pack's rules.** The WotLK HD pack's menu keeps some patches together (u needs a, n needs m) and apart (j and k). The Client tab doesn't yet; its config file has the rules to read.
+2. **The HD pack's rules.** The WotLK HD pack's menu keeps some patches together (u needs a, n needs m) and apart (j and k). The Client tab doesn't yet; its config file has the rules to read.
 
 ## Later
 

@@ -87,39 +87,63 @@ class ClientModsTest {
     }
 
     @Test
-    fun passwordFileGoesBeforeTheLoginFile() {
+    fun serverAndPasswordFilesGoBeforeTheLoginFile() {
         val toc = "GlueStrings.lua\r\n## This Always Runs Last\r\n"
-        val lines = ClientMods.withLoginFile(ClientMods.withLoginFile(toc, true), true).split("\r\n")
-        assertEquals(listOf("GlueStrings.lua", "AndroWhereLoginData.lua", "AndroWhereLogin.lua", "## This Always Runs Last"), lines.take(4))
-        assertFalse(ClientMods.withLoginFile(ClientMods.withLoginFile(toc, true)).contains("AndroWhereLoginData.lua"))
-    }
-
-    @Test
-    fun passwordIsWrittenAsByteEscapesOnly() {
+        val lines = ClientMods.withLoginFile(ClientMods.withLoginFile(toc, true, true), true, true).split("\r\n")
         assertEquals(
-            "AndroWhereLoginPassword = \"\\97\\34\\92\\93\\195\\169\"\r\nAndroWhereLoginAuto = false\r\n",
-            ClientMods.loginDataLua("a\"\\]é", false),
+            listOf("GlueStrings.lua", "AndroWhereServers.lua", "AndroWhereLoginData.lua", "AndroWhereLogin.lua", "## This Always Runs Last"),
+            lines.take(5),
         )
+        assertFalse(ClientMods.withLoginFile(ClientMods.withLoginFile(toc, true, true)).contains("AndroWhereLoginData.lua"))
     }
 
     @Test
-    fun wipingThePasswordKeepsTheLoginAddOn() {
+    fun luaStringsAreByteEscapesOnly() {
+        assertEquals("\"\\97\\34\\92\\93\\195\\169\"", ClientMods.luaString("a\"\\]é"))
+    }
+
+    private val twoServers = LoginData(
+        servers = listOf(GlueServer("Warmane", "logon.warmane.com", "me"), GlueServer("Other", "logon.other.org", "")),
+        selected = 1,
+        passwords = listOf("pw", null),
+        autoLogin = true,
+    )
+
+    @Test
+    fun serversAndPasswordsBecomeLuaTables() {
+        val servers = ClientMods.serversLua(twoServers).toString(Charsets.ISO_8859_1)
+        assertTrue(servers.startsWith("AndroWhereServers = {\r\n    { name = ${ClientMods.luaString("Warmane")}, realmlist = "))
+        assertTrue(servers.endsWith("}\r\nAndroWhereServerIndex = 2\r\n"))
+        assertEquals(
+            "AndroWhereLoginPasswords = {\r\n    [1] = ${ClientMods.luaString("pw")},\r\n}\r\nAndroWhereLoginAuto = true\r\n",
+            ClientMods.passwordsLua(twoServers)!!.toString(Charsets.ISO_8859_1),
+        )
+        assertNull(ClientMods.passwordsLua(twoServers.copy(passwords = listOf(null, null))))
+        assertNull(ClientMods.passwordsLua(twoServers.copy(passwords = null)))
+    }
+
+    @Test
+    fun wipingThePasswordsKeepsTheServersAndTheLoginAddOn() {
         val root = tempDir()
         exeWithSpots(root)
         val locale = File(root, "Data/enUS").apply { mkdirs() }
         Mpq.write(File(locale, "locale-enUS.MPQ"), mapOf("Interface\\GlueXML\\GlueXML.toc" to "GlueStrings.lua\r\n".toByteArray()))
+        fun toc() = Mpq.read(ClientMods.archive(root), "Interface\\GlueXML\\GlueXML.toc")!!.toString(Charsets.ISO_8859_1)
 
-        ClientMods.enableLogin(root, "secret")
+        ClientMods.enableLogin(root, twoServers)
         assertTrue(ClientMods.hasPassword(root))
-        val archive = ClientMods.archive(root)
-        assertTrue(Mpq.read(archive, "Interface\\GlueXML\\GlueXML.toc")!!.toString(Charsets.ISO_8859_1).contains("AndroWhereLoginData.lua"))
+        assertTrue(toc().contains("AndroWhereLoginData.lua"))
 
         ClientMods.wipePassword(root)
         assertFalse(ClientMods.hasPassword(root))
         assertTrue(ClientMods.loginEnabled(root))
-        assertFalse(Mpq.read(archive, "Interface\\GlueXML\\GlueXML.toc")!!.toString(Charsets.ISO_8859_1).contains("AndroWhereLoginData.lua"))
-        assertTrue(Mpq.read(archive, "Interface\\GlueXML\\AndroWhereLogin.lua") != null)
-        assertEquals(listOf("locale-enUS.MPQ", archive.name), locale.list()!!.sorted())
+        assertFalse(toc().contains("AndroWhereLoginData.lua"))
+        assertTrue(toc().contains("AndroWhereServers.lua"))
+        assertTrue(Mpq.read(ClientMods.archive(root), "Interface\\GlueXML\\AndroWhereLogin.lua") != null)
+        assertEquals(listOf("locale-enUS.MPQ", ClientMods.archive(root).name), locale.list()!!.sorted())
+
+        ClientMods.refresh(root)
+        assertTrue(toc().contains("AndroWhereServers.lua"))
     }
 
     private fun exeWithSpots(dir: File = tempDir()): File {

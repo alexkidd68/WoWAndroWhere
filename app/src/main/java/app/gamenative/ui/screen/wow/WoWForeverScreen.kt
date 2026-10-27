@@ -973,6 +973,10 @@ internal fun prepareLaunch(
         container.saveData()
     }
     check(containerManager.hasContainer(CONTAINER_ID)) { "Container creation failed. Check system storage and logs." }
+    containerManager.getContainerById(CONTAINER_ID)?.let {
+        hideMouseToggle(it)
+        it.saveData()
+    }
     return CONTAINER_ID
 }
 
@@ -1018,13 +1022,18 @@ internal fun prepareLegacyLaunch(
     }
     legacy.putExtra("skipWinHandler", "1")
     legacy.putExtra("wineLog", if (settings.saveLog) "1" else null)
-    legacy.putExtra(LegacyClient.TYPE_PASSWORD_EXTRA, if (LegacyClient.hasServerPassword(context)) "1" else null)
+    hideMouseToggle(legacy)
     runCatching { ConsolePortLK.applyControls(context, legacy, root) }.onFailure { Timber.w(it, "ConsolePortLK controls") }
     legacy.saveData()
     return LEGACY_CONTAINER_ID
 }
 
 private const val LEGACY_CONTAINER_ID = "wow_legacy"
+
+/** Daniel didn't want the Enable Mouse button over the top of the game; the WoW containers keep shooter mode without it. */
+private fun hideMouseToggle(container: Container) {
+    container.shooterConfig = app.gamenative.data.ShooterModeConfig.fromJson(container.shooterConfig).copy(showRuntimeToggle = false).toJson()
+}
 
 private fun containerConfig(gameRoot: File, product: WowProduct, gpu: GpuProfile, screenSize: String): JSONObject =
     baseContainerConfig(CONTAINER_ID, "WoW Forever", gameRoot, gpu, screenSize).apply {
