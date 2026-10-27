@@ -25,6 +25,8 @@ data class LegacySettings(
     /** Off by default: Wine's warn and fixme output is written line by line and costs frame rate. */
     val saveLog: Boolean = false,
     val perfOverlay: Boolean = false,
+    /** Off by default: AndroWhere Login fills in the saved password, which briefly puts it in the client folder. */
+    val fastLogin: Boolean = false,
 )
 
 object LegacyClient {
@@ -64,6 +66,7 @@ object LegacyClient {
             renderer = LegacyRenderer.entries.firstOrNull { it.name == p.getString("renderer", null) } ?: LegacyRenderer.DXVK,
             saveLog = p.getBoolean("save_log", false),
             perfOverlay = p.getBoolean("perf_overlay", false),
+            fastLogin = p.getBoolean("fast_login", false),
         )
     }
 
@@ -74,6 +77,7 @@ object LegacyClient {
             .putString("renderer", settings.renderer.name)
             .putBoolean("save_log", settings.saveLog)
             .putBoolean("perf_overlay", settings.perfOverlay)
+            .putBoolean("fast_login", settings.fastLogin)
             .apply()
     }
 
@@ -110,7 +114,7 @@ object LegacyClient {
         LoginVault(context, VAULT).clear()
     }
 
-    private fun serverPassword(context: Context): String? = LoginVault(context, VAULT).load()?.second?.takeIf { it.isNotEmpty() }
+    internal fun serverPassword(context: Context): String? = LoginVault(context, VAULT).load()?.second?.takeIf { it.isNotEmpty() }
 
     /** Types the saved password and Enter into the game. Called from the in-game menu. */
     fun typeServerPassword(context: Context) {

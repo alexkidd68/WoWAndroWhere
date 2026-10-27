@@ -50,6 +50,7 @@ What the app does, by area, with the version each feature came in. Versions up t
 - Immersion's quest and gossip windows work with the controller on 3.3.5a when ConsolePortLK is installed (0.5.0)
 - Client tab in Addons on 3.3.5a, for add-ons that change the client itself (unreleased)
 - AndroWhere Login: controller and button hints on the 3.3.5a character select, realm list and dialogs, using a 5-byte Wow.exe patch that is undone when turned off (unreleased)
+- Log in with A on the 3.3.5a login screen: opt-in, the saved password goes into AndroWhere Login for one launch and is wiped right after the client opens it (unreleased)
 - Switches for the patch archives in the player's 3.3.5a client, such as HD packs, named from the pack's own labels (unreleased)
 
 ## Sign-in and security

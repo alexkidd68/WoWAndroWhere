@@ -301,6 +301,7 @@ fun PluviaMain(
                         preLaunchJob?.cancel()
                         preLaunchJob = null
                         BattleNetSignIn.removeLoginFile(File(GamePath.load(context)))
+                        app.gamenative.wow.legacy.mods.FastLogin.wipe(context)
                         viewModel.setLoadingDialogVisible(false)
                         WoWLauncherState.shouldAutoLaunch = false
                         viewModel.abortBoot()
@@ -371,10 +372,12 @@ fun PluviaMain(
                         },
                         onExit = { onComplete ->
                             BattleNetSignIn.removeLoginFile(File(GamePath.load(context)))
+                            app.gamenative.wow.legacy.mods.FastLogin.wipe(context)
                             viewModel.exitApp(context, state.launchedAppId, onComplete)
                         },
                         onGameLaunchError = { error ->
                             BattleNetSignIn.removeLoginFile(File(GamePath.load(context)))
+                            app.gamenative.wow.legacy.mods.FastLogin.wipe(context)
                             viewModel.onGameLaunchError(error)
                         },
                     )

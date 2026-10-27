@@ -86,8 +86,41 @@ class ClientModsTest {
         assertEquals(mapOf("A" to "HD characters", "6" to "HD textures of the world"), ClientMods.labels(root))
     }
 
-    private fun exeWithSpots(): File {
-        val exe = File(tempDir(), "Wow.exe")
+    @Test
+    fun passwordFileGoesBeforeTheLoginFile() {
+        val toc = "GlueStrings.lua\r\n## This Always Runs Last\r\n"
+        val lines = ClientMods.withLoginFile(ClientMods.withLoginFile(toc, true), true).split("\r\n")
+        assertEquals(listOf("GlueStrings.lua", "AndroWhereLoginData.lua", "AndroWhereLogin.lua", "## This Always Runs Last"), lines.take(4))
+        assertFalse(ClientMods.withLoginFile(ClientMods.withLoginFile(toc, true)).contains("AndroWhereLoginData.lua"))
+    }
+
+    @Test
+    fun passwordIsWrittenAsByteEscapesOnly() {
+        assertEquals("AndroWhereLoginPassword = \"\\97\\34\\92\\93\\195\\169\"\r\n", ClientMods.passwordLua("a\"\\]é"))
+    }
+
+    @Test
+    fun wipingThePasswordKeepsTheLoginAddOn() {
+        val root = tempDir()
+        exeWithSpots(root)
+        val locale = File(root, "Data/enUS").apply { mkdirs() }
+        Mpq.write(File(locale, "locale-enUS.MPQ"), mapOf("Interface\\GlueXML\\GlueXML.toc" to "GlueStrings.lua\r\n".toByteArray()))
+
+        ClientMods.enableLogin(root, "secret")
+        assertTrue(ClientMods.hasPassword(root))
+        val archive = ClientMods.archive(root)
+        assertTrue(Mpq.read(archive, "Interface\\GlueXML\\GlueXML.toc")!!.toString(Charsets.ISO_8859_1).contains("AndroWhereLoginData.lua"))
+
+        ClientMods.wipePassword(root)
+        assertFalse(ClientMods.hasPassword(root))
+        assertTrue(ClientMods.loginEnabled(root))
+        assertFalse(Mpq.read(archive, "Interface\\GlueXML\\GlueXML.toc")!!.toString(Charsets.ISO_8859_1).contains("AndroWhereLoginData.lua"))
+        assertTrue(Mpq.read(archive, "Interface\\GlueXML\\AndroWhereLogin.lua") != null)
+        assertEquals(listOf("locale-enUS.MPQ", archive.name), locale.list()!!.sorted())
+    }
+
+    private fun exeWithSpots(dir: File = tempDir()): File {
+        val exe = File(dir, "Wow.exe")
         RandomAccessFile(exe, "rw").use { file ->
             file.setLength(0x420000)
             mapOf(0x415A25L to "75", 0x415A3FL to "01", 0x415A95L to "01", 0x415B46L to "7F", 0x415B5FL to "83C0035E8BE55D").forEach { (offset, hex) ->

@@ -170,7 +170,14 @@ private fun PlayTile(launcher: LauncherController, onOpenGame: () -> Unit, modif
             launcher.busy -> Text(if (launcher.isUpdating) launcher.updateStatusText else launcher.statusText, style = Fw.Text)
             launcher.isPrivate && launcher.filesMissing -> Text("Choose your 3.3.5a client folder and enter your server's realmlist.", style = Fw.Secondary)
             launcher.isPrivate && launcher.legacy.realmlist.isBlank() -> Text("Enter your server's realmlist in Client and server.", style = Fw.Secondary.copy(color = Fw.Warn))
-            launcher.isPrivate -> Text(if (launcher.hasServerPassword) "Password saved: Back, then Type password on the login screen." else "Log in inside the game.", style = Fw.Secondary)
+            launcher.isPrivate -> Text(
+                when {
+                    !launcher.hasServerPassword -> "Log in inside the game."
+                    launcher.legacy.fastLogin -> "Password saved: press A on the login screen."
+                    else -> "Password saved: Back, then Type password on the login screen."
+                },
+                style = Fw.Secondary,
+            )
             launcher.filesMissing -> Text("Download the game, or find the copy already on this device.", style = Fw.Secondary)
             version?.isOutdated == true -> {
                 Text("Live servers need ${version.remoteVersion}. Press A to update.", style = Fw.Secondary.copy(color = Fw.Warn))

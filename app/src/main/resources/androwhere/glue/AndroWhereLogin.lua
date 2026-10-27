@@ -54,16 +54,49 @@ local function hint(parent, text)
     return line
 end
 
--- Login: the password box keeps the keyboard, so pad keys only reach this when it isn't focused.
--- Type password from the app ends with Enter and logs in. B does nothing, so the pad can't quit the game.
+-- Login with A: when the app passed the saved password (AndroWhereLoginData.lua, written only for one launch),
+-- the password box is filled and left unfocused, so A reaches the login frame and logs in.
+local password = AndroWhereLoginPassword
+AndroWhereLoginPassword = nil
+
+local function fillPassword()
+    if password and AccountLoginPasswordEdit:GetText() == "" then
+        AccountLoginPasswordEdit:SetText(password)
+    end
+end
+
+if password then
+    local focusAccountName = AccountLogin_FocusAccountName
+    AccountLogin_FocusPassword = function()
+        fillPassword()
+        AccountLoginPasswordEdit:ClearFocus()
+        AccountLoginAccountEdit:ClearFocus()
+    end
+    AccountLogin_FocusAccountName = function()
+        fillPassword()
+        focusAccountName()
+    end
+end
+
+-- Without the password the box keeps the keyboard, so pad keys only reach this when it isn't focused.
+-- B does nothing here, so the pad can't quit the game.
 local accountLoginKey = AccountLogin_OnKeyDown
 AccountLogin_OnKeyDown = function(key)
     local mapped = translate(key)
     if not mapped or mapped == "ESCAPE" and PAD[key] then return end
+    if mapped == "ENTER" then fillPassword() end
     accountLoginKey(mapped)
 end
 
-hint(AccountLoginUI or AccountLogin, "Back, then Type password, to log in")
+local loginHint
+if not password then
+    loginHint = "Back, then Type password, to log in"
+elseif GetSavedAccountName() ~= "" then
+    loginHint = "A  Log in"
+else
+    loginHint = "Type your account name and press Enter. Tick Remember Account Name to log in with A next time."
+end
+hint(AccountLoginUI or AccountLogin, loginHint)
 
 -- Character select: the D-pad picks, A enters the world, B goes back, Y changes realm.
 local characterSelectKey = CharacterSelect_OnKeyDown

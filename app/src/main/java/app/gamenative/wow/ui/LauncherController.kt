@@ -32,6 +32,7 @@ import app.gamenative.utils.StorageUtils
 import app.gamenative.wow.legacy.ClientBuild
 import app.gamenative.wow.legacy.LegacyClient
 import app.gamenative.wow.legacy.LegacySettings
+import app.gamenative.wow.legacy.mods.FastLogin
 import app.gamenative.wow.product.GameInstall
 import app.gamenative.wow.product.GameVersion
 import app.gamenative.wow.product.GameVersions
@@ -255,6 +256,7 @@ class LauncherController(
     fun forgetServerPassword() {
         LegacyClient.forgetServerPassword(context)
         hasServerPassword = false
+        FastLogin.wipe(context)
     }
 
     fun saveCurseForgeKey(key: String): Boolean =
@@ -339,8 +341,10 @@ class LauncherController(
 
     fun updateLegacy(settings: LegacySettings) {
         val rootChanged = settings.root != legacy.root
+        val fastLoginOff = legacy.fastLogin && !settings.fastLogin
         legacy = settings
         LegacyClient.save(context, settings)
+        if (fastLoginOff) FastLogin.wipe(context)
         if (rootChanged) detectLegacyBuild()
     }
 
@@ -508,6 +512,7 @@ class LauncherController(
         isLaunching = false
         statusText = READY
         BattleNetSignIn.removeLoginFile(File(gamePath))
+        FastLogin.wipe(context)
         if (versionStatus == null && !WoWLauncherState.shouldAutoLaunch) checkVersionStatus()
         if (appUpdate == null && !WoWLauncherState.shouldAutoLaunch) checkAppUpdate()
         if (pendingInstallPermission && AppUpdater.canInstall(context)) {
@@ -525,6 +530,7 @@ class LauncherController(
         resetLaunch()
         saveLegacyLog()
         BattleNetSignIn.removeLoginFile(File(gamePath))
+        FastLogin.wipe(context)
     }
 
     /** Upstream's start-up sequence: auto-launch only when files, login, game and app are all current. */

@@ -13,6 +13,8 @@ data class ClientPatch(val key: String, val name: String, val files: List<File>,
 object ClientMods {
     const val DISABLED = ".disabled"
     private const val LOGIN_FILE = "AndroWhereLogin.lua"
+    private const val PASSWORD_FILE = "AndroWhereLoginData.lua"
+    private const val GLUE_DIR = "Interface\\GlueXML\\"
     private const val LOGIN_RESOURCE = "/androwhere/glue/$LOGIN_FILE"
     private const val GLUE_TOC = "Interface\\GlueXML\\GlueXML.toc"
     private const val TOC_LAST = "## This Always Runs Last"
@@ -26,6 +28,8 @@ object ClientMods {
 
     private fun locale(root: File) = LegacyClient.locales(root).firstOrNull() ?: "enUS"
 
+    internal fun archive(root: File) = ourArchive(root)
+
     private fun ourArchive(root: File): File {
         val locale = locale(root)
         return File(root, "Data/$locale/patch-$locale-$OUR_SUFFIX.MPQ")
@@ -36,9 +40,9 @@ object ClientMods {
     fun loginEnabled(root: File) = ourArchive(root).isFile
 
     /** Writes our login add-on and patches the exe so the client accepts it. */
-    fun enableLogin(root: File) {
+    fun enableLogin(root: File, password: String? = null) {
         WowExePatch.apply(exe(root))
-        writeLogin(root)
+        writeLogin(root, password)
     }
 
     fun disableLogin(root: File) {
@@ -46,30 +50,53 @@ object ClientMods {
         WowExePatch.restore(exe(root))
     }
 
-    /** Rebuilds the add-on at launch so it follows the client's current login file list, e.g. after an HD patch changed. */
-    fun refresh(root: File) {
-        if (loginEnabled(root)) enableLogin(root)
+    /**
+     * Rebuilds the add-on at launch so it follows the client's current login file list, e.g. after an HD patch changed.
+     * With [password], the login screen fills it in; [wipePassword] takes it out again once the client has the archive open.
+     */
+    fun refresh(root: File, password: String? = null) {
+        if (loginEnabled(root)) enableLogin(root, password)
     }
 
-    private fun writeLogin(root: File) {
+    fun hasPassword(root: File) = ourArchive(root).isFile && Mpq.read(ourArchive(root), GLUE_DIR + PASSWORD_FILE) != null
+
+    /** Rewrites the add-on without the password. A no-op when it holds none. */
+    fun wipePassword(root: File) {
+        if (hasPassword(root)) writeLogin(root, null)
+    }
+
+    /**
+     * Writes a new archive and renames it over ours. The running client keeps reading the archive it opened,
+     * so replacing it never corrupts the game, and the old copy, password included, is gone from storage.
+     */
+    @Synchronized
+    private fun writeLogin(root: File, password: String?) {
         val toc = effectiveGlueToc(root) ?: error("Couldn't find the client's login screen files.")
         val lua = checkNotNull(javaClass.getResourceAsStream(LOGIN_RESOURCE)) { "Missing $LOGIN_FILE" }.use { it.readBytes() }
         val archive = ourArchive(root)
         archive.parentFile?.mkdirs()
-        Mpq.write(
-            archive,
-            mapOf(
-                GLUE_TOC to withLoginFile(toc).toByteArray(Charsets.ISO_8859_1),
-                "Interface\\GlueXML\\$LOGIN_FILE" to lua,
-            ),
+        val files = mutableMapOf(
+            GLUE_TOC to withLoginFile(toc, password != null).toByteArray(Charsets.ISO_8859_1),
+            GLUE_DIR + LOGIN_FILE to lua,
         )
+        if (password != null) files[GLUE_DIR + PASSWORD_FILE] = passwordLua(password).toByteArray(Charsets.ISO_8859_1)
+        val temp = File(archive.parentFile, archive.name + ".tmp")
+        Mpq.write(temp, files)
+        if (!temp.renameTo(archive)) {
+            temp.delete()
+            error("Couldn't replace ${archive.name}.")
+        }
     }
 
-    /** Adds our file before the line Blizzard keeps last, so it runs after every stock login file. */
-    internal fun withLoginFile(toc: String): String {
-        val lines = toc.replace("\r", "").split("\n").filterNot { it.trim() == LOGIN_FILE }.toMutableList()
+    /** Every byte as a decimal escape, so no password can break out of the Lua string. */
+    internal fun passwordLua(password: String) =
+        password.toByteArray(Charsets.UTF_8).joinToString("", "AndroWhereLoginPassword = \"", "\"\r\n") { "\\" + (it.toInt() and 0xFF) }
+
+    /** Adds our files before the line Blizzard keeps last, so they run after every stock login file. */
+    internal fun withLoginFile(toc: String, withPassword: Boolean = false): String {
+        val lines = toc.replace("\r", "").split("\n").filterNot { it.trim() == LOGIN_FILE || it.trim() == PASSWORD_FILE }.toMutableList()
         val last = lines.indexOfFirst { it.startsWith(TOC_LAST) }.takeIf { it >= 0 } ?: lines.size
-        lines.add(last, LOGIN_FILE)
+        lines.addAll(last, listOfNotNull(PASSWORD_FILE.takeIf { withPassword }, LOGIN_FILE))
         return lines.joinToString("\r\n")
     }
 

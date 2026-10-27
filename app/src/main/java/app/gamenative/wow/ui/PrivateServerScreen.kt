@@ -51,7 +51,7 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
     FwPage("Client and server", onBack) {
         FwSection("Client") {
             Text(
-                "Point the app at your own 3.3.5a client folder, the one with ${LegacyClient.EXE} and Data. The app never downloads or changes the client beyond its realmlist and settings.",
+                "Point the app at your own 3.3.5a client folder, the one with ${LegacyClient.EXE} and Data. The app never downloads or changes the client beyond its realmlist, its settings and the client add-ons you turn on.",
                 style = Fw.Secondary,
             )
             if (settings.root.isBlank()) {
@@ -158,9 +158,26 @@ fun ServerLoginScreen(launcher: LauncherController, onBack: () -> Unit) {
             }
             launcher.errorMessage?.let { Text(it, style = Fw.Secondary.copy(color = Fw.Warn)) }
         }
+        FwSection("Log in with A") {
+            val settings = launcher.legacy
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FwChip("Off", !settings.fastLogin, { launcher.updateLegacy(settings.copy(fastLogin = false)) })
+                FwChip("On", settings.fastLogin, { launcher.updateLegacy(settings.copy(fastLogin = true)) })
+            }
+            Text(
+                "With AndroWhere Login turned on in Addons, Client, the login screen fills in your saved password and A logs you in. " +
+                    "To do that, the app puts the password in AndroWhere Login's file in the client folder when the game starts, and removes it about 10 seconds after the game opens that file, " +
+                    "or after 3 minutes at most, when the game closes and when the app opens again. While it's there, any app that can read the client folder could read it.",
+                style = Fw.Secondary,
+            )
+        }
         FwSection("How it works") {
             Text(
-                "The password never goes into the game folder. Type password presses its keys and Enter in the game, so use it only when the password box is selected. Security codes your server emails you are still typed by hand.",
+                if (launcher.legacy.fastLogin) {
+                    "Type password presses the password's keys and Enter in the game, so use it only when the password box is selected. Security codes your server emails you are still typed by hand."
+                } else {
+                    "The password never goes into the game folder. Type password presses its keys and Enter in the game, so use it only when the password box is selected. Security codes your server emails you are still typed by hand."
+                },
                 style = Fw.Secondary,
             )
         }
