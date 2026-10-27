@@ -127,11 +127,171 @@ CharacterSelect_OnKeyDown = function(self, key)
     if not mapped then return end
     if mapped == "PAD_Y" then
         CharacterSelect_ChangeRealm()
+    elseif mapped == "PAD_X" then
+        if CharSelectCreateCharacterButton:IsShown() then
+            CharacterSelect_SelectCharacter(CharacterSelect.createIndex)
+        end
     else
         characterSelectKey(self, mapped)
     end
 end
-hint(CharacterSelect, "D-pad  Choose       A  Enter world       B  Back       Y  Change realm")
+hint(CharacterSelect, "D-pad  Choose       A  Enter world       X  New character       Y  Change realm       B  Back")
+
+-- Character creation: up and down pick a row, left and right change it. The row is lit with the
+-- stock button highlight. A on the name row opens the name box for typing; elsewhere it creates.
+local createRow = 1
+local function createRows()
+    local rows = { "gender", "race", "class" }
+    for i = 1, NUM_CHAR_CUSTOMIZATIONS do
+        if _G["CharacterCustomizationButtonFrame" .. i]:IsShown() then
+            table.insert(rows, i)
+        end
+    end
+    table.insert(rows, "name")
+    return rows
+end
+
+local function rowButtons(row)
+    if row == "gender" then
+        return { CharacterCreateGenderButtonMale, CharacterCreateGenderButtonFemale }
+    elseif row == "race" then
+        return { _G["CharacterCreateRaceButton" .. (CharacterCreate.selectedRace or 1)] }
+    elseif row == "class" then
+        return { _G["CharacterCreateClassButton" .. (CharacterCreate.selectedClass or 1)] }
+    elseif type(row) == "number" then
+        local frame = "CharacterCustomizationButtonFrame" .. row
+        return { _G[frame .. "LeftButton"], _G[frame .. "RightButton"] }
+    end
+    return {}
+end
+
+local createStatus
+local function lightRow()
+    for _, row in ipairs({ "gender", "race", "class", 1, 2, 3, 4, 5 }) do
+        for _, button in ipairs(rowButtons(row)) do
+            if button then button:UnlockHighlight() end
+        end
+    end
+    for i = 1, MAX_RACES do _G["CharacterCreateRaceButton" .. i]:UnlockHighlight() end
+    for i = 1, MAX_CLASSES_PER_RACE do _G["CharacterCreateClassButton" .. i]:UnlockHighlight() end
+    local rows = createRows()
+    if createRow > #rows then createRow = #rows end
+    local row = rows[createRow]
+    for _, button in ipairs(rowButtons(row)) do
+        if button then button:LockHighlight() end
+    end
+    if createStatus then
+        if row == "name" then
+            createStatus:SetText("Name: A to type it, then Enter to create. Enter with no name goes back to the pad")
+        elseif type(row) == "number" then
+            createStatus:SetText(_G["CharacterCustomizationButtonFrame" .. row .. "Text"]:GetText() or "")
+        else
+            createStatus:SetText(row == "gender" and "Gender" or row == "race" and "Race" or "Class")
+        end
+    end
+end
+
+local function stepChoice(count, current, step, usable)
+    local index = current
+    for _ = 1, count do
+        index = index + step
+        if index < 1 then index = count elseif index > count then index = 1 end
+        if usable(index) then return index end
+    end
+end
+
+local function changeRow(step)
+    local row = createRows()[createRow]
+    if row == "gender" then
+        PlaySound("gsCharacterCreationClass")
+        SetCharacterGender(GetSelectedSex() == SEX_MALE and SEX_FEMALE or SEX_MALE)
+    elseif row == "race" then
+        local index = stepChoice(CharacterCreate.numRaces, CharacterCreate.selectedRace or 1, step,
+            function(i) return _G["CharacterCreateRaceButton" .. i].enable end)
+        if index then
+            local button = _G["CharacterCreateRaceButton" .. index]
+            button:SetChecked(1)
+            CharacterRace_OnClick(button, index)
+        end
+    elseif row == "class" then
+        local index = stepChoice(CharacterCreate.numClasses, CharacterCreate.selectedClass or 1, step,
+            function(i) return _G["CharacterCreateClassButton" .. i].enable end)
+        if index then CharacterClass_OnClick(index) end
+    elseif type(row) == "number" then
+        if step < 0 then CharacterCustomization_Left(row) else CharacterCustomization_Right(row) end
+    end
+    lightRow()
+end
+
+local characterCreateShow = CharacterCreate_OnShow
+CharacterCreate_OnShow = function(...)
+    characterCreateShow(...)
+    CharacterCreateNameEdit:ClearFocus()
+    -- Focus can also be handed out after OnShow, so clear it again on the next frame.
+    local timer = CreateFrame("Frame", nil, CharacterCreate)
+    timer:SetScript("OnUpdate", function(self)
+        self:SetScript("OnUpdate", nil)
+        CharacterCreateNameEdit:ClearFocus()
+    end)
+    createRow = 1
+    lightRow()
+end
+
+-- The name box would take every key as soon as the screen opens, so it only gets the keyboard on A.
+-- Escape in it gives the pad back instead of leaving the screen.
+if CharacterCreateNameEdit.SetAutoFocus then CharacterCreateNameEdit:SetAutoFocus(false) end
+CharacterCreateNameEdit:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+-- A focused box keeps the pad's keys too, so Enter with no name also gives them back.
+CharacterCreateNameEdit:SetScript("OnEnterPressed", function(self)
+    if self:GetText() == "" then
+        self:ClearFocus()
+    else
+        CharacterCreate_Okay()
+    end
+end)
+
+-- Tapping or clicking anywhere else on the screen, or on any of its buttons, also leaves the box.
+for _, name in ipairs({ "CharacterCreateFrame_OnMouseDown", "CharacterRace_OnClick", "CharacterClass_OnClick",
+    "SetCharacterGender", "CharacterCustomization_Left", "CharacterCustomization_Right", "CharacterCreate_Randomize" }) do
+    local original = _G[name]
+    if original then
+        _G[name] = function(...)
+            CharacterCreateNameEdit:ClearFocus()
+            return original(...)
+        end
+    end
+end
+
+local characterCreateKey = CharacterCreate_OnKeyDown
+CharacterCreate_OnKeyDown = function(key)
+    local mapped = translate(key)
+    if not mapped then return end
+    local rows = createRows()
+    if mapped == "UP" then
+        createRow = createRow > 1 and createRow - 1 or #rows
+        lightRow()
+    elseif mapped == "DOWN" then
+        createRow = createRow < #rows and createRow + 1 or 1
+        lightRow()
+    elseif mapped == "LEFT" then
+        changeRow(-1)
+    elseif mapped == "RIGHT" then
+        changeRow(1)
+    elseif mapped == "PAD_X" then
+        CharacterCreate_Randomize()
+    elseif mapped == "PAD_L1" or mapped == "PAD_R1" then
+        SetCharacterCreateFacing(GetCharacterCreateFacing() + (mapped == "PAD_L1" and -20 or 20))
+    elseif mapped == "ENTER" and (rows[createRow] == "name" or CharacterCreateNameEdit:GetText() == "") then
+        createRow = #rows
+        lightRow()
+        CharacterCreateNameEdit:SetFocus()
+    else
+        characterCreateKey(mapped)
+    end
+end
+hint(CharacterCreate, "D-pad  Choose and change       A  Name, then create       X  Random look       L1 R1  Turn       B  Back")
+createStatus = hint(CharacterCreate, "")
+if createStatus then createStatus:SetPoint("TOP", CharacterCreate, "TOP", 0, -30) end
 
 -- Realm list: the D-pad moves through realms, L1 and R1 switch tabs.
 local function selectRealm(step)
