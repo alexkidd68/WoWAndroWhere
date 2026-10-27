@@ -10,7 +10,7 @@ data class ClientPatch(val key: String, val name: String, val files: List<File>,
 enum class AndroWherePatch(val title: String, val summary: String) {
     LOGIN(
         "AndroWhere Login",
-        "Controller support on the login, realm and character screens, with button hints at the top. " +
+        "Controller support on the login, realm, character select and character creation screens, with button hints at the top. " +
             "A logs you in when Log in with A is on in Server login. Uses the ConsolePortLK controller layout. " +
             "Installing it changes 5 bytes of Wow.exe so the client accepts it, and keeps the original to put back when you remove it.",
     ),
