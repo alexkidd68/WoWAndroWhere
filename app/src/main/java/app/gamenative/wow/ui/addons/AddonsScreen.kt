@@ -178,7 +178,7 @@ private fun AddonList(c: AddonsController, modifier: Modifier, onOpen: () -> Uni
             c.listings.isEmpty() -> Text(
                 when (c.mode) {
                     AddonsController.Mode.INSTALLED -> if (c.installed == null) "Reading your AddOns folder…" else "No addons installed yet. Switch to Browse to find some."
-                    AddonsController.Mode.BROWSE ->
+                    AddonsController.Mode.BROWSE, AddonsController.Mode.CLIENT ->
                         if (c.version == GameVersion.FOREVER) "Nothing found. Try another name, or include Classic addons." else "Nothing found. Try another name."
                 },
                 style = Fw.Secondary,
