@@ -3,9 +3,12 @@ package app.gamenative.wow.ui
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -25,6 +28,7 @@ import app.gamenative.wow.legacy.LegacyRenderer
 import app.gamenative.wow.ui.components.FwButton
 import app.gamenative.wow.ui.components.FwButtonKind
 import app.gamenative.wow.ui.components.FwChip
+import app.gamenative.wow.ui.components.FwRow
 import app.gamenative.wow.ui.theme.Fw
 import java.io.File
 
@@ -129,7 +133,8 @@ fun ServerLoginScreen(launcher: LauncherController, onBack: () -> Unit) {
         FwSection("Password") {
             Text(
                 if (launcher.hasServerPassword) {
-                    "Your server password is saved on this device, encrypted with the Android keystore. On the login screen, open the menu with Back and choose Type password."
+                    "Your server password is saved on this device, encrypted with the Android keystore. " +
+                        if (launcher.legacy.fastLogin) "On the login screen, press A." else "On the login screen, open the menu with Back and choose Type password."
                 } else {
                     "Save your server password to enter it from the in-game menu instead of typing it each time. The client remembers your account name itself."
                 },
@@ -145,6 +150,23 @@ fun ServerLoginScreen(launcher: LauncherController, onBack: () -> Unit) {
                 textStyle = Fw.Text,
                 modifier = Modifier.fillMaxWidth(),
             )
+            val settings = launcher.legacy
+            FwRow(selected = false, onClick = { launcher.updateLegacy(settings.copy(fastLogin = !settings.fastLogin)) }) {
+                Checkbox(
+                    checked = settings.fastLogin,
+                    onCheckedChange = null,
+                    colors = CheckboxDefaults.colors(checkedColor = Fw.Brass, uncheckedColor = Fw.Ash, checkmarkColor = Fw.BrassInk),
+                )
+                Column(Modifier.weight(1f)) {
+                    Text("Log in with A", style = Fw.Text)
+                    Text(
+                        "Needs AndroWhere Login from Addons, Client. The login screen fills in this password and A logs you in. " +
+                            "To do that, the app puts the password in AndroWhere Login's file in the client folder when the game starts, and removes it about 10 seconds after the game opens that file, " +
+                            "or after 3 minutes at most, when the game closes and when the app opens again. While it's there, any app that can read the client folder could read it.",
+                        style = Fw.Secondary,
+                    )
+                }
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 FwButton(
                     "Save password",
@@ -157,19 +179,6 @@ fun ServerLoginScreen(launcher: LauncherController, onBack: () -> Unit) {
                 if (launcher.hasServerPassword) FwButton("Forget password", launcher::forgetServerPassword, kind = FwButtonKind.Danger)
             }
             launcher.errorMessage?.let { Text(it, style = Fw.Secondary.copy(color = Fw.Warn)) }
-        }
-        FwSection("Log in with A") {
-            val settings = launcher.legacy
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FwChip("Off", !settings.fastLogin, { launcher.updateLegacy(settings.copy(fastLogin = false)) })
-                FwChip("On", settings.fastLogin, { launcher.updateLegacy(settings.copy(fastLogin = true)) })
-            }
-            Text(
-                "With AndroWhere Login turned on in Addons, Client, the login screen fills in your saved password and A logs you in. " +
-                    "To do that, the app puts the password in AndroWhere Login's file in the client folder when the game starts, and removes it about 10 seconds after the game opens that file, " +
-                    "or after 3 minutes at most, when the game closes and when the app opens again. While it's there, any app that can read the client folder could read it.",
-                style = Fw.Secondary,
-            )
         }
         FwSection("How it works") {
             Text(
