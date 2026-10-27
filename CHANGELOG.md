@@ -2,7 +2,7 @@
 
 Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which this fork started from.
 
-## Unreleased
+## 0.7.0
 
 - **Several private servers (3.3.5a).** **Client and server** now keeps a list of servers, each with a name, realmlist and optional account name, and **Add server** adds another. Play starts on the selected one, and each server keeps its own password. With AndroWhere Login installed and more than one server saved, the login screen shows the server's name at the top, and L1 and R1 switch to the previous or next one, account name and password included.
 - **Password moves into Client and server.** The Server login screen and its home tile are gone. The password, Fill in password and Log in automatically are now in **Client and server**, under the servers, and show once AndroWhere Login is installed. Until then that spot offers Install. Before, the boxes could be ticked with nothing happening on the login screen.
