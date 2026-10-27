@@ -3,9 +3,13 @@ package app.gamenative.wow.ui
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -25,6 +29,7 @@ import app.gamenative.wow.legacy.LegacyRenderer
 import app.gamenative.wow.ui.components.FwButton
 import app.gamenative.wow.ui.components.FwButtonKind
 import app.gamenative.wow.ui.components.FwChip
+import app.gamenative.wow.ui.components.FwRow
 import app.gamenative.wow.ui.theme.Fw
 import java.io.File
 
@@ -51,7 +56,7 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
     FwPage("Client and server", onBack) {
         FwSection("Client") {
             Text(
-                "Point the app at your own 3.3.5a client folder, the one with ${LegacyClient.EXE} and Data. The app never downloads or changes the client beyond its realmlist and settings.",
+                "Point the app at your own 3.3.5a client folder, the one with ${LegacyClient.EXE} and Data. The app never downloads or changes the client beyond its realmlist, its settings and the client add-ons you turn on.",
                 style = Fw.Secondary,
             )
             if (settings.root.isBlank()) {
@@ -129,7 +134,8 @@ fun ServerLoginScreen(launcher: LauncherController, onBack: () -> Unit) {
         FwSection("Password") {
             Text(
                 if (launcher.hasServerPassword) {
-                    "Your server password is saved on this device, encrypted with the Android keystore. On the login screen, open the menu with Back and choose Type password."
+                    "Your server password is saved on this device, encrypted with the Android keystore. " +
+                        if (launcher.legacy.fastLogin) "On the login screen, press A." else "On the login screen, open the menu with Back and choose Type password."
                 } else {
                     "Save your server password to enter it from the in-game menu instead of typing it each time. The client remembers your account name itself."
                 },
@@ -145,6 +151,25 @@ fun ServerLoginScreen(launcher: LauncherController, onBack: () -> Unit) {
                 textStyle = Fw.Text,
                 modifier = Modifier.fillMaxWidth(),
             )
+            val settings = launcher.legacy
+            CheckRow(
+                "Fill in password",
+                "Needs AndroWhere Login from Addons, Client. The login screen fills in this password, so A logs you in. " +
+                    "To do that, the app puts the password in AndroWhere Login's file in the client folder when the game starts, and removes it about 10 seconds after the game opens that file, " +
+                    "or after 3 minutes at most, when the game closes and when the app opens again. While it's there, any app that can read the client folder could read it.",
+                settings.fastLogin,
+            ) { launcher.updateLegacy(settings.copy(fastLogin = !settings.fastLogin)) }
+            CheckRow(
+                "Log in automatically",
+                if (settings.fastLogin) {
+                    "Presses Log in for you once each time the game starts. If that login fails, press A to try again."
+                } else {
+                    "Needs Fill in password."
+                },
+                settings.fastLogin && settings.autoLogin,
+                enabled = settings.fastLogin,
+                modifier = Modifier.padding(start = 24.dp),
+            ) { launcher.updateLegacy(settings.copy(autoLogin = !settings.autoLogin)) }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 FwButton(
                     "Save password",
@@ -160,9 +185,29 @@ fun ServerLoginScreen(launcher: LauncherController, onBack: () -> Unit) {
         }
         FwSection("How it works") {
             Text(
-                "The password never goes into the game folder. Type password presses its keys and Enter in the game, so use it only when the password box is selected. Security codes your server emails you are still typed by hand.",
+                if (launcher.legacy.fastLogin) {
+                    "Type password presses the password's keys and Enter in the game, so use it only when the password box is selected. Security codes your server emails you are still typed by hand."
+                } else {
+                    "The password never goes into the game folder. Type password presses its keys and Enter in the game, so use it only when the password box is selected. Security codes your server emails you are still typed by hand."
+                },
                 style = Fw.Secondary,
             )
+        }
+    }
+}
+
+@Composable
+private fun CheckRow(title: String, detail: String, checked: Boolean, enabled: Boolean = true, modifier: Modifier = Modifier, onToggle: () -> Unit) {
+    FwRow(selected = false, onClick = { if (enabled) onToggle() }, modifier = modifier) {
+        Checkbox(
+            checked = checked,
+            onCheckedChange = null,
+            enabled = enabled,
+            colors = CheckboxDefaults.colors(checkedColor = Fw.Brass, uncheckedColor = Fw.Ash, checkmarkColor = Fw.BrassInk),
+        )
+        Column(Modifier.weight(1f)) {
+            Text(title, style = if (enabled) Fw.Text else Fw.Text.copy(color = Fw.Ash))
+            Text(detail, style = Fw.Secondary)
         }
     }
 }

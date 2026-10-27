@@ -2,6 +2,13 @@
 
 Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which this fork started from.
 
+## Unreleased
+
+- **Client tab in Addons (3.3.5a).** Addons now has a **Client** tab for add-ons that change the game client itself. Its **AndroWhere patches** section lists the patches made for this app, each with Install and Remove. Once ConsolePortLK is installed, the Installed list also offers any AndroWhere patch you don't have yet.
+- **AndroWhere Login.** Install it from the Client tab to use the controller on the login, realm and character screens. On character select, the D-pad picks a character, A enters the world, B goes back and Y opens the realm list. In the realm list, the D-pad moves, L1 and R1 switch tabs, A accepts and B cancels. Each screen shows its buttons at the top. On the login screen, press Back and choose Type password, which logs you in, or turn on Log in with A. It needs ConsolePortLK installed, and it changes 5 bytes of Wow.exe so the client accepts it. The original is kept and put back when you remove it. Some servers may not allow a changed Wow.exe.
+- **Log in with A (3.3.5a).** With AndroWhere Login on and your server password saved, tick **Fill in password** under the password in Server login. The login screen then fills in your password and A logs you in. Tick **Log in automatically** too and it presses Log in for you once each time the game starts. It's off by default because, to do this, the app puts the password in the client folder when the game starts and removes it about 10 seconds after the game reads it, or after 3 minutes at most.
+- **Turn your client's patches on and off.** If your 3.3.5a client has extra patch files, such as an HD pack, the Client tab lists them by name and size so you can turn each one off or on again. This helps when a heavy patch slows the game down.
+
 ## 0.5.1
 
 - **CurseForge uses your own key or proxy.** The app no longer sends CurseForge searches through the WoW Foreverywhere project's server. To use CurseForge, open Settings → CurseForge and enter your own CurseForge API key, which is stored encrypted on the device and only sent to CurseForge, or the address of a proxy you run. Without either, CurseForge is off and Addons says so. Wago, WoWInterface and the GitHub catalog work as before.
