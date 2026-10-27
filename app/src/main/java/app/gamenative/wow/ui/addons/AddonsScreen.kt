@@ -84,6 +84,7 @@ fun AddonsScreen(c: AddonsController, onBack: () -> Unit) {
     var showUrlDialog by remember { mutableStateOf(false) }
     val wideBar = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp >= 600
     LaunchedEffect(c) { if (c.installed == null) c.refreshInstalled() }
+    val clientMods = c.clientMods?.takeIf { c.mode == AddonsController.Mode.CLIENT }
 
     Column(Modifier.fillMaxSize().background(Fw.Ground)) {
         Row(
@@ -94,9 +95,15 @@ fun AddonsScreen(c: AddonsController, onBack: () -> Unit) {
             FwButton("Back", onBack, kind = FwButtonKind.Ghost)
             FwChip("Installed ${c.installed?.size ?: "…"}", c.mode == AddonsController.Mode.INSTALLED, { c.switchMode(AddonsController.Mode.INSTALLED) })
             FwChip("Browse", c.mode == AddonsController.Mode.BROWSE, { c.switchMode(AddonsController.Mode.BROWSE) })
-            if (wideBar) SearchField(c.query, c::search, searchHint(c.version), Modifier.weight(1f)) else Box(Modifier.weight(1f))
+            if (c.clientMods != null) FwChip("Client", c.mode == AddonsController.Mode.CLIENT, { c.switchMode(AddonsController.Mode.CLIENT) })
+            if (clientMods != null) Box(Modifier.weight(1f)) else if (wideBar) SearchField(c.query, c::search, searchHint(c.version), Modifier.weight(1f)) else Box(Modifier.weight(1f))
             c.updates?.takeIf { it > 0 }?.let { FwButton("Update all ($it)", c::updateAll, enabled = c.working == null) }
             if (wideBar) FwButton("From link", { showUrlDialog = true }, kind = FwButtonKind.Ghost)
+        }
+        if (clientMods != null) {
+            ConsolePortCard(c)
+            ClientModsPanel(clientMods, Modifier.padding(top = 10.dp))
+            return@Column
         }
         if (!wideBar) SearchField(c.query, c::search, searchHint(c.version), Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 10.dp))
         // One scrolling row of filters: game version, source, then categories.

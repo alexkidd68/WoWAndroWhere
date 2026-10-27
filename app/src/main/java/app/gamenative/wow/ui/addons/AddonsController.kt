@@ -35,13 +35,16 @@ class AddonsController(
     private val scope: CoroutineScope,
     curseForge: CurseForgeSetup = CurseForgeSetup(),
 ) {
-    enum class Mode { INSTALLED, BROWSE }
+    enum class Mode { INSTALLED, BROWSE, CLIENT }
 
     constructor(gameRoot: File, product: WowProduct, scope: CoroutineScope, curseForge: CurseForgeSetup) :
         this(File(gameRoot, "${product.flavorDir}/Interface/AddOns"), GameVersion.of(product), scope, curseForge)
 
     /** CurseForge applies to this version but has no key or proxy set in Settings. */
     val curseForgeOff = !version.isPrivateServer && !curseForge.enabled
+
+    /** 3.3.5a only: add-ons that change the client itself. [addonsDir] is `<client>/Interface/AddOns`. */
+    val clientMods = addonsDir.parentFile?.parentFile?.takeIf { version == GameVersion.PRIVATE_335 }?.let { ClientModsController(it, scope) }
 
     private val target = version.addonTarget()
     private val manager = AddonManager(
@@ -100,7 +103,11 @@ class AddonsController(
     fun switchMode(newMode: Mode) {
         mode = newMode
         selected = null
-        if (newMode == Mode.INSTALLED) show(installed.orEmpty()) else load()
+        when (newMode) {
+            Mode.INSTALLED -> show(installed.orEmpty())
+            Mode.BROWSE -> load()
+            Mode.CLIENT -> Unit
+        }
     }
 
     fun search(text: String) {

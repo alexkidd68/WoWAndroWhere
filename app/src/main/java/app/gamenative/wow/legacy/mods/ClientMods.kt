@@ -1,0 +1,141 @@
+package app.gamenative.wow.legacy.mods
+
+import app.gamenative.wow.legacy.LegacyClient
+import java.io.File
+
+/** A patch MPQ found in the player's client, with its locale twin when it has one. */
+data class ClientPatch(val key: String, val name: String, val files: List<File>, val size: Long, val enabled: Boolean)
+
+/**
+ * Add-ons that change the 3.3.5a client itself rather than its AddOns folder: our own login screen add-on,
+ * and switches for the patch MPQs (HD packs and the like) already in the player's client.
+ */
+object ClientMods {
+    const val DISABLED = ".disabled"
+    private const val LOGIN_FILE = "AndroWhereLogin.lua"
+    private const val LOGIN_RESOURCE = "/androwhere/glue/$LOGIN_FILE"
+    private const val GLUE_TOC = "Interface\\GlueXML\\GlueXML.toc"
+    private const val TOC_LAST = "## This Always Runs Last"
+
+    /** Our archive's letter. Locale patches with letters load above Blizzard's numbered ones and the HD packs' early letters. */
+    private const val OUR_SUFFIX = "Z"
+
+    private val PATCH = Regex("patch(?:-([a-z]{2}[A-Z]{2}))?(?:-([0-9A-Za-z]))?\\.mpq", RegexOption.IGNORE_CASE)
+    private val LABEL_LINE = Regex("patch-([0-9a-z])\\.mpq\\s*-\\s*(.+)", RegexOption.IGNORE_CASE)
+    private val PACK_LABEL = Regex("\"([0-9a-z])\"\\s*:\\s*\\{\\s*\"name\"\\s*:\\s*\"(?:\\(\\d+\\))?([^\"]+)\"", RegexOption.IGNORE_CASE)
+
+    private fun locale(root: File) = LegacyClient.locales(root).firstOrNull() ?: "enUS"
+
+    private fun ourArchive(root: File): File {
+        val locale = locale(root)
+        return File(root, "Data/$locale/patch-$locale-$OUR_SUFFIX.MPQ")
+    }
+
+    private fun exe(root: File) = File(root, LegacyClient.EXE)
+
+    fun loginEnabled(root: File) = ourArchive(root).isFile
+
+    /** Writes our login add-on and patches the exe so the client accepts it. */
+    fun enableLogin(root: File) {
+        WowExePatch.apply(exe(root))
+        writeLogin(root)
+    }
+
+    fun disableLogin(root: File) {
+        ourArchive(root).delete()
+        WowExePatch.restore(exe(root))
+    }
+
+    /** Rebuilds the add-on at launch so it follows the client's current login file list, e.g. after an HD patch changed. */
+    fun refresh(root: File) {
+        if (loginEnabled(root)) enableLogin(root)
+    }
+
+    private fun writeLogin(root: File) {
+        val toc = effectiveGlueToc(root) ?: error("Couldn't find the client's login screen files.")
+        val lua = checkNotNull(javaClass.getResourceAsStream(LOGIN_RESOURCE)) { "Missing $LOGIN_FILE" }.use { it.readBytes() }
+        val archive = ourArchive(root)
+        archive.parentFile?.mkdirs()
+        Mpq.write(
+            archive,
+            mapOf(
+                GLUE_TOC to withLoginFile(toc).toByteArray(Charsets.ISO_8859_1),
+                "Interface\\GlueXML\\$LOGIN_FILE" to lua,
+            ),
+        )
+    }
+
+    /** Adds our file before the line Blizzard keeps last, so it runs after every stock login file. */
+    internal fun withLoginFile(toc: String): String {
+        val lines = toc.replace("\r", "").split("\n").filterNot { it.trim() == LOGIN_FILE }.toMutableList()
+        val last = lines.indexOfFirst { it.startsWith(TOC_LAST) }.takeIf { it >= 0 } ?: lines.size
+        lines.add(last, LOGIN_FILE)
+        return lines.joinToString("\r\n")
+    }
+
+    /** The login file list the client would load without us: the highest priority archive that has one. */
+    private fun effectiveGlueToc(root: File): String? {
+        val locale = locale(root)
+        val ours = ourArchive(root).name
+        val candidates = (File(root, "Data/$locale").listFiles().orEmpty().filter { it.isFile && it.name != ours && PATCH.matches(it.name) }
+            .sortedByDescending { priority(it.name) }) +
+            listOf(File(root, "Data/$locale/locale-$locale.MPQ"))
+        return candidates.firstNotNullOfOrNull { Mpq.read(it, GLUE_TOC) }?.toString(Charsets.ISO_8859_1)
+    }
+
+    /** Lettered patches load over numbered ones, which load over the plain patch archive. */
+    internal fun priority(name: String): Int {
+        val suffix = PATCH.matchEntire(name)?.groupValues?.get(2).orEmpty().uppercase()
+        return when {
+            suffix.isEmpty() -> 0
+            suffix[0].isDigit() -> 1 + suffix[0].digitToInt()
+            else -> 100 + (suffix[0] - 'A')
+        }
+    }
+
+    /** Patch archives the player added, grouped by letter, without Blizzard's own or ours. */
+    fun patches(root: File): List<ClientPatch> {
+        val locale = locale(root)
+        val labels = labels(root)
+        val files = listOf(File(root, "Data"), File(root, "Data/$locale")).flatMap { dir -> dir.listFiles().orEmpty().filter { it.isFile } }
+        return files.mapNotNull { file ->
+            val enabled = !file.name.endsWith(DISABLED, ignoreCase = true)
+            val match = PATCH.matchEntire(file.name.removeSuffix(DISABLED).removeSuffix(DISABLED.uppercase())) ?: return@mapNotNull null
+            val key = match.groupValues[2].uppercase()
+            if (key.isEmpty() || key == "2" || key == "3") return@mapNotNull null
+            if (file.name.equals(ourArchive(root).name, ignoreCase = true)) return@mapNotNull null
+            key to (file to enabled)
+        }.groupBy({ it.first }, { it.second }).map { (key, entries) ->
+            ClientPatch(
+                key = key,
+                name = labels[key] ?: "Patch $key",
+                files = entries.map { it.first },
+                size = entries.sumOf { it.first.length() },
+                enabled = entries.all { it.second },
+            )
+        }.sortedBy { it.key }
+    }
+
+    /** Turns a patch on or off the way the HD packs' own menus do, by adding or removing `.disabled`. */
+    fun setPatchEnabled(patch: ClientPatch, enabled: Boolean) {
+        patch.files.forEach { file ->
+            val off = file.name.endsWith(DISABLED, ignoreCase = true)
+            val target = when {
+                enabled && off -> File(file.parentFile, file.name.dropLast(DISABLED.length))
+                !enabled && !off -> File(file.parentFile, file.name + DISABLED)
+                else -> return@forEach
+            }
+            check(file.renameTo(target)) { "Couldn't rename ${file.name}." }
+        }
+    }
+
+    /** Names from a pack's own label file or patch menu config, by patch letter. */
+    internal fun labels(root: File): Map<String, String> {
+        val listed = File(root, "Data/Patch_Lables.txt").takeIf { it.isFile }?.readLines().orEmpty()
+            .mapNotNull { LABEL_LINE.matchEntire(it.trim())?.destructured?.let { (key, name) -> key.uppercase() to name.trim() } }
+        val pack = File(root, "patchmenu/.config/config_en.json").takeIf { it.isFile }?.readText()
+            ?.let { text -> PACK_LABEL.findAll(text).map { it.groupValues[1].uppercase() to it.groupValues[2].trim() }.toList() }
+            .orEmpty()
+        return (pack + listed).toMap()
+    }
+}

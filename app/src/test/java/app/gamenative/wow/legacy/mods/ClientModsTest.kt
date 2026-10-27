@@ -1,0 +1,133 @@
+package app.gamenative.wow.legacy.mods
+
+import java.io.File
+import java.io.RandomAccessFile
+import java.nio.file.Files
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class ClientModsTest {
+
+    private fun tempDir(): File = Files.createTempDirectory("clientmods").toFile()
+
+    @Test
+    fun archiveRoundTrips() {
+        val archive = File(tempDir(), "patch-enUS-Z.MPQ")
+        val toc = "GlueStrings.lua\r\nAccountLogin.xml\r\n".toByteArray()
+        val lua = ByteArray(5000) { (it % 251).toByte() }
+        Mpq.write(archive, mapOf("Interface\\GlueXML\\GlueXML.toc" to toc, "Interface\\GlueXML\\AndroWhereLogin.lua" to lua))
+
+        assertArrayEquals(toc, Mpq.read(archive, "Interface\\GlueXML\\GlueXML.toc"))
+        assertArrayEquals(lua, Mpq.read(archive, "interface/gluexml/androwherelogin.lua"))
+        assertNull(Mpq.read(archive, "Interface\\GlueXML\\Missing.lua"))
+    }
+
+    @Test
+    fun loginFileGoesBeforeTheLastStockFile() {
+        val toc = "GlueStrings.lua\r\nServerList.xml\r\n## This Always Runs Last, Add New Items above it.\r\nGlueLocalizationPost.xml\r\n"
+        val lines = ClientMods.withLoginFile(toc).split("\r\n")
+        assertEquals(listOf("GlueStrings.lua", "ServerList.xml", "AndroWhereLogin.lua", "## This Always Runs Last, Add New Items above it."), lines.take(4))
+        assertEquals(1, ClientMods.withLoginFile(ClientMods.withLoginFile(toc)).split("\r\n").count { it == "AndroWhereLogin.lua" })
+    }
+
+    @Test
+    fun letteredPatchesOutrankNumberedOnes() {
+        assertTrue(ClientMods.priority("patch-enUS-c.mpq") > ClientMods.priority("patch-enUS-9.MPQ"))
+        assertTrue(ClientMods.priority("patch-enUS-Z.MPQ") > ClientMods.priority("patch-enUS-c.mpq"))
+        assertTrue(ClientMods.priority("patch-enUS-2.MPQ") > ClientMods.priority("patch-enUS.MPQ"))
+    }
+
+    @Test
+    fun patchesGroupByLetterAndSkipBlizzardFiles() {
+        val root = tempDir()
+        val data = File(root, "Data").apply { mkdirs() }
+        val locale = File(data, "enUS").apply { mkdirs() }
+        listOf("patch.MPQ", "patch-2.MPQ", "patch-3.MPQ", "common.MPQ", "patch-a.mpq", "patch-j.mpq.disabled", "patch-4.mpq").forEach { File(data, it).writeBytes(ByteArray(10)) }
+        listOf("patch-enUS.MPQ", "patch-enUS-2.MPQ", "patch-enUS-a.mpq", "locale-enUS.MPQ").forEach { File(locale, it).writeBytes(ByteArray(10)) }
+        File(data, "Patch_Lables.txt").writeText("patch-4.MPQ - Music\nPatch-A.MPQ - HD Characters\n")
+
+        val patches = ClientMods.patches(root)
+        assertEquals(listOf("4", "A", "J"), patches.map { it.key })
+        val hd = patches.first { it.key == "A" }
+        assertEquals("HD Characters", hd.name)
+        assertEquals(2, hd.files.size)
+        assertEquals(20L, hd.size)
+        assertTrue(hd.enabled)
+        assertFalse(patches.first { it.key == "J" }.enabled)
+        assertEquals("Patch J", patches.first { it.key == "J" }.name)
+    }
+
+    @Test
+    fun turningAPatchOffAndOnRenamesBothFiles() {
+        val root = tempDir()
+        val data = File(root, "Data/enUS").apply { mkdirs() }.parentFile
+        File(data, "patch-a.mpq").writeBytes(ByteArray(1))
+        File(data, "enUS/patch-enUS-a.mpq").writeBytes(ByteArray(1))
+
+        ClientMods.setPatchEnabled(ClientMods.patches(root).single(), false)
+        assertTrue(File(data, "patch-a.mpq.disabled").isFile)
+        assertTrue(File(data, "enUS/patch-enUS-a.mpq.disabled").isFile)
+        ClientMods.setPatchEnabled(ClientMods.patches(root).single(), true)
+        assertTrue(File(data, "patch-a.mpq").isFile)
+        assertTrue(File(data, "enUS/patch-enUS-a.mpq").isFile)
+    }
+
+    @Test
+    fun readsNamesFromAnHdPackMenuConfig() {
+        val root = tempDir()
+        File(root, "patchmenu/.config").mkdirs()
+        File(root, "patchmenu/.config/config_en.json").writeText(
+            """{"patches":{"dynamic":{"a":{"name":"(9)HD characters","conditions":[[]]},"6":{"name":"(9)HD textures of the world"}}}}""",
+        )
+        assertEquals(mapOf("A" to "HD characters", "6" to "HD textures of the world"), ClientMods.labels(root))
+    }
+
+    private fun exeWithSpots(): File {
+        val exe = File(tempDir(), "Wow.exe")
+        RandomAccessFile(exe, "rw").use { file ->
+            file.setLength(0x420000)
+            mapOf(0x415A25L to "75", 0x415A3FL to "01", 0x415A95L to "01", 0x415B46L to "7F", 0x415B5FL to "83C0035E8BE55D").forEach { (offset, hex) ->
+                file.seek(offset)
+                file.write(hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray())
+            }
+        }
+        return exe
+    }
+
+    @Test
+    fun exePatchKeepsAndRestoresTheOriginal() {
+        val exe = exeWithSpots()
+        val original = exe.readBytes()
+        assertEquals(WowExePatch.State.ORIGINAL, WowExePatch.state(exe))
+
+        WowExePatch.apply(exe)
+        assertEquals(WowExePatch.State.PATCHED, WowExePatch.state(exe))
+        assertTrue(WowExePatch.backupOf(exe).isFile)
+
+        WowExePatch.restore(exe)
+        assertArrayEquals(original, exe.readBytes())
+        assertFalse(WowExePatch.backupOf(exe).isFile)
+    }
+
+    @Test
+    fun anExeAlreadyPatchedElsewhereIsLeftAlone() {
+        val exe = exeWithSpots()
+        WowExePatch.apply(exe)
+        WowExePatch.backupOf(exe).delete()
+        val patched = exe.readBytes()
+
+        WowExePatch.apply(exe)
+        WowExePatch.restore(exe)
+        assertArrayEquals(patched, exe.readBytes())
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun anUnknownExeIsRefused() {
+        val exe = File(tempDir(), "Wow.exe").apply { writeBytes(ByteArray(0x420000)) }
+        WowExePatch.apply(exe)
+    }
+}

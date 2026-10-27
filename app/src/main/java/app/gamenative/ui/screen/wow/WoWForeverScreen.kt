@@ -990,6 +990,7 @@ internal fun prepareLegacyLaunch(
     check(settings.realmlist.isNotBlank()) { "Enter the server's realmlist address." }
     try {
         LegacyClient.applyConfig(root, settings, screenSize)
+        app.gamenative.wow.legacy.mods.ClientMods.refresh(root)
     } catch (e: Exception) {
         if (e.isPermissionDenied()) throw StorageAccessDeniedException(e)
         throw e
