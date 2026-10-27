@@ -6,6 +6,16 @@ import java.io.File
 /** A patch MPQ found in the player's client, with its locale twin when it has one. */
 data class ClientPatch(val key: String, val name: String, val files: List<File>, val size: Long, val enabled: Boolean)
 
+/** A patch we make for the 3.3.5a client, installed and removed from the Addons screen's Client tab. */
+enum class AndroWherePatch(val title: String, val summary: String) {
+    LOGIN(
+        "AndroWhere Login",
+        "Controller support on the login, realm and character screens, with button hints at the top. " +
+            "A logs you in when Log in with A is on in Server login. Uses the ConsolePortLK controller layout. " +
+            "Installing it changes 5 bytes of Wow.exe so the client accepts it, and keeps the original to put back when you remove it.",
+    ),
+}
+
 /**
  * Add-ons that change the 3.3.5a client itself rather than its AddOns folder: our own login screen add-on,
  * and switches for the patch MPQs (HD packs and the like) already in the player's client.
@@ -38,6 +48,14 @@ object ClientMods {
     private fun exe(root: File) = File(root, LegacyClient.EXE)
 
     fun loginEnabled(root: File) = ourArchive(root).isFile
+
+    fun installed(root: File, patch: AndroWherePatch) = when (patch) {
+        AndroWherePatch.LOGIN -> loginEnabled(root)
+    }
+
+    fun setInstalled(root: File, patch: AndroWherePatch, installed: Boolean) = when (patch) {
+        AndroWherePatch.LOGIN -> if (installed) enableLogin(root) else disableLogin(root)
+    }
 
     /** Writes our login add-on and patches the exe so the client accepts it. */
     fun enableLogin(root: File, password: String? = null) {

@@ -1,7 +1,10 @@
 package app.gamenative.wow.ui.addons
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,14 +12,18 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import app.gamenative.wow.legacy.mods.AndroWherePatch
 import app.gamenative.wow.legacy.mods.ClientPatch
+import app.gamenative.wow.ui.components.FwButton
+import app.gamenative.wow.ui.components.FwButtonKind
 import app.gamenative.wow.ui.components.FwChip
 import app.gamenative.wow.ui.components.FwRow
 import app.gamenative.wow.ui.theme.Fw
 
-/** The Client tab on 3.3.5a: add-ons that change the client itself, each with an on/off switch. */
+/** The Client tab on 3.3.5a: our patches to install or remove, and switches for the patches already in the client. */
 @Composable
 internal fun ClientModsPanel(c: ClientModsController, modifier: Modifier = Modifier) {
     LaunchedEffect(c) { c.refresh() }
@@ -24,15 +31,38 @@ internal fun ClientModsPanel(c: ClientModsController, modifier: Modifier = Modif
         (c.working ?: c.message)?.let { status ->
             item { Text(status, style = Fw.Secondary.copy(color = if (c.working != null) Fw.Brass else Fw.Warn)) }
         }
-        item { Text("From AndroWhere", style = Fw.Label.copy(color = Fw.Ash), modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)) }
+        item { Text("AndroWhere patches", style = Fw.Label.copy(color = Fw.Ash), modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)) }
         item {
-            Toggle(
-                title = "AndroWhere Login",
-                detail = "Controller support on the login, realm and character screens, with button hints. Uses the ConsolePortLK controller layout. " +
-                    "Turning it on changes 5 bytes of Wow.exe so the client accepts it, and keeps the original to put back when you turn it off.",
-                on = c.loginEnabled,
-                onToggle = { c.setLogin(!c.loginEnabled) },
+            Text(
+                "Made for this app. Install adds one to your client, Remove puts the client back as it was.",
+                style = Fw.Secondary,
+                modifier = Modifier.padding(bottom = 4.dp),
             )
+        }
+        val ours = c.ours
+        if (ours == null) {
+            item { Text("Checking the client…", style = Fw.Secondary) }
+        } else {
+            items(AndroWherePatch.entries, key = { it.name }) { patch ->
+                val installed = ours[patch] == true
+                Row(
+                    Modifier.fillMaxWidth().background(Fw.Stone, Fw.Shape).padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(patch.title, style = Fw.Text)
+                        Text(patch.summary, style = Fw.Secondary)
+                        Text(if (installed) "Installed" else "Not installed", style = Fw.Data.copy(color = if (installed) Fw.Brass else Fw.Ash))
+                    }
+                    FwButton(
+                        if (installed) "Remove" else "Install",
+                        { c.setInstalled(patch, !installed) },
+                        kind = if (installed) FwButtonKind.Ghost else FwButtonKind.Primary,
+                        enabled = c.working == null,
+                    )
+                }
+            }
         }
         item { Text("In your client", style = Fw.Label.copy(color = Fw.Ash), modifier = Modifier.padding(top = 14.dp, bottom = 2.dp)) }
         val patches = c.patches

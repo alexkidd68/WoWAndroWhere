@@ -3,6 +3,7 @@ package app.gamenative.wow.ui.addons
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import app.gamenative.wow.legacy.mods.AndroWherePatch
 import app.gamenative.wow.legacy.mods.ClientMods
 import app.gamenative.wow.legacy.mods.ClientPatch
 import java.io.File
@@ -15,7 +16,8 @@ import timber.log.Timber
 
 /** UI state for the 3.3.5a client add-ons: our login screen add-on and the client's own patch archives. */
 class ClientModsController(val root: File, private val scope: CoroutineScope) {
-    var loginEnabled by mutableStateOf(false)
+    /** Our patches and whether each is installed; null until read. */
+    var ours by mutableStateOf<Map<AndroWherePatch, Boolean>?>(null)
         private set
     var patches by mutableStateOf<List<ClientPatch>?>(null)
         private set
@@ -26,18 +28,18 @@ class ClientModsController(val root: File, private val scope: CoroutineScope) {
 
     fun refresh() {
         scope.launch {
-            val (login, found) = withContext(Dispatchers.IO) {
-                runCatching { ClientMods.loginEnabled(root) }.getOrDefault(false) to
+            val (installed, found) = withContext(Dispatchers.IO) {
+                AndroWherePatch.entries.associateWith { runCatching { ClientMods.installed(root, it) }.getOrDefault(false) } to
                     runCatching { ClientMods.patches(root) }.onFailure { Timber.w(it, "Listing client patches failed") }.getOrDefault(emptyList())
             }
-            loginEnabled = login
+            ours = installed
             patches = found
         }
     }
 
-    fun setLogin(enabled: Boolean) =
-        act(if (enabled) "Turning on AndroWhere Login" else "Turning off AndroWhere Login") {
-            if (enabled) ClientMods.enableLogin(root) else ClientMods.disableLogin(root)
+    fun setInstalled(patch: AndroWherePatch, installed: Boolean) =
+        act(if (installed) "Installing ${patch.title}" else "Removing ${patch.title}") {
+            ClientMods.setInstalled(root, patch, installed)
         }
 
     fun setPatch(patch: ClientPatch, enabled: Boolean) =
