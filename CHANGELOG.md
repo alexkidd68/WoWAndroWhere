@@ -2,7 +2,7 @@
 
 Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which this fork started from.
 
-## Unreleased
+## 0.6.0
 
 - **Client tab in Addons (3.3.5a).** Addons now has a **Client** tab for add-ons that change the game client itself. Its **AndroWhere patches** section lists the patches made for this app, each with Install and Remove. Once ConsolePortLK is installed, the Installed list also offers any AndroWhere patch you don't have yet.
 - **AndroWhere Login.** Install it from the Client tab to use the controller on the login, realm and character screens. On character select, the D-pad picks a character, A enters the world, B goes back and Y opens the realm list. In the realm list, the D-pad moves, L1 and R1 switch tabs, A accepts and B cancels. Each screen shows its buttons at the top. On the login screen, press Back and choose Type password, which logs you in, or turn on Log in with A. It needs ConsolePortLK installed, and it changes 5 bytes of Wow.exe so the client accepts it. The original is kept and put back when you remove it. Some servers may not allow a changed Wow.exe.

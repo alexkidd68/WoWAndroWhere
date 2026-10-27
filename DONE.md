@@ -42,17 +42,17 @@ What the app does, by area, with the version each feature came in. Versions up t
 - Keyless GitHub addon catalog with nightly rebuild (0.2.0)
 - Open addon pages on their source site, Ko-fi support links (0.2.0)
 - CurseForge source through a key-holding proxy (0.3.0)
-- CurseForge with your own API key (stored encrypted) or your own proxy, set in Settings; no shared default (unreleased)
+- CurseForge with your own API key (stored encrypted) or your own proxy, set in Settings; no shared default (0.5.1)
 - Addon sources follow the selected game version (0.4.0)
 - 3.3.5a addons: WoWInterface filtered to 3.3, GitHub links without releases install from the default branch and get renamed after their TOC (0.5.0)
 - 3.3.5a addon catalog: over 30 GitHub backports from `catalog/wotlk335.json`, snapshotted nightly by commit and kept only when their TOC says Interface 303xx (0.5.0)
 - One-tap ConsolePortLK install on the 3.3.5a client, with a controller-to-keyboard profile used automatically while it is installed (0.5.0)
 - Immersion's quest and gossip windows work with the controller on 3.3.5a when ConsolePortLK is installed (0.5.0)
-- Client tab in Addons on 3.3.5a, for add-ons that change the client itself, with an AndroWhere patches section (Install and Remove) and a card on the Installed list for ones not installed yet (unreleased)
-- AndroWhere Login: controller and button hints on the 3.3.5a character select, realm list and dialogs, using a 5-byte Wow.exe patch that is undone when turned off (unreleased)
-- Log in with A on the 3.3.5a login screen, and optional auto login once per game start: opt-in, the saved password goes into AndroWhere Login for one launch and is wiped right after the client opens it (unreleased)
-- Controller on 3.3.5a character creation through AndroWhere Login: rows for gender, race, class, looks and name, X for a new character on character select (unreleased)
-- Switches for the patch archives in the player's 3.3.5a client, such as HD packs, named from the pack's own labels (unreleased)
+- Client tab in Addons on 3.3.5a, for add-ons that change the client itself, with an AndroWhere patches section (Install and Remove) and a card on the Installed list for ones not installed yet (0.6.0)
+- AndroWhere Login: controller and button hints on the 3.3.5a character select, realm list and dialogs, using a 5-byte Wow.exe patch that is undone when turned off (0.6.0)
+- Log in with A on the 3.3.5a login screen, and optional auto login once per game start: opt-in, the saved password goes into AndroWhere Login for one launch and is wiped right after the client opens it (0.6.0)
+- Controller on 3.3.5a character creation through AndroWhere Login: rows for gender, race, class, looks and name, X for a new character on character select (0.6.0)
+- Switches for the patch archives in the player's 3.3.5a client, such as HD packs, named from the pack's own labels (0.6.0)
 
 ## Sign-in and security
 
