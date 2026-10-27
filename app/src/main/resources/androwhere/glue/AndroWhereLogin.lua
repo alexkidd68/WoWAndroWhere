@@ -182,7 +182,7 @@ local function lightRow()
     end
     if createStatus then
         if row == "name" then
-            createStatus:SetText("Name: press A to type it, then Enter to create")
+            createStatus:SetText("Name: A to type it, then Enter to create. Enter with no name goes back to the pad")
         elseif type(row) == "number" then
             createStatus:SetText(_G["CharacterCustomizationButtonFrame" .. row .. "Text"]:GetText() or "")
         else
@@ -241,6 +241,26 @@ end
 -- Escape in it gives the pad back instead of leaving the screen.
 if CharacterCreateNameEdit.SetAutoFocus then CharacterCreateNameEdit:SetAutoFocus(false) end
 CharacterCreateNameEdit:SetScript("OnEscapePressed", function(self) self:ClearFocus() end)
+-- A focused box keeps the pad's keys too, so Enter with no name also gives them back.
+CharacterCreateNameEdit:SetScript("OnEnterPressed", function(self)
+    if self:GetText() == "" then
+        self:ClearFocus()
+    else
+        CharacterCreate_Okay()
+    end
+end)
+
+-- Tapping or clicking anywhere else on the screen, or on any of its buttons, also leaves the box.
+for _, name in ipairs({ "CharacterCreateFrame_OnMouseDown", "CharacterRace_OnClick", "CharacterClass_OnClick",
+    "SetCharacterGender", "CharacterCustomization_Left", "CharacterCustomization_Right", "CharacterCreate_Randomize" }) do
+    local original = _G[name]
+    if original then
+        _G[name] = function(...)
+            CharacterCreateNameEdit:ClearFocus()
+            return original(...)
+        end
+    end
+end
 
 local characterCreateKey = CharacterCreate_OnKeyDown
 CharacterCreate_OnKeyDown = function(key)
