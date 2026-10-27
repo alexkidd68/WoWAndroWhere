@@ -5,6 +5,7 @@ Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which thi
 ## Unreleased
 
 - **Several private servers (3.3.5a).** **Client and server** now keeps a list of servers, each with a name, realmlist and optional account name, and **Add server** adds another. Play starts on the selected one. Server login saves a password for each server. With AndroWhere Login installed and more than one server saved, the login screen shows the server's name at the top, and L1 and R1 switch to the previous or next one, account name and password included.
+- **Server login says when AndroWhere Login is missing.** With Fill in password ticked and AndroWhere Login not installed in the client, Server login now says so and offers Install. Before, the boxes could be ticked with nothing happening on the login screen.
 
 ## 0.6.0
 

@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -27,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import app.gamenative.utils.StorageUtils
 import app.gamenative.wow.legacy.LegacyClient
 import app.gamenative.wow.legacy.LegacyRenderer
+import app.gamenative.wow.legacy.mods.AndroWherePatch
+import app.gamenative.wow.ui.addons.ClientModsController
 import app.gamenative.wow.ui.components.FwButton
 import app.gamenative.wow.ui.components.FwButtonKind
 import app.gamenative.wow.ui.components.FwChip
@@ -206,6 +209,7 @@ fun ServerLoginScreen(launcher: LauncherController, onBack: () -> Unit) {
                 enabled = settings.fastLogin,
                 modifier = Modifier.padding(start = 24.dp),
             ) { launcher.updateLegacy(settings.copy(autoLogin = !settings.autoLogin)) }
+            if (settings.fastLogin && settings.root.isNotBlank()) LoginAddOnStatus(File(settings.root))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 FwButton(
                     "Save password",
@@ -246,4 +250,18 @@ private fun CheckRow(title: String, detail: String, checked: Boolean, enabled: B
             Text(detail, style = Fw.Secondary)
         }
     }
+}
+
+/** Fill in password does nothing without AndroWhere Login, so say so where it's ticked and offer to install it. */
+@Composable
+private fun LoginAddOnStatus(root: File) {
+    val scope = rememberCoroutineScope()
+    val mods = remember(root) { ClientModsController(root, scope) }
+    LaunchedEffect(root) { mods.refresh() }
+    if (mods.ours?.get(AndroWherePatch.LOGIN) != false) return
+    Text(
+        mods.working ?: mods.message ?: "AndroWhere Login isn't installed in this client, so the login screen can't fill in the password yet.",
+        style = Fw.Secondary,
+    )
+    FwButton("Install AndroWhere Login", { mods.setInstalled(AndroWherePatch.LOGIN, true) }, enabled = mods.working == null)
 }
