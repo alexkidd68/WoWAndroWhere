@@ -25,7 +25,7 @@ object FastLogin {
     /** Called at launch, after the client's config is written. */
     fun prepare(context: Context, root: File, settings: LegacySettings) {
         val password = if (settings.fastLogin && ClientMods.loginEnabled(root)) LegacyClient.serverPassword(context) else null
-        ClientMods.refresh(root, password)
+        ClientMods.refresh(root, password, settings.autoLogin)
         if (password != null) watch(root)
     }
 

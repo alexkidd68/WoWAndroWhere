@@ -58,9 +58,9 @@ object ClientMods {
     }
 
     /** Writes our login add-on and patches the exe so the client accepts it. */
-    fun enableLogin(root: File, password: String? = null) {
+    fun enableLogin(root: File, password: String? = null, autoLogin: Boolean = false) {
         WowExePatch.apply(exe(root))
-        writeLogin(root, password)
+        writeLogin(root, password, autoLogin)
     }
 
     fun disableLogin(root: File) {
@@ -70,17 +70,18 @@ object ClientMods {
 
     /**
      * Rebuilds the add-on at launch so it follows the client's current login file list, e.g. after an HD patch changed.
-     * With [password], the login screen fills it in; [wipePassword] takes it out again once the client has the archive open.
+     * With [password], the login screen fills it in, and with [autoLogin] also logs in once;
+     * [wipePassword] takes it out again once the client has the archive open.
      */
-    fun refresh(root: File, password: String? = null) {
-        if (loginEnabled(root)) enableLogin(root, password)
+    fun refresh(root: File, password: String? = null, autoLogin: Boolean = false) {
+        if (loginEnabled(root)) enableLogin(root, password, autoLogin)
     }
 
     fun hasPassword(root: File) = ourArchive(root).isFile && Mpq.read(ourArchive(root), GLUE_DIR + PASSWORD_FILE) != null
 
     /** Rewrites the add-on without the password. A no-op when it holds none. */
     fun wipePassword(root: File) {
-        if (hasPassword(root)) writeLogin(root, null)
+        if (hasPassword(root)) writeLogin(root, null, false)
     }
 
     /**
@@ -88,7 +89,7 @@ object ClientMods {
      * so replacing it never corrupts the game, and the old copy, password included, is gone from storage.
      */
     @Synchronized
-    private fun writeLogin(root: File, password: String?) {
+    private fun writeLogin(root: File, password: String?, autoLogin: Boolean) {
         val toc = effectiveGlueToc(root) ?: error("Couldn't find the client's login screen files.")
         val lua = checkNotNull(javaClass.getResourceAsStream(LOGIN_RESOURCE)) { "Missing $LOGIN_FILE" }.use { it.readBytes() }
         val archive = ourArchive(root)
@@ -97,7 +98,7 @@ object ClientMods {
             GLUE_TOC to withLoginFile(toc, password != null).toByteArray(Charsets.ISO_8859_1),
             GLUE_DIR + LOGIN_FILE to lua,
         )
-        if (password != null) files[GLUE_DIR + PASSWORD_FILE] = passwordLua(password).toByteArray(Charsets.ISO_8859_1)
+        if (password != null) files[GLUE_DIR + PASSWORD_FILE] = loginDataLua(password, autoLogin).toByteArray(Charsets.ISO_8859_1)
         val temp = File(archive.parentFile, archive.name + ".tmp")
         Mpq.write(temp, files)
         if (!temp.renameTo(archive)) {
@@ -107,8 +108,9 @@ object ClientMods {
     }
 
     /** Every byte as a decimal escape, so no password can break out of the Lua string. */
-    internal fun passwordLua(password: String) =
-        password.toByteArray(Charsets.UTF_8).joinToString("", "AndroWhereLoginPassword = \"", "\"\r\n") { "\\" + (it.toInt() and 0xFF) }
+    internal fun loginDataLua(password: String, autoLogin: Boolean) =
+        password.toByteArray(Charsets.UTF_8).joinToString("", "AndroWhereLoginPassword = \"", "\"\r\n") { "\\" + (it.toInt() and 0xFF) } +
+            "AndroWhereLoginAuto = $autoLogin\r\n"
 
     /** Adds our files before the line Blizzard keeps last, so they run after every stock login file. */
     internal fun withLoginFile(toc: String, withPassword: Boolean = false): String {

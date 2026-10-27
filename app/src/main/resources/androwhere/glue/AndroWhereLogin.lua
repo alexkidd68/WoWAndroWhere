@@ -57,12 +57,32 @@ end
 -- Login with A: when the app passed the saved password (AndroWhereLoginData.lua, written only for one launch),
 -- the password box is filled and left unfocused, so A reaches the login frame and logs in.
 local password = AndroWhereLoginPassword
-AndroWhereLoginPassword = nil
+local autoLogin = AndroWhereLoginAuto
+AndroWhereLoginPassword, AndroWhereLoginAuto = nil, nil
 
 local function fillPassword()
     if password and AccountLoginPasswordEdit:GetText() == "" then
         AccountLoginPasswordEdit:SetText(password)
     end
+end
+
+-- Auto login presses Log in once per game start, half a second after the screen shows. After a failed
+-- login or a disconnect it waits for A, so a wrong password isn't sent again and again.
+local function tryAutoLogin()
+    if not (password and autoLogin) then return end
+    autoLogin = nil
+    if AccountLoginAccountEdit:GetText() == "" or not TOSAccepted() then return end
+    local waited = 0
+    local timer = CreateFrame("Frame")
+    timer:SetScript("OnUpdate", function(self, elapsed)
+        waited = waited + (elapsed or arg1 or 0)
+        if waited < 0.5 then return end
+        self:SetScript("OnUpdate", nil)
+        if AccountLogin:IsShown() and not GlueDialog:IsShown() and not TOSFrame:IsShown() then
+            fillPassword()
+            AccountLogin_Login()
+        end
+    end)
 end
 
 if password then
@@ -71,6 +91,7 @@ if password then
         fillPassword()
         AccountLoginPasswordEdit:ClearFocus()
         AccountLoginAccountEdit:ClearFocus()
+        tryAutoLogin()
     end
     AccountLogin_FocusAccountName = function()
         fillPassword()
@@ -92,7 +113,7 @@ local loginHint
 if not password then
     loginHint = "Back, then Type password, to log in"
 elseif GetSavedAccountName() ~= "" then
-    loginHint = "A  Log in"
+    loginHint = autoLogin and "Logging in. A  Log in again" or "A  Log in"
 else
     loginHint = "Type your account name and press Enter. Tick Remember Account Name to log in with A next time."
 end

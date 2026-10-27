@@ -27,6 +27,8 @@ data class LegacySettings(
     val perfOverlay: Boolean = false,
     /** Off by default: AndroWhere Login fills in the saved password, which briefly puts it in the client folder. */
     val fastLogin: Boolean = false,
+    /** With [fastLogin], the login screen also presses Log in once per game start. */
+    val autoLogin: Boolean = false,
 )
 
 object LegacyClient {
@@ -67,6 +69,7 @@ object LegacyClient {
             saveLog = p.getBoolean("save_log", false),
             perfOverlay = p.getBoolean("perf_overlay", false),
             fastLogin = p.getBoolean("fast_login", false),
+            autoLogin = p.getBoolean("auto_login", false),
         )
     }
 
@@ -78,6 +81,7 @@ object LegacyClient {
             .putBoolean("save_log", settings.saveLog)
             .putBoolean("perf_overlay", settings.perfOverlay)
             .putBoolean("fast_login", settings.fastLogin)
+            .putBoolean("auto_login", settings.autoLogin)
             .apply()
     }
 

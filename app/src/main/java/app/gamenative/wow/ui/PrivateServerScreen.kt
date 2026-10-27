@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
@@ -151,22 +152,24 @@ fun ServerLoginScreen(launcher: LauncherController, onBack: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
             )
             val settings = launcher.legacy
-            FwRow(selected = false, onClick = { launcher.updateLegacy(settings.copy(fastLogin = !settings.fastLogin)) }) {
-                Checkbox(
-                    checked = settings.fastLogin,
-                    onCheckedChange = null,
-                    colors = CheckboxDefaults.colors(checkedColor = Fw.Brass, uncheckedColor = Fw.Ash, checkmarkColor = Fw.BrassInk),
-                )
-                Column(Modifier.weight(1f)) {
-                    Text("Log in with A", style = Fw.Text)
-                    Text(
-                        "Needs AndroWhere Login from Addons, Client. The login screen fills in this password and A logs you in. " +
-                            "To do that, the app puts the password in AndroWhere Login's file in the client folder when the game starts, and removes it about 10 seconds after the game opens that file, " +
-                            "or after 3 minutes at most, when the game closes and when the app opens again. While it's there, any app that can read the client folder could read it.",
-                        style = Fw.Secondary,
-                    )
-                }
-            }
+            CheckRow(
+                "Fill in password",
+                "Needs AndroWhere Login from Addons, Client. The login screen fills in this password, so A logs you in. " +
+                    "To do that, the app puts the password in AndroWhere Login's file in the client folder when the game starts, and removes it about 10 seconds after the game opens that file, " +
+                    "or after 3 minutes at most, when the game closes and when the app opens again. While it's there, any app that can read the client folder could read it.",
+                settings.fastLogin,
+            ) { launcher.updateLegacy(settings.copy(fastLogin = !settings.fastLogin)) }
+            CheckRow(
+                "Log in automatically",
+                if (settings.fastLogin) {
+                    "Presses Log in for you once each time the game starts. If that login fails, press A to try again."
+                } else {
+                    "Needs Fill in password."
+                },
+                settings.fastLogin && settings.autoLogin,
+                enabled = settings.fastLogin,
+                modifier = Modifier.padding(start = 24.dp),
+            ) { launcher.updateLegacy(settings.copy(autoLogin = !settings.autoLogin)) }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 FwButton(
                     "Save password",
@@ -189,6 +192,22 @@ fun ServerLoginScreen(launcher: LauncherController, onBack: () -> Unit) {
                 },
                 style = Fw.Secondary,
             )
+        }
+    }
+}
+
+@Composable
+private fun CheckRow(title: String, detail: String, checked: Boolean, enabled: Boolean = true, modifier: Modifier = Modifier, onToggle: () -> Unit) {
+    FwRow(selected = false, onClick = { if (enabled) onToggle() }, modifier = modifier) {
+        Checkbox(
+            checked = checked,
+            onCheckedChange = null,
+            enabled = enabled,
+            colors = CheckboxDefaults.colors(checkedColor = Fw.Brass, uncheckedColor = Fw.Ash, checkmarkColor = Fw.BrassInk),
+        )
+        Column(Modifier.weight(1f)) {
+            Text(title, style = if (enabled) Fw.Text else Fw.Text.copy(color = Fw.Ash))
+            Text(detail, style = Fw.Secondary)
         }
     }
 }

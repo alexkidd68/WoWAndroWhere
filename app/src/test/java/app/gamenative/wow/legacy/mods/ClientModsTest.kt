@@ -96,7 +96,10 @@ class ClientModsTest {
 
     @Test
     fun passwordIsWrittenAsByteEscapesOnly() {
-        assertEquals("AndroWhereLoginPassword = \"\\97\\34\\92\\93\\195\\169\"\r\n", ClientMods.passwordLua("a\"\\]é"))
+        assertEquals(
+            "AndroWhereLoginPassword = \"\\97\\34\\92\\93\\195\\169\"\r\nAndroWhereLoginAuto = false\r\n",
+            ClientMods.loginDataLua("a\"\\]é", false),
+        )
     }
 
     @Test
