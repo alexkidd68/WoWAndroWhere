@@ -25,13 +25,13 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.gamenative.BuildConfig
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocalCafe
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
@@ -63,12 +63,12 @@ fun HomeScreen(
     LaunchedEffect(Unit) { runCatching { playFocus.requestFocus() } }
 
     Column(Modifier.fillMaxSize().background(Fw.Ground).padding(horizontal = 24.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Header(launcher)
+        Header(launcher, onOpenSettings)
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
             val wide = maxWidth >= 600.dp
             val play: @Composable (Modifier) -> Unit = { m -> PlayTile(launcher, onOpenGame, m.focusRequester(playFocus)) }
             val tiles: @Composable (Modifier) -> Unit = { m ->
-                SmallTiles(launcher, addonUpdates, addonCount, onOpenAddons, onOpenGame, onOpenAccount, onOpenSettings, m)
+                SmallTiles(launcher, addonUpdates, addonCount, onOpenAddons, onOpenGame, onOpenAccount, m)
             }
             if (wide) {
                 Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -76,10 +76,10 @@ fun HomeScreen(
                     tiles(Modifier.weight(1f).fillMaxHeight())
                 }
             } else {
-                // Portrait: the four small tiles keep a fixed height and Play takes all the rest.
+                // Portrait: the small tiles keep a fixed height and Play takes all the rest.
                 Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     play(Modifier.fillMaxWidth().weight(1f))
-                    tiles(Modifier.fillMaxWidth().height(340.dp))
+                    tiles(Modifier.fillMaxWidth().height(if (launcher.isPrivate) 163.dp else 340.dp))
                 }
             }
         }
@@ -110,7 +110,7 @@ private fun SupportLink() {
 }
 
 @Composable
-private fun Header(launcher: LauncherController) {
+private fun Header(launcher: LauncherController, onOpenSettings: () -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             GameIconImage(launcher.version.icon, 34.dp) { Box(Modifier.size(34.dp)) }
@@ -130,6 +130,13 @@ private fun Header(launcher: LauncherController) {
             else -> "Game up to date" to Fw.Ok
         }
         Text(text, style = Fw.Data.copy(color = color), modifier = Modifier.background(Fw.Stone, Fw.Pill).padding(horizontal = 14.dp, vertical = 6.dp))
+        FwButton(
+            if (launcher.appUpdate != null) "Settings · Update" else "Settings",
+            onOpenSettings,
+            modifier = Modifier.padding(start = 10.dp),
+            kind = if (launcher.appUpdate != null) FwButtonKind.Primary else FwButtonKind.Ghost,
+            icon = Icons.Filled.Settings,
+        )
     }
     launcher.errorMessage?.let { Text(it, style = Fw.Secondary.copy(color = Fw.Warn)) }
 }
@@ -196,7 +203,6 @@ private fun SmallTiles(
     onOpenAddons: () -> Unit,
     onOpenGame: () -> Unit,
     onOpenAccount: () -> Unit,
-    onOpenSettings: () -> Unit,
     modifier: Modifier,
 ) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -223,21 +229,10 @@ private fun SmallTiles(
                 if (launcher.canConvertToLaunch) Text("Launch version available", style = Fw.Secondary.copy(color = Fw.Brass))
             }
         }
-        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            // Private servers keep their password in Client and server.
-            if (!launcher.isPrivate) {
-                FwTile("Account", Modifier.weight(1f).fillMaxHeight(), art = ForeverArt.SKYBORNE, onClick = onOpenAccount) {
-                    Text(if (launcher.hasSavedLogin) "Login saved on this device" else "No login saved", style = Fw.Secondary)
-                }
-            }
-            FwTile(
-                "Settings",
-                Modifier.weight(1f).fillMaxHeight(),
-                art = ForeverArt.CAMP,
-                badge = launcher.appUpdate?.let { "NEW" },
-                onClick = onOpenSettings,
-            ) {
-                Text(launcher.appUpdate?.let { "App ${it.version} available" } ?: "App v${BuildConfig.VERSION_NAME}", style = Fw.Secondary)
+        // Private servers keep their password in Client and server, and Settings is in the top bar.
+        if (!launcher.isPrivate) {
+            FwTile("Account", Modifier.weight(1f).fillMaxWidth(), art = ForeverArt.SKYBORNE, onClick = onOpenAccount) {
+                Text(if (launcher.hasSavedLogin) "Login saved on this device" else "No login saved", style = Fw.Secondary)
             }
         }
     }

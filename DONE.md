@@ -29,6 +29,7 @@ What the app does, by area, with the version each feature came in. Versions up t
 - 3.3.5a clients run through Box64 WoW64, started directly instead of through winhandler; DXVK renderer, OpenGL as a fallback (0.5.0)
 - Saved, encrypted private server password for each server, in Client and server, used by AndroWhere Login's Fill in password; Install is offered until the add-on is in (0.5.0, Type password replaced unreleased)
 - No Enable Mouse button over the WoW containers (unreleased)
+- Settings as a top bar button on the home screen, marked when an app update is out (unreleased)
 - Private server launches can save a Wine log (off by default, it costs frame rate) and offer to share it when the game closes (0.5.0)
 - Performance overlay for private server launches: DXVK frame rate, frame times and GPU load (0.5.0)
 - Use lighter graphics: one tap writes CPU-light 3.3.5a settings to Config.wtf (0.5.0)
