@@ -77,7 +77,7 @@ if serverLine then serverLine:SetPoint("TOP", AccountLoginUI or AccountLogin, "T
 local function updateLoginHint()
     if loginHint then
         if not password then
-            loginHint:SetText("Back, then Type password, to log in")
+            loginHint:SetText("")
         elseif AccountLoginAccountEdit:GetText() ~= "" then
             loginHint:SetText(autoLogin and "Logging in. A  Log in again" or "A  Log in")
         else

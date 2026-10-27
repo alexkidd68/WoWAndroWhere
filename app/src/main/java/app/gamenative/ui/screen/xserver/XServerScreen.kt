@@ -117,7 +117,6 @@ import app.gamenative.utils.BrightnessManager
 import app.gamenative.utils.downloader.WinComponentDownloader
 import app.gamenative.utils.WineProcessSnapshotHelper
 import com.winlator.alsaserver.ALSAClient
-import app.gamenative.wow.legacy.PasswordButton
 import com.winlator.container.Container
 import com.winlator.container.ContainerFiles
 import com.winlator.container.ContainerManager
@@ -2690,7 +2689,6 @@ fun XServerScreen(
             )
         }
 
-        PasswordButton(container, hidden = showQuickMenu || isEditMode, modifier = Modifier.align(Alignment.TopEnd))
 
         QuickMenu(
             isVisible = showQuickMenu,

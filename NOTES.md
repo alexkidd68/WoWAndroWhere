@@ -2,6 +2,10 @@
 
 Why things are the way they are, newest first.
 
+## 2026-10-27: Type password and Enable Mouse removed
+
+Daniel found 0.6.0's Fill in password doing nothing on the phone because AndroWhere Login wasn't installed there, and the app never said so. He asked to hide the password options until it is installed, and to remove Type password and the Enable Mouse button at the top. So Server login now offers Install AndroWhere Login until the add-on is in, and only then shows the password, Fill in password and Log in automatically. Type password (button and menu item) is gone, so the saved password only ever reaches the game through Fill in password. The Enable Mouse button is upstream's shooter mode runtime toggle; both WoW containers keep shooter mode but set `showRuntimeToggle` off at every launch.
+
 ## 2026-10-27: Server list on the login screen
 
 Daniel wanted the HD pack's login server list, but with our own servers. The app keeps the list (`LegacyServers`, JSON in the `wow_legacy` prefs, no passwords in it), and `realmlist` in the settings stays the selected server's, so launching is unchanged. Each server's password has its own `LoginVault`; the first server keeps the vault the single password used before, so nothing has to move. At launch the app writes `AndroWhereServers.lua` (names, realmlists and account names, as byte escapes) into AndroWhere Login's archive and leaves it there: none of it is secret. L1 and R1 on the login screen set the `realmList` CVar, the account name and the password for the next server. The switch lasts for that game session: the app writes the selected server's realmlist again at every launch.

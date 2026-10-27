@@ -165,74 +165,85 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
     }
 }
 
-/** Private server "Account": the saved password that the in-game menu's Type password enters. */
+/** Private server "Account": the saved password that AndroWhere Login fills in on the login screen. */
 @Composable
 fun ServerLoginScreen(launcher: LauncherController, onBack: () -> Unit) {
-    var password by remember { mutableStateOf("") }
+    val root = launcher.legacy.root.takeIf { it.isNotBlank() }?.let(::File)
+    val scope = rememberCoroutineScope()
+    val mods = remember(root) { root?.let { ClientModsController(it, scope) } }
+    LaunchedEffect(root) { mods?.refresh() }
+    val installed = mods?.ours?.get(AndroWherePatch.LOGIN)
     FwPage("Server login", onBack) {
-        FwSection(if (launcher.servers.size > 1) "Password for ${launcher.selectedServer.name}" else "Password") {
-            Text(
-                if (launcher.hasServerPassword) {
-                    "Your server password is saved on this device, encrypted with the Android keystore. " +
-                        if (launcher.legacy.fastLogin) "On the login screen, press A." else "On the login screen, open the menu with Back and choose Type password."
-                } else {
-                    "Save your server password to enter it from the in-game menu instead of typing it each time. The client remembers your account name itself."
-                },
-                style = Fw.Text,
-            )
-            OutlinedTextField(
-                password,
-                { password = it },
-                singleLine = true,
-                label = { Text(if (launcher.hasServerPassword) "New password" else "Password") },
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                textStyle = Fw.Text,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            val settings = launcher.legacy
-            CheckRow(
-                "Fill in password",
-                "Needs AndroWhere Login from Addons, Client. The login screen fills in this password, so A logs you in. " +
-                    "To do that, the app puts the password in AndroWhere Login's file in the client folder when the game starts, and removes it about 10 seconds after the game opens that file, " +
-                    "or after 3 minutes at most, when the game closes and when the app opens again. While it's there, any app that can read the client folder could read it.",
-                settings.fastLogin,
-            ) { launcher.updateLegacy(settings.copy(fastLogin = !settings.fastLogin)) }
-            CheckRow(
-                "Log in automatically",
-                if (settings.fastLogin) {
-                    "Presses Log in for you once each time the game starts. If that login fails, press A to try again."
-                } else {
-                    "Needs Fill in password."
-                },
-                settings.fastLogin && settings.autoLogin,
-                enabled = settings.fastLogin,
-                modifier = Modifier.padding(start = 24.dp),
-            ) { launcher.updateLegacy(settings.copy(autoLogin = !settings.autoLogin)) }
-            if (settings.fastLogin && settings.root.isNotBlank()) LoginAddOnStatus(File(settings.root))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                FwButton(
-                    "Save password",
-                    {
-                        launcher.saveServerPassword(password)
-                        password = ""
-                    },
-                    enabled = password.isNotEmpty(),
+        when {
+            mods == null -> FwSection("Password") { Text("Choose your 3.3.5a client folder in Client and server first.", style = Fw.Text) }
+            installed == null -> Unit
+            installed -> PasswordSection(launcher)
+            else -> FwSection("Password") {
+                Text(
+                    mods.working ?: mods.message
+                        ?: "Saving your password needs AndroWhere Login, which fills it in on the game's login screen so A logs you in.",
+                    style = Fw.Text,
                 )
-                if (launcher.hasServerPassword) FwButton("Forget password", launcher::forgetServerPassword, kind = FwButtonKind.Danger)
+                FwButton("Install AndroWhere Login", { mods.setInstalled(AndroWherePatch.LOGIN, true) }, enabled = mods.working == null)
             }
-            launcher.errorMessage?.let { Text(it, style = Fw.Secondary.copy(color = Fw.Warn)) }
         }
-        FwSection("How it works") {
-            Text(
-                if (launcher.legacy.fastLogin) {
-                    "Type password presses the password's keys and Enter in the game, so use it only when the password box is selected. Security codes your server emails you are still typed by hand."
-                } else {
-                    "The password never goes into the game folder. Type password presses its keys and Enter in the game, so use it only when the password box is selected. Security codes your server emails you are still typed by hand."
+    }
+}
+
+@Composable
+private fun PasswordSection(launcher: LauncherController) {
+    var password by remember { mutableStateOf("") }
+    val settings = launcher.legacy
+    FwSection(if (launcher.servers.size > 1) "Password for ${launcher.selectedServer.name}" else "Password") {
+        Text(
+            when {
+                !launcher.hasServerPassword -> "Save your server password so the login screen can fill it in. The client remembers your account name itself."
+                settings.fastLogin -> "Your server password is saved on this device, encrypted with the Android keystore. On the login screen, press A."
+                else -> "Your server password is saved on this device, encrypted with the Android keystore. Tick Fill in password to use it."
+            },
+            style = Fw.Text,
+        )
+        OutlinedTextField(
+            password,
+            { password = it },
+            singleLine = true,
+            label = { Text(if (launcher.hasServerPassword) "New password" else "Password") },
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            textStyle = Fw.Text,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        CheckRow(
+            "Fill in password",
+            "The login screen fills in this password, so A logs you in. " +
+                "To do that, the app puts the password in AndroWhere Login's file in the client folder when the game starts, and removes it about 10 seconds after the game opens that file, " +
+                "or after 3 minutes at most, when the game closes and when the app opens again. While it's there, any app that can read the client folder could read it.",
+            settings.fastLogin,
+        ) { launcher.updateLegacy(settings.copy(fastLogin = !settings.fastLogin)) }
+        CheckRow(
+            "Log in automatically",
+            if (settings.fastLogin) {
+                "Presses Log in for you once each time the game starts. If that login fails, press A to try again."
+            } else {
+                "Needs Fill in password."
+            },
+            settings.fastLogin && settings.autoLogin,
+            enabled = settings.fastLogin,
+            modifier = Modifier.padding(start = 24.dp),
+        ) { launcher.updateLegacy(settings.copy(autoLogin = !settings.autoLogin)) }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            FwButton(
+                "Save password",
+                {
+                    launcher.saveServerPassword(password)
+                    password = ""
                 },
-                style = Fw.Secondary,
+                enabled = password.isNotEmpty(),
             )
+            if (launcher.hasServerPassword) FwButton("Forget password", launcher::forgetServerPassword, kind = FwButtonKind.Danger)
         }
+        Text("Security codes your server emails you are still typed by hand.", style = Fw.Secondary)
+        launcher.errorMessage?.let { Text(it, style = Fw.Secondary.copy(color = Fw.Warn)) }
     }
 }
 
@@ -250,18 +261,4 @@ private fun CheckRow(title: String, detail: String, checked: Boolean, enabled: B
             Text(detail, style = Fw.Secondary)
         }
     }
-}
-
-/** Fill in password does nothing without AndroWhere Login, so say so where it's ticked and offer to install it. */
-@Composable
-private fun LoginAddOnStatus(root: File) {
-    val scope = rememberCoroutineScope()
-    val mods = remember(root) { ClientModsController(root, scope) }
-    LaunchedEffect(root) { mods.refresh() }
-    if (mods.ours?.get(AndroWherePatch.LOGIN) != false) return
-    Text(
-        mods.working ?: mods.message ?: "AndroWhere Login isn't installed in this client, so the login screen can't fill in the password yet.",
-        style = Fw.Secondary,
-    )
-    FwButton("Install AndroWhere Login", { mods.setInstalled(AndroWherePatch.LOGIN, true) }, enabled = mods.working == null)
 }

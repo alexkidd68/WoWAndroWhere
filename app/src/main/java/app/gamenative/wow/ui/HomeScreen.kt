@@ -173,9 +173,8 @@ private fun PlayTile(launcher: LauncherController, onOpenGame: () -> Unit, modif
             launcher.isPrivate && launcher.legacy.realmlist.isBlank() -> Text("Enter your server's realmlist in Client and server.", style = Fw.Secondary.copy(color = Fw.Warn))
             launcher.isPrivate -> Text(
                 when {
-                    !launcher.hasServerPassword -> "Log in inside the game."
-                    launcher.legacy.fastLogin -> "Password saved: press A on the login screen."
-                    else -> "Password saved: Back, then Type password on the login screen."
+                    launcher.hasServerPassword && launcher.legacy.fastLogin -> "Password saved: press A on the login screen."
+                    else -> "Log in inside the game."
                 },
                 style = Fw.Secondary,
             )
