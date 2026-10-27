@@ -70,15 +70,16 @@ end
 -- login or a disconnect it waits for A, so a wrong password isn't sent again and again.
 local function tryAutoLogin()
     if not (password and autoLogin) then return end
+    -- The screen's focus calls can come before the account name is filled in, so check when it's due.
     autoLogin = nil
-    if AccountLoginAccountEdit:GetText() == "" or not TOSAccepted() then return end
     local waited = 0
-    local timer = CreateFrame("Frame")
+    local timer = CreateFrame("Frame", nil, AccountLogin)
     timer:SetScript("OnUpdate", function(self, elapsed)
         waited = waited + (elapsed or arg1 or 0)
         if waited < 0.5 then return end
         self:SetScript("OnUpdate", nil)
-        if AccountLogin:IsShown() and not GlueDialog:IsShown() and not TOSFrame:IsShown() then
+        if AccountLogin:IsShown() and AccountLoginAccountEdit:GetText() ~= "" and TOSAccepted()
+            and not GlueDialog:IsShown() and not TOSFrame:IsShown() then
             fillPassword()
             AccountLogin_Login()
         end
