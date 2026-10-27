@@ -103,7 +103,7 @@ fun ForeverywhereApp(onLaunch: (appId: String) -> Unit) {
                 }
                 composable(Routes.ACCOUNT) {
                     if (launcher.isPrivate) {
-                        ServerLoginScreen(launcher, onBack = { nav.popBackStack() })
+                        PrivateServerScreen(launcher, onBack = { nav.popBackStack() })
                     } else {
                         AccountScreen(launcher, onBack = { nav.popBackStack() }, onEditLogin = { showLoginDialog = true })
                     }

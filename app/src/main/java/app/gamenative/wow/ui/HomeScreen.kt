@@ -224,9 +224,11 @@ private fun SmallTiles(
             }
         }
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            FwTile(if (launcher.isPrivate) "Server login" else "Account", Modifier.weight(1f).fillMaxHeight(), art = ForeverArt.SKYBORNE, onClick = onOpenAccount) {
-                val saved = if (launcher.isPrivate) launcher.hasServerPassword else launcher.hasSavedLogin
-                Text(if (saved) "${if (launcher.isPrivate) "Password" else "Login"} saved on this device" else "No ${if (launcher.isPrivate) "password" else "login"} saved", style = Fw.Secondary)
+            // Private servers keep their password in Client and server.
+            if (!launcher.isPrivate) {
+                FwTile("Account", Modifier.weight(1f).fillMaxHeight(), art = ForeverArt.SKYBORNE, onClick = onOpenAccount) {
+                    Text(if (launcher.hasSavedLogin) "Login saved on this device" else "No login saved", style = Fw.Secondary)
+                }
             }
             FwTile(
                 "Settings",

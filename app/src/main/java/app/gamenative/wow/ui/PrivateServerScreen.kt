@@ -37,7 +37,7 @@ import app.gamenative.wow.ui.components.FwRow
 import app.gamenative.wow.ui.theme.Fw
 import java.io.File
 
-/** Private server "Game files": the player's 3.3.5a client folder, its realmlist and how it runs. */
+/** Private server "Client and server": the player's 3.3.5a client folder, its servers and password, and how it runs. */
 @Composable
 fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
     val context = LocalContext.current
@@ -111,7 +111,7 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
                 )
             }
             Text(
-                "The account name fills the login screen's account box for this server. Leave it empty to use the one the game remembers. Each server's password is saved in Server login.",
+                "The account name fills the login screen's account box for this server. Leave it empty to use the one the game remembers. Each server's password is saved under Password.",
                 style = Fw.Secondary,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -121,6 +121,8 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
                 }
             }
         }
+
+        if (settings.root.isNotBlank()) LoginSection(launcher, File(settings.root))
 
         FwSection("Renderer") {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -165,27 +167,22 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
     }
 }
 
-/** Private server "Account": the saved password that AndroWhere Login fills in on the login screen. */
+/** The saved password that AndroWhere Login fills in on the login screen; until it's installed, only an Install button. */
 @Composable
-fun ServerLoginScreen(launcher: LauncherController, onBack: () -> Unit) {
-    val root = launcher.legacy.root.takeIf { it.isNotBlank() }?.let(::File)
+private fun LoginSection(launcher: LauncherController, root: File) {
     val scope = rememberCoroutineScope()
-    val mods = remember(root) { root?.let { ClientModsController(it, scope) } }
-    LaunchedEffect(root) { mods?.refresh() }
-    val installed = mods?.ours?.get(AndroWherePatch.LOGIN)
-    FwPage("Server login", onBack) {
-        when {
-            mods == null -> FwSection("Password") { Text("Choose your 3.3.5a client folder in Client and server first.", style = Fw.Text) }
-            installed == null -> Unit
-            installed -> PasswordSection(launcher)
-            else -> FwSection("Password") {
-                Text(
-                    mods.working ?: mods.message
-                        ?: "Saving your password needs AndroWhere Login, which fills it in on the game's login screen so A logs you in.",
-                    style = Fw.Text,
-                )
-                FwButton("Install AndroWhere Login", { mods.setInstalled(AndroWherePatch.LOGIN, true) }, enabled = mods.working == null)
-            }
+    val mods = remember(root) { ClientModsController(root, scope) }
+    LaunchedEffect(root) { mods.refresh() }
+    when (mods.ours?.get(AndroWherePatch.LOGIN)) {
+        null -> Unit
+        true -> PasswordSection(launcher)
+        false -> FwSection("Password") {
+            Text(
+                mods.working ?: mods.message
+                    ?: "Saving your password needs AndroWhere Login, which fills it in on the game's login screen so A logs you in.",
+                style = Fw.Text,
+            )
+            FwButton("Install AndroWhere Login", { mods.setInstalled(AndroWherePatch.LOGIN, true) }, enabled = mods.working == null)
         }
     }
 }

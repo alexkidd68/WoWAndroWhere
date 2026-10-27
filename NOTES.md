@@ -4,7 +4,7 @@ Why things are the way they are, newest first.
 
 ## 2026-10-27: Type password and Enable Mouse removed
 
-Daniel found 0.6.0's Fill in password doing nothing on the phone because AndroWhere Login wasn't installed there, and the app never said so. He asked to hide the password options until it is installed, and to remove Type password and the Enable Mouse button at the top. So Server login now offers Install AndroWhere Login until the add-on is in, and only then shows the password, Fill in password and Log in automatically. Type password (button and menu item) is gone, so the saved password only ever reaches the game through Fill in password. The Enable Mouse button is upstream's shooter mode runtime toggle; both WoW containers keep shooter mode but set `showRuntimeToggle` off at every launch.
+Daniel found 0.6.0's Fill in password doing nothing on the phone because AndroWhere Login wasn't installed there, and the app never said so. He asked to hide the password options until it is installed, and to remove Type password and the Enable Mouse button at the top. He also asked to merge Server login into Client and server, so the password now sits there under the servers, and the private server home screen has no Server login tile. That spot offers Install AndroWhere Login until the add-on is in, and only then shows the password, Fill in password and Log in automatically. Type password (button and menu item) is gone, so the saved password only ever reaches the game through Fill in password. The Enable Mouse button is upstream's shooter mode runtime toggle; both WoW containers keep shooter mode but set `showRuntimeToggle` off at every launch.
 
 ## 2026-10-27: Server list on the login screen
 

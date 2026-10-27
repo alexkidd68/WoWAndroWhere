@@ -4,8 +4,8 @@ Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which thi
 
 ## Unreleased
 
-- **Several private servers (3.3.5a).** **Client and server** now keeps a list of servers, each with a name, realmlist and optional account name, and **Add server** adds another. Play starts on the selected one. Server login saves a password for each server. With AndroWhere Login installed and more than one server saved, the login screen shows the server's name at the top, and L1 and R1 switch to the previous or next one, account name and password included.
-- **Server login needs AndroWhere Login.** The saved password is now only used by AndroWhere Login's Fill in password, so Server login shows the password options once it's installed and offers Install until then. Before, the boxes could be ticked with nothing happening on the login screen.
+- **Several private servers (3.3.5a).** **Client and server** now keeps a list of servers, each with a name, realmlist and optional account name, and **Add server** adds another. Play starts on the selected one, and each server keeps its own password. With AndroWhere Login installed and more than one server saved, the login screen shows the server's name at the top, and L1 and R1 switch to the previous or next one, account name and password included.
+- **Password moves into Client and server.** The Server login screen and its home tile are gone. The password, Fill in password and Log in automatically are now in **Client and server**, under the servers, and show once AndroWhere Login is installed. Until then that spot offers Install. Before, the boxes could be ticked with nothing happening on the login screen.
 - **Type password is gone.** The Type password button on the login screen and the menu item are removed. Fill in password and Log in automatically replace them.
 - **No Enable Mouse button over the game.** The WoW versions no longer show the Enable Mouse button at the top of the screen.
 

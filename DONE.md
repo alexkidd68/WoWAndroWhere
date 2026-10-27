@@ -27,7 +27,7 @@ What the app does, by area, with the version each feature came in. Versions up t
 - Each version keeps its own install, addons and addon database; launch, first run and detection follow the selected version (0.4.0)
 - Private server (3.3.5a) game version: your own client folder and realmlist, its own home screen, Play, and Client and server screen (0.5.0)
 - 3.3.5a clients run through Box64 WoW64, started directly instead of through winhandler; DXVK renderer, OpenGL as a fallback (0.5.0)
-- Saved, encrypted private server password for each server, used by AndroWhere Login's Fill in password; Server login offers Install until the add-on is in (0.5.0, Type password replaced unreleased)
+- Saved, encrypted private server password for each server, in Client and server, used by AndroWhere Login's Fill in password; Install is offered until the add-on is in (0.5.0, Type password replaced unreleased)
 - No Enable Mouse button over the WoW containers (unreleased)
 - Private server launches can save a Wine log (off by default, it costs frame rate) and offer to share it when the game closes (0.5.0)
 - Performance overlay for private server launches: DXVK frame rate, frame times and GPU load (0.5.0)
