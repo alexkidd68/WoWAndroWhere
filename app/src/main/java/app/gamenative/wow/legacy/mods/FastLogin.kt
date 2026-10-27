@@ -3,6 +3,7 @@ package app.gamenative.wow.legacy.mods
 import android.content.Context
 import android.os.FileObserver
 import app.gamenative.wow.legacy.LegacyClient
+import app.gamenative.wow.legacy.LegacyServers
 import app.gamenative.wow.legacy.LegacySettings
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
@@ -12,7 +13,7 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /**
- * Log in with A: AndroWhere Login carries the saved server password into the client for one launch.
+ * Log in with A: AndroWhere Login carries the saved server passwords into the client for one launch.
  * It sits in our archive in the client folder from launch until the client has opened the archive, and is
  * wiped then, at a backstop, when the game ends and whenever the launcher comes back. See NOTES.md.
  */
@@ -24,9 +25,17 @@ object FastLogin {
 
     /** Called at launch, after the client's config is written. */
     fun prepare(context: Context, root: File, settings: LegacySettings) {
-        val password = if (settings.fastLogin && ClientMods.loginEnabled(root)) LegacyClient.serverPassword(context) else null
-        ClientMods.refresh(root, password, settings.autoLogin)
-        if (password != null) watch(root)
+        if (!ClientMods.loginEnabled(root)) return
+        val servers = LegacyServers.load(context, settings)
+        val passwords = if (settings.fastLogin) servers.map { LegacyServers.password(context, it.id) } else null
+        val data = LoginData(
+            servers = servers.map { GlueServer(it.name, it.realmlist, it.account) },
+            selected = servers.indexOfFirst { it.id == settings.serverId }.coerceAtLeast(0),
+            passwords = passwords,
+            autoLogin = settings.autoLogin,
+        )
+        ClientMods.refresh(root, data)
+        if (passwords?.any { it != null } == true) watch(root)
     }
 
     /** Takes the password out of the client folder. Safe to call any time; does nothing when it isn't there. */

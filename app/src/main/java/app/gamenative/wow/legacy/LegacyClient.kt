@@ -29,6 +29,8 @@ data class LegacySettings(
     val fastLogin: Boolean = false,
     /** With [fastLogin], the login screen also presses Log in once per game start. */
     val autoLogin: Boolean = false,
+    /** The selected one of [LegacyServers]; [realmlist] is its realmlist. */
+    val serverId: String = LegacyServers.MAIN,
 )
 
 object LegacyClient {
@@ -40,7 +42,6 @@ object LegacyClient {
     private const val PREFS = "wow_legacy"
     private const val DEBUG_CLEARED = "leftover_debug_cleared"
     private const val LOG_WAITING = "log_waiting"
-    private const val VAULT = "legacy_server_vault"
     private const val TYPE_DELAY_MS = 400L
 
     /** Container extra: the in-game menu offers Type password. */
@@ -70,6 +71,7 @@ object LegacyClient {
             perfOverlay = p.getBoolean("perf_overlay", false),
             fastLogin = p.getBoolean("fast_login", false),
             autoLogin = p.getBoolean("auto_login", false),
+            serverId = p.getString("server_id", null) ?: LegacyServers.MAIN,
         )
     }
 
@@ -82,6 +84,7 @@ object LegacyClient {
             .putBoolean("perf_overlay", settings.perfOverlay)
             .putBoolean("fast_login", settings.fastLogin)
             .putBoolean("auto_login", settings.autoLogin)
+            .putString("server_id", settings.serverId)
             .apply()
     }
 
@@ -112,13 +115,14 @@ object LegacyClient {
     fun hasServerPassword(context: Context): Boolean = runCatching { serverPassword(context) != null }.getOrDefault(false)
 
     fun saveServerPassword(context: Context, password: String): Boolean =
-        runCatching { LoginVault(context, VAULT).save("", password) }.isSuccess
+        runCatching { LegacyServers.vault(context, load(context).serverId).save("", password) }.isSuccess
 
     fun forgetServerPassword(context: Context) {
-        LoginVault(context, VAULT).clear()
+        LegacyServers.vault(context, load(context).serverId).clear()
     }
 
-    internal fun serverPassword(context: Context): String? = LoginVault(context, VAULT).load()?.second?.takeIf { it.isNotEmpty() }
+    /** The selected server's saved password. */
+    internal fun serverPassword(context: Context): String? = LegacyServers.password(context, load(context).serverId)
 
     /** Types the saved password and Enter into the game. Called from the in-game menu. */
     fun typeServerPassword(context: Context) {

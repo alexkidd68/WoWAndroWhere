@@ -162,6 +162,7 @@ private fun PlayTile(launcher: LauncherController, onOpenGame: () -> Unit, modif
         Text(
             when {
                 launcher.isPrivate && !launcher.filesMissing -> launcher.legacy.realmlist.ifBlank { "No server set" }
+                    .let { if (launcher.servers.size > 1) "${launcher.selectedServer.name} · $it" else it }
                 else -> files.product?.let { listOfNotNull(it.displayName, version?.localVersion).joinToString(" · ") } ?: "Set up ${launcher.version.displayName} to start"
             },
             style = Fw.Data,

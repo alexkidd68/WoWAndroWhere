@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -38,7 +39,6 @@ import java.io.File
 fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
     val context = LocalContext.current
     val settings = launcher.legacy
-    var realmlist by remember { mutableStateOf(settings.realmlist) }
     var folderError by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) { launcher.detectLegacyBuild() }
 
@@ -48,7 +48,6 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
         folderError = if (root == null) "No ${LegacyClient.EXE} with a Data folder in $path." else null
         root?.let {
             val existing = LegacyClient.readRealmlist(it)
-            if (existing != null) realmlist = existing
             launcher.updateLegacy(settings.copy(root = it.absolutePath, realmlist = existing ?: settings.realmlist))
         }
     }
@@ -69,18 +68,55 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
             FwButton("Choose folder", { picker.launch(null) }, kind = FwButtonKind.Ghost)
         }
 
-        FwSection("Server") {
-            OutlinedTextField(
-                realmlist,
-                {
-                    realmlist = it
-                    launcher.updateLegacy(settings.copy(realmlist = it))
-                },
-                singleLine = true,
-                label = { Text("Realmlist, e.g. logon.example.com") },
-                textStyle = Fw.Text,
-                modifier = Modifier.fillMaxWidth(),
+        FwSection("Servers") {
+            Text(
+                "Play starts on the selected server. With AndroWhere Login installed, L1 and R1 switch between these on the login screen.",
+                style = Fw.Secondary,
             )
+            launcher.servers.forEach { server ->
+                FwRow(selected = server.id == settings.serverId, onClick = { launcher.selectServer(server.id) }) {
+                    Column(Modifier.weight(1f)) {
+                        Text(server.name, style = Fw.Text)
+                        Text(server.realmlist.ifBlank { "No realmlist yet" }, style = Fw.Data)
+                    }
+                    if (server.id == settings.serverId) Text("Selected", style = Fw.Data.copy(color = Fw.Brass))
+                }
+            }
+            val selected = launcher.selectedServer
+            key(selected.id) {
+                var name by remember { mutableStateOf(selected.name) }
+                var realmlist by remember { mutableStateOf(selected.realmlist) }
+                var account by remember { mutableStateOf(selected.account) }
+                LaunchedEffect(settings.realmlist) { if (settings.realmlist != realmlist) realmlist = settings.realmlist }
+                val save = { launcher.updateServer(selected.copy(name = name.ifBlank { "Server" }, realmlist = realmlist.trim(), account = account.trim())) }
+                OutlinedTextField(name, { name = it; save() }, singleLine = true, label = { Text("Name") }, textStyle = Fw.Text, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(
+                    realmlist,
+                    { realmlist = it; save() },
+                    singleLine = true,
+                    label = { Text("Realmlist, e.g. logon.example.com") },
+                    textStyle = Fw.Text,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    account,
+                    { account = it; save() },
+                    singleLine = true,
+                    label = { Text("Account name (optional)") },
+                    textStyle = Fw.Text,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            Text(
+                "The account name fills the login screen's account box for this server. Leave it empty to use the one the game remembers. Each server's password is saved in Server login.",
+                style = Fw.Secondary,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                FwButton("Add server", launcher::addServer, kind = FwButtonKind.Ghost)
+                if (launcher.servers.size > 1) {
+                    FwButton("Remove ${selected.name}", { launcher.removeServer(selected.id) }, kind = FwButtonKind.Danger)
+                }
+            }
         }
 
         FwSection("Renderer") {
@@ -131,7 +167,7 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
 fun ServerLoginScreen(launcher: LauncherController, onBack: () -> Unit) {
     var password by remember { mutableStateOf("") }
     FwPage("Server login", onBack) {
-        FwSection("Password") {
+        FwSection(if (launcher.servers.size > 1) "Password for ${launcher.selectedServer.name}" else "Password") {
             Text(
                 if (launcher.hasServerPassword) {
                     "Your server password is saved on this device, encrypted with the Android keystore. " +

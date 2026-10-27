@@ -2,6 +2,12 @@
 
 Why things are the way they are, newest first.
 
+## 2026-10-27: Server list on the login screen
+
+Daniel wanted the HD pack's login server list, but with our own servers. The app keeps the list (`LegacyServers`, JSON in the `wow_legacy` prefs, no passwords in it), and `realmlist` in the settings stays the selected server's, so launching is unchanged. Each server's password has its own `LoginVault`; the first server keeps the vault the single password used before, so nothing has to move. At launch the app writes `AndroWhereServers.lua` (names, realmlists and account names, as byte escapes) into AndroWhere Login's archive and leaves it there: none of it is secret. L1 and R1 on the login screen set the `realmList` CVar, the account name and the password for the next server. The switch lasts for that game session: the app writes the selected server's realmlist again at every launch.
+
+With Fill in password on, every saved server's password goes into `AndroWhereLoginData.lua` for the launch, not just the selected one's, so switching servers on the login screen still logs in with A. That widens the window below from one password to all of them, for the same ten seconds or so, and is wiped the same way. Daniel was asked on 2026-10-27 whether to limit it to the selected server; it ships with all of them until he says otherwise.
+
 ## 2026-10-27: Log in with A puts the password in the client folder for a moment
 
 Daniel didn't want to log in on the Odin with Back, then Type password, and chose to have A log in. The login screen's Lua can only read files from the client's MPQ archives, so with Log in with A turned on (a checkbox under the password in Server login, off by default) the app adds `AndroWhereLoginData.lua` with the saved server password to AndroWhere Login's archive at launch. Every byte is written as a decimal escape, so no password can break out of the Lua string. The glue reads it into a local, clears the global, fills the password box and keeps the boxes unfocused so the pad's A reaches the login frame. Daniel then asked for two checkboxes: Fill in password, and Log in automatically under it. Auto login presses Log in once per game start, half a second after the screen shows; after a failed login or a disconnect it waits for A, so a wrong saved password is never sent over and over, which could get an account locked.

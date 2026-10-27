@@ -2,6 +2,10 @@
 
 Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which this fork started from.
 
+## Unreleased
+
+- **Several private servers (3.3.5a).** **Client and server** now keeps a list of servers, each with a name, realmlist and optional account name, and **Add server** adds another. Play starts on the selected one. Server login saves a password for each server. With AndroWhere Login installed and more than one server saved, the login screen shows the server's name at the top, and L1 and R1 switch to the previous or next one, account name and password included.
+
 ## 0.6.0
 
 - **Client tab in Addons (3.3.5a).** Addons now has a **Client** tab for add-ons that change the game client itself. Its **AndroWhere patches** section lists the patches made for this app, each with Install and Remove. Once ConsolePortLK is installed, the Installed list also offers any AndroWhere patch you don't have yet.

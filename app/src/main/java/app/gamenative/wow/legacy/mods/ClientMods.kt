@@ -6,6 +6,15 @@ import java.io.File
 /** A patch MPQ found in the player's client, with its locale twin when it has one. */
 data class ClientPatch(val key: String, val name: String, val files: List<File>, val size: Long, val enabled: Boolean)
 
+/** A server as the login screen sees it. */
+data class GlueServer(val name: String, val realmlist: String, val account: String)
+
+/**
+ * What the app hands the login screen at launch: its servers, which one is selected, and, with Fill in password,
+ * each server's password (null where none is saved) for one launch.
+ */
+data class LoginData(val servers: List<GlueServer>, val selected: Int, val passwords: List<String?>?, val autoLogin: Boolean)
+
 /** A patch we make for the 3.3.5a client, installed and removed from the Addons screen's Client tab. */
 enum class AndroWherePatch(val title: String, val summary: String) {
     LOGIN(
@@ -24,6 +33,7 @@ object ClientMods {
     const val DISABLED = ".disabled"
     private const val LOGIN_FILE = "AndroWhereLogin.lua"
     private const val PASSWORD_FILE = "AndroWhereLoginData.lua"
+    private const val SERVERS_FILE = "AndroWhereServers.lua"
     private const val GLUE_DIR = "Interface\\GlueXML\\"
     private const val LOGIN_RESOURCE = "/androwhere/glue/$LOGIN_FILE"
     private const val GLUE_TOC = "Interface\\GlueXML\\GlueXML.toc"
@@ -58,9 +68,9 @@ object ClientMods {
     }
 
     /** Writes our login add-on and patches the exe so the client accepts it. */
-    fun enableLogin(root: File, password: String? = null, autoLogin: Boolean = false) {
+    fun enableLogin(root: File, data: LoginData? = null) {
         WowExePatch.apply(exe(root))
-        writeLogin(root, password, autoLogin)
+        writeLogin(root, data?.let { serversLua(it) } ?: existing(root, SERVERS_FILE), data?.let { passwordsLua(it) })
     }
 
     fun disableLogin(root: File) {
@@ -70,35 +80,38 @@ object ClientMods {
 
     /**
      * Rebuilds the add-on at launch so it follows the client's current login file list, e.g. after an HD patch changed.
-     * With [password], the login screen fills it in, and with [autoLogin] also logs in once;
-     * [wipePassword] takes it out again once the client has the archive open.
+     * With [data], the login screen gets the app's servers and, when it carries them, their passwords;
+     * [wipePassword] takes the passwords out again once the client has the archive open. Without it the server list stays.
      */
-    fun refresh(root: File, password: String? = null, autoLogin: Boolean = false) {
-        if (loginEnabled(root)) enableLogin(root, password, autoLogin)
+    fun refresh(root: File, data: LoginData? = null) {
+        if (loginEnabled(root)) enableLogin(root, data)
     }
 
-    fun hasPassword(root: File) = ourArchive(root).isFile && Mpq.read(ourArchive(root), GLUE_DIR + PASSWORD_FILE) != null
+    fun hasPassword(root: File) = ourArchive(root).isFile && existing(root, PASSWORD_FILE) != null
 
-    /** Rewrites the add-on without the password. A no-op when it holds none. */
+    /** Rewrites the add-on without the passwords, keeping the server list. A no-op when it holds none. */
     fun wipePassword(root: File) {
-        if (hasPassword(root)) writeLogin(root, null, false)
+        if (hasPassword(root)) writeLogin(root, existing(root, SERVERS_FILE), null)
     }
+
+    private fun existing(root: File, file: String) = Mpq.read(ourArchive(root), GLUE_DIR + file)
 
     /**
      * Writes a new archive and renames it over ours. The running client keeps reading the archive it opened,
-     * so replacing it never corrupts the game, and the old copy, password included, is gone from storage.
+     * so replacing it never corrupts the game, and the old copy, passwords included, is gone from storage.
      */
     @Synchronized
-    private fun writeLogin(root: File, password: String?, autoLogin: Boolean) {
+    private fun writeLogin(root: File, servers: ByteArray?, passwords: ByteArray?) {
         val toc = effectiveGlueToc(root) ?: error("Couldn't find the client's login screen files.")
         val lua = checkNotNull(javaClass.getResourceAsStream(LOGIN_RESOURCE)) { "Missing $LOGIN_FILE" }.use { it.readBytes() }
         val archive = ourArchive(root)
         archive.parentFile?.mkdirs()
         val files = mutableMapOf(
-            GLUE_TOC to withLoginFile(toc, password != null).toByteArray(Charsets.ISO_8859_1),
+            GLUE_TOC to withLoginFile(toc, servers != null, passwords != null).toByteArray(Charsets.ISO_8859_1),
             GLUE_DIR + LOGIN_FILE to lua,
         )
-        if (password != null) files[GLUE_DIR + PASSWORD_FILE] = loginDataLua(password, autoLogin).toByteArray(Charsets.ISO_8859_1)
+        if (servers != null) files[GLUE_DIR + SERVERS_FILE] = servers
+        if (passwords != null) files[GLUE_DIR + PASSWORD_FILE] = passwords
         val temp = File(archive.parentFile, archive.name + ".tmp")
         Mpq.write(temp, files)
         if (!temp.renameTo(archive)) {
@@ -107,16 +120,34 @@ object ClientMods {
         }
     }
 
-    /** Every byte as a decimal escape, so no password can break out of the Lua string. */
-    internal fun loginDataLua(password: String, autoLogin: Boolean) =
-        password.toByteArray(Charsets.UTF_8).joinToString("", "AndroWhereLoginPassword = \"", "\"\r\n") { "\\" + (it.toInt() and 0xFF) } +
-            "AndroWhereLoginAuto = $autoLogin\r\n"
+    /** Every byte as a decimal escape, so no name or password can break out of the Lua string. */
+    internal fun luaString(text: String) =
+        text.toByteArray(Charsets.UTF_8).joinToString("", "\"", "\"") { "\\" + (it.toInt() and 0xFF) }
+
+    internal fun serversLua(data: LoginData): ByteArray = buildString {
+        append("AndroWhereServers = {\r\n")
+        data.servers.forEach {
+            append("    { name = ${luaString(it.name)}, realmlist = ${luaString(it.realmlist)}, account = ${luaString(it.account)} },\r\n")
+        }
+        append("}\r\nAndroWhereServerIndex = ${data.selected + 1}\r\n")
+    }.toByteArray(Charsets.ISO_8859_1)
+
+    /** Null when no password goes to the login screen. */
+    internal fun passwordsLua(data: LoginData): ByteArray? {
+        val passwords = data.passwords?.takeIf { list -> list.any { it != null } } ?: return null
+        return buildString {
+            append("AndroWhereLoginPasswords = {\r\n")
+            passwords.forEachIndexed { index, password -> if (password != null) append("    [${index + 1}] = ${luaString(password)},\r\n") }
+            append("}\r\nAndroWhereLoginAuto = ${data.autoLogin}\r\n")
+        }.toByteArray(Charsets.ISO_8859_1)
+    }
 
     /** Adds our files before the line Blizzard keeps last, so they run after every stock login file. */
-    internal fun withLoginFile(toc: String, withPassword: Boolean = false): String {
-        val lines = toc.replace("\r", "").split("\n").filterNot { it.trim() == LOGIN_FILE || it.trim() == PASSWORD_FILE }.toMutableList()
+    internal fun withLoginFile(toc: String, withServers: Boolean = false, withPassword: Boolean = false): String {
+        val ours = setOf(LOGIN_FILE, SERVERS_FILE, PASSWORD_FILE)
+        val lines = toc.replace("\r", "").split("\n").filterNot { it.trim() in ours }.toMutableList()
         val last = lines.indexOfFirst { it.startsWith(TOC_LAST) }.takeIf { it >= 0 } ?: lines.size
-        lines.addAll(last, listOfNotNull(PASSWORD_FILE.takeIf { withPassword }, LOGIN_FILE))
+        lines.addAll(last, listOfNotNull(SERVERS_FILE.takeIf { withServers }, PASSWORD_FILE.takeIf { withPassword }, LOGIN_FILE))
         return lines.joinToString("\r\n")
     }
 
