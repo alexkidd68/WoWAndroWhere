@@ -6,7 +6,7 @@ Why things are the way they are, newest first.
 
 Daniel wanted the HD pack's login server list, but with our own servers. The app keeps the list (`LegacyServers`, JSON in the `wow_legacy` prefs, no passwords in it), and `realmlist` in the settings stays the selected server's, so launching is unchanged. Each server's password has its own `LoginVault`; the first server keeps the vault the single password used before, so nothing has to move. At launch the app writes `AndroWhereServers.lua` (names, realmlists and account names, as byte escapes) into AndroWhere Login's archive and leaves it there: none of it is secret. L1 and R1 on the login screen set the `realmList` CVar, the account name and the password for the next server. The switch lasts for that game session: the app writes the selected server's realmlist again at every launch.
 
-With Fill in password on, every saved server's password goes into `AndroWhereLoginData.lua` for the launch, not just the selected one's, so switching servers on the login screen still logs in with A. That widens the window below from one password to all of them, for the same ten seconds or so, and is wiped the same way. Daniel was asked on 2026-10-27 whether to limit it to the selected server; it ships with all of them until he says otherwise.
+With Fill in password on, every saved server's password goes into `AndroWhereLoginData.lua` for the launch, not just the selected one's, so switching servers on the login screen still logs in with A. That widens the window below from one password to all of them, for the same ten seconds or so, and is wiped the same way. Daniel chose all of them over only the selected server's on 2026-10-27.
 
 ## 2026-10-27: Log in with A puts the password in the client folder for a moment
 
