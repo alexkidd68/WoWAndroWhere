@@ -15,7 +15,7 @@ local PAD = {
     F10 = "PAD_R1",
 }
 
--- An edit box with focus and its parent frame can both see one press.
+-- Ignores a repeat of the same key within 150 ms.
 local lastKey, lastTime = nil, 0
 local function translate(key)
     local mapped = PAD[key] or key
@@ -49,12 +49,13 @@ end
 local function hint(parent, text)
     if not parent then return end
     local line = parent:CreateFontString(nil, "OVERLAY", "GlueFontNormalSmall")
-    line:SetPoint("BOTTOM", parent, "BOTTOM", 0, 12)
+    line:SetPoint("TOP", parent, "TOP", 0, -12)
     line:SetText(text)
     return line
 end
 
--- Login: A logs in. B does nothing here, so the pad can't quit the game by accident.
+-- Login: the password box keeps the keyboard, so pad keys only reach this when it isn't focused.
+-- Type password from the app ends with Enter and logs in. B does nothing, so the pad can't quit the game.
 local accountLoginKey = AccountLogin_OnKeyDown
 AccountLogin_OnKeyDown = function(key)
     local mapped = translate(key)
@@ -62,15 +63,7 @@ AccountLogin_OnKeyDown = function(key)
     accountLoginKey(mapped)
 end
 
-local function loginFromEditBox(self, key)
-    if PAD[key] == "ENTER" then
-        AccountLogin_OnKeyDown(key)
-    end
-end
-for _, box in ipairs({ AccountLoginAccountEdit, AccountLoginPasswordEdit, AccountLoginTokenEdit }) do
-    if box then box:HookScript("OnKeyDown", loginFromEditBox) end
-end
-hint(AccountLoginUI or AccountLogin, "A  Log in       Menu  Type password")
+hint(AccountLoginUI or AccountLogin, "Back, then Type password, to log in")
 
 -- Character select: the D-pad picks, A enters the world, B goes back, Y changes realm.
 local characterSelectKey = CharacterSelect_OnKeyDown

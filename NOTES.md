@@ -2,6 +2,14 @@
 
 Why things are the way they are, newest first.
 
+## 2026-10-27: Client add-ons patch Wow.exe
+
+Daniel wanted our own add-ons for the 3.3.5a client itself, starting with the login screens, instead of copying an HD pack's changes. Login screens (GlueXML) can't use normal addons: the client only loads them from its MPQ archives, and the stock exe refuses changed ones ("Your login interface files are corrupt"). Tested on Daniel's PC on 2026-10-27 with his Warmane client: the 1-byte interface patch some guides name did not help, and the five changes around 0x415A25 that the WotLK HD pack's exe also has were enough on their own. So turning on AndroWhere Login checks that Wow.exe is build 12340 with the original bytes, keeps a copy next to it (`Wow.exe.androwhere-original`), and changes only those five spots; turning it off puts the copy back. An exe already patched by something else is left alone and never "restored". Trade-off: a server's anti-cheat can see a changed exe. Warmane accepted the same bytes in the HD pack's exe, but other servers might not.
+
+The add-on is our own Lua in `resources/androwhere/glue/`, written into a small uncompressed `Data/<locale>/patch-<locale>-Z.MPQ` together with the client's own `GlueXML.toc` plus one line. The toc is read on the device from the highest priority archive that has one, so no Blizzard file is in the repo, and an HD pack's own login screen keeps working under ours. Z is the last letter, so ours loads over the packs' lettered patches. The add-on hooks Blizzard's key handlers and translates the ConsolePortLK profile's F-keys into the Enter, Escape and arrow keys those screens already understand. On the login screen itself the password box holds the keyboard, so pad keys never reach Lua there; the app's Type password ends with Enter and logs in instead.
+
+The same Client tab turns patch archives already in the player's client on and off by adding or removing `.disabled`, the convention the HD packs' own menus use. Names come from the pack's `Patch_Lables.txt` or its patch menu config when there is one. Nothing from those packs is shipped.
+
 ## 2026-10-24: Only full releases
 
 Daniel stopped test builds. 0.5.1 removed the `test-build` workflow run, its pre-release and the updater's test channel. Pull requests still run the "Checks" workflow, with unit tests and a debug build. Releases come from `release.yml`, dispatched with `tag=vX.Y.Z`, because tag pushes from Claude's container are refused. At Daniel's request, 0.5.1 was published with `prune=true`, which deleted every other release and its tag once 0.5.1 was confirmed as the latest. A phone still on a test build from before 0.5.0's updater can't see releases and needs the 0.5.1 APK installed by hand once.

@@ -48,6 +48,9 @@ What the app does, by area, with the version each feature came in. Versions up t
 - 3.3.5a addon catalog: over 30 GitHub backports from `catalog/wotlk335.json`, snapshotted nightly by commit and kept only when their TOC says Interface 303xx (0.5.0)
 - One-tap ConsolePortLK install on the 3.3.5a client, with a controller-to-keyboard profile used automatically while it is installed (0.5.0)
 - Immersion's quest and gossip windows work with the controller on 3.3.5a when ConsolePortLK is installed (0.5.0)
+- Client tab in Addons on 3.3.5a, for add-ons that change the client itself (unreleased)
+- AndroWhere Login: controller and button hints on the 3.3.5a character select, realm list and dialogs, using a 5-byte Wow.exe patch that is undone when turned off (unreleased)
+- Switches for the patch archives in the player's 3.3.5a client, such as HD packs, named from the pack's own labels (unreleased)
 
 ## Sign-in and security
 

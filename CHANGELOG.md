@@ -2,6 +2,12 @@
 
 Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which this fork started from.
 
+## Unreleased
+
+- **Client tab in Addons (3.3.5a).** Addons now has a **Client** tab for add-ons that change the game client itself.
+- **AndroWhere Login.** Turn it on in the Client tab to use the controller on the login, realm and character screens. On character select, the D-pad picks a character, A enters the world, B goes back and Y opens the realm list. In the realm list, the D-pad moves, L1 and R1 switch tabs, A accepts and B cancels. Each screen shows its buttons at the top. On the login screen, press Back and choose Type password, which logs you in. It needs ConsolePortLK installed, and it changes 5 bytes of Wow.exe so the client accepts it. The original is kept and put back when you turn it off. Some servers may not allow a changed Wow.exe.
+- **Turn your client's patches on and off.** If your 3.3.5a client has extra patch files, such as an HD pack, the Client tab lists them by name and size so you can turn each one off or on again. This helps when a heavy patch slows the game down.
+
 ## 0.5.1
 
 - **CurseForge uses your own key or proxy.** The app no longer sends CurseForge searches through the WoW Foreverywhere project's server. To use CurseForge, open Settings → CurseForge and enter your own CurseForge API key, which is stored encrypted on the device and only sent to CurseForge, or the address of a proxy you run. Without either, CurseForge is off and Addons says so. Wago, WoWInterface and the GitHub catalog work as before.
