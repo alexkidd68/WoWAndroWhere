@@ -27,9 +27,9 @@ What the app does, by area, with the version each feature came in. Versions up t
 - Each version keeps its own install, addons and addon database; launch, first run and detection follow the selected version (0.4.0)
 - Private server (3.3.5a) game version: your own client folder and realmlist, its own home screen, Play, and Client and server screen (0.5.0)
 - 3.3.5a clients run through Box64 WoW64, started directly instead of through winhandler; DXVK renderer, OpenGL as a fallback (0.5.0)
-- Saved, encrypted private server password for each server, in Client and server, used by AndroWhere Login's Fill in password; Install is offered until the add-on is in (0.5.0, Type password replaced unreleased)
-- No Enable Mouse button over the WoW containers (unreleased)
-- Settings as a top bar button on the home screen, marked when an app update is out (unreleased)
+- Saved, encrypted private server password for each server, in Client and server, used by AndroWhere Login's Fill in password; Install is offered until the add-on is in (0.5.0, Type password replaced 0.7.0)
+- No Enable Mouse button over the WoW containers (0.7.0)
+- Settings as a top bar button on the home screen, marked when an app update is out (0.7.0)
 - Private server launches can save a Wine log (off by default, it costs frame rate) and offer to share it when the game closes (0.5.0)
 - Performance overlay for private server launches: DXVK frame rate, frame times and GPU load (0.5.0)
 - Use lighter graphics: one tap writes CPU-light 3.3.5a settings to Config.wtf (0.5.0)
@@ -54,7 +54,7 @@ What the app does, by area, with the version each feature came in. Versions up t
 - AndroWhere Login: controller and button hints on the 3.3.5a character select, realm list and dialogs, using a 5-byte Wow.exe patch that is undone when turned off (0.6.0)
 - Log in with A on the 3.3.5a login screen, and optional auto login once per game start: opt-in, the saved password goes into AndroWhere Login for one launch and is wiped right after the client opens it (0.6.0)
 - Controller on 3.3.5a character creation through AndroWhere Login: rows for gender, race, class, looks and name, X for a new character on character select (0.6.0)
-- Several saved private servers (name, realmlist, account name, own sealed password), switched with L1 and R1 on the login screen through AndroWhere Login (unreleased)
+- Several saved private servers (name, realmlist, account name, own sealed password), switched with L1 and R1 on the login screen through AndroWhere Login (0.7.0)
 - Switches for the patch archives in the player's 3.3.5a client, such as HD packs, named from the pack's own labels (0.6.0)
 
 ## Sign-in and security
