@@ -56,6 +56,7 @@ What the app does, by area, with the version each feature came in. Versions up t
 - AndroWhere Login: controller and button hints on the 3.3.5a character select, realm list and dialogs, using a 5-byte Wow.exe patch that is undone when turned off (0.6.0)
 - Log in with A on the 3.3.5a login screen, and optional auto login once per game start: opt-in, the saved password goes into AndroWhere Login for one launch and is wiped right after the client opens it (0.6.0)
 - Controller on 3.3.5a character creation through AndroWhere Login: rows for gender, race, class, looks and name, X for a new character on character select (0.6.0)
+- On the 3.3.5a login screen, B or a tap outside the boxes stops typing, and B with no box in use quits (0.8.2)
 - Several saved private servers (name, realmlist, account name, own sealed password), switched with L1 and R1 on the login screen through AndroWhere Login (0.7.0)
 - Switches for the patch archives in the player's 3.3.5a client, such as HD packs, named from the pack's own labels (0.6.0)
 
