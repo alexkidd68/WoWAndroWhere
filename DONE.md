@@ -29,14 +29,14 @@ What the app does, by area, with the version each feature came in. Versions up t
 - Profiles sharing a folder keep their own addons (AddOns.txt written at launch), server list, passwords and 3.3.5a client patches (0.8.0)
 - Private server (3.3.5a) game version: your own client folder and realmlist, its own home screen, Play, and Client and server screen (0.5.0)
 - 3.3.5a clients run through Box64 WoW64, started directly instead of through winhandler; DXVK renderer, OpenGL as a fallback (0.5.0)
-- Saved, encrypted private server password for each server, in Client and server, used by AndroWhere Login's Fill in password; Install is offered until the add-on is in (0.5.0, Type password replaced 0.7.0); a saved password shows as dots (0.8.1)
+- Saved, encrypted private server password for each server, in Client and server, used by Controller Menus' Fill in password; Install is offered until the add-on is in (0.5.0, Type password replaced 0.7.0); a saved password shows as dots (0.8.1)
 - No Enable Mouse button over the WoW containers (0.7.0)
 - Settings as a top bar button on the home screen, marked when an app update is out (0.7.0)
 - Private server launches can save a Wine log (off by default, it costs frame rate) and offer to share it when the game closes (0.5.0)
 - Performance overlay for private server launches: DXVK frame rate, frame times and GPU load (0.5.0)
 - Use lighter graphics: one tap writes CPU-light 3.3.5a settings to Config.wtf (0.5.0)
-- Faster emulation: opt-in Box64 flags on top of the Performance preset for 3.3.5a (unreleased)
-- 3.3.5a runs on wowbox64 0.4.4, built in CI from the official Box64 tag (unreleased)
+- Faster emulation: opt-in Box64 flags on top of the Performance preset for 3.3.5a (0.8.4)
+- 3.3.5a runs on wowbox64 0.4.4, built in CI from the official Box64 tag (0.8.4)
 
 ## Addons
 
@@ -56,11 +56,12 @@ What the app does, by area, with the version each feature came in. Versions up t
 - One-tap ConsolePortLK install on the 3.3.5a client, with a controller-to-keyboard profile used automatically while it is installed (0.5.0)
 - Immersion's quest and gossip windows work with the controller on 3.3.5a when ConsolePortLK is installed (0.5.0)
 - Client tab in Addons on 3.3.5a, for add-ons that change the client itself, with an AndroWhere patches section (Install and Remove) and a card on the Installed list for ones not installed yet (0.6.0)
-- AndroWhere Login: controller and button hints on the 3.3.5a character select, realm list and dialogs, using a 5-byte Wow.exe patch that is undone when turned off (0.6.0)
-- Log in with A on the 3.3.5a login screen, and optional auto login once per game start: opt-in, the saved password goes into AndroWhere Login for one launch and is wiped right after the client opens it (0.6.0)
-- Controller on 3.3.5a character creation through AndroWhere Login: rows for gender, race, class, looks and name, X for a new character on character select (0.6.0)
+- Controller Menus (was AndroWhere Login): controller and button hints on the 3.3.5a character select, realm list and dialogs, using a 5-byte Wow.exe patch that is undone when turned off (0.6.0)
+- Log in with A on the 3.3.5a login screen, and optional auto login once per game start: opt-in, the saved password goes into Controller Menus for one launch and is wiped right after the client opens it (0.6.0)
+- Controller on 3.3.5a character creation through Controller Menus: rows for gender, race, class, looks and name, X for a new character on character select (0.6.0)
 - On the 3.3.5a login screen, B or a tap outside the boxes stops typing, and B with no box in use quits (0.8.2)
-- Several saved private servers (name, realmlist, account name, own sealed password), switched with L1 and R1 on the login screen through AndroWhere Login (0.7.0)
+- Several saved private servers (name, realmlist, account name, own sealed password), switched with L1 and R1 on the login screen through Controller Menus (0.7.0)
+- Controller Menus works without ConsolePortLK: the app turns on its controller profile when either is installed, and the add-on was renamed from AndroWhere Login (unreleased)
 - Switches for the patch archives in the player's 3.3.5a client, such as HD packs, named from the pack's own labels (0.6.0)
 
 ## Sign-in and security

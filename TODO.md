@@ -4,8 +4,7 @@ Only work that's left. Shipped items move to DONE.md, rejected ones to DROPPED.m
 
 ## Client add-ons (3.3.5a)
 
-1. **Controller without ConsolePortLK.** The pad only sends keys while ConsolePortLK's profile is in use. A small profile for players without it (D-pad as arrows, A as Enter, B as Escape) would let the login screens work on their own.
-2. **The HD pack's rules.** The WotLK HD pack's menu keeps some patches together (u needs a, n needs m) and apart (j and k). The Client tab doesn't yet; its config file has the rules to read.
+1. **The HD pack's rules.** The WotLK HD pack's menu keeps some patches together (u needs a, n needs m) and apart (j and k). The Client tab doesn't yet; its config file has the rules to read.
 
 ## Later
 
