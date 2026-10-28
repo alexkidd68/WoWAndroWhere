@@ -53,6 +53,7 @@ fun HomeScreen(
     addonCount: Int?,
     onOpenAddons: () -> Unit,
     onOpenGame: () -> Unit,
+    onOpenClient: () -> Unit,
     onOpenSettings: () -> Unit,
     onNewProfile: () -> Unit,
 ) {
@@ -77,9 +78,9 @@ fun HomeScreen(
         Header(launcher, onOpenSettings, onOpenProfiles = { showProfiles = true })
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
             val wide = maxWidth >= 600.dp
-            val play: @Composable (Modifier) -> Unit = { m -> PlayTile(launcher, onOpenGame, m.focusRequester(playFocus)) }
+            val play: @Composable (Modifier) -> Unit = { m -> PlayTile(launcher, onOpenGame, onOpenClient, m.focusRequester(playFocus)) }
             val tiles: @Composable (Modifier) -> Unit = { m ->
-                SmallTiles(launcher, addonUpdates, addonCount, onOpenAddons, onOpenGame, m)
+                SmallTiles(launcher, addonUpdates, addonCount, onOpenAddons, onOpenGame, onOpenClient, m)
             }
             if (wide) {
                 Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -90,7 +91,7 @@ fun HomeScreen(
                 // Portrait: the small tiles keep a fixed height and Play takes all the rest.
                 Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     play(Modifier.fillMaxWidth().weight(1f))
-                    tiles(Modifier.fillMaxWidth().height(163.dp))
+                    tiles(Modifier.fillMaxWidth().height(if (launcher.isPrivate) 340.dp else 163.dp))
                 }
             }
         }
@@ -159,7 +160,7 @@ private fun Header(launcher: LauncherController, onOpenSettings: () -> Unit, onO
 }
 
 @Composable
-private fun PlayTile(launcher: LauncherController, onOpenGame: () -> Unit, modifier: Modifier) {
+private fun PlayTile(launcher: LauncherController, onOpenGame: () -> Unit, onOpenClient: () -> Unit, modifier: Modifier) {
     val files = launcher.files
     val version = launcher.versionStatus
     FwTile(
@@ -177,6 +178,7 @@ private fun PlayTile(launcher: LauncherController, onOpenGame: () -> Unit, modif
         },
         onClick = {
             when {
+                launcher.isPrivate && launcher.filesMissing -> onOpenClient()
                 launcher.filesMissing || (launcher.isPrivate && !launcher.canPlay && !launcher.busy) -> onOpenGame()
                 version?.isOutdated == true -> launcher.performUpdate()
                 launcher.canPlay -> launcher.launchGame()
@@ -194,7 +196,7 @@ private fun PlayTile(launcher: LauncherController, onOpenGame: () -> Unit, modif
         when {
             launcher.busy -> Text(if (launcher.isUpdating) launcher.updateStatusText else launcher.statusText, style = Fw.Text)
             launcher.isPrivate && launcher.filesMissing -> Text("Choose your 3.3.5a client folder and enter your server's realmlist.", style = Fw.Secondary)
-            launcher.isPrivate && launcher.legacy.realmlist.isBlank() -> Text("Enter your server's realmlist in Client and server.", style = Fw.Secondary.copy(color = Fw.Warn))
+            launcher.isPrivate && launcher.legacy.realmlist.isBlank() -> Text("Enter your server's realmlist in Server.", style = Fw.Secondary.copy(color = Fw.Warn))
             // The Battle.net login below is for Blizzard versions only.
             launcher.isPrivate -> Unit
             launcher.filesMissing -> Text("Download the game, or find the copy already on this device.", style = Fw.Secondary)
@@ -214,9 +216,25 @@ private fun SmallTiles(
     addonCount: Int?,
     onOpenAddons: () -> Unit,
     onOpenGame: () -> Unit,
+    onOpenClient: () -> Unit,
     modifier: Modifier,
 ) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        // 3.3.5a: Server and Client on top, Addons below.
+        if (launcher.isPrivate) {
+            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                FwTile("Server", Modifier.weight(1f).fillMaxHeight(), art = ForeverArt.ASHENVALE, onClick = onOpenGame) {
+                    Text(
+                        if (launcher.servers.size > 1) "${launcher.selectedServer.name} · ${launcher.servers.size} servers" else launcher.legacy.realmlist.ifBlank { "No server set" },
+                        style = Fw.Secondary,
+                        maxLines = 1,
+                    )
+                }
+                FwTile("Client", Modifier.weight(1f).fillMaxHeight(), art = ForeverArt.CAMP, onClick = onOpenClient) {
+                    Text(if (launcher.filesMissing) "Not set up" else launcher.legacy.renderer.label, style = Fw.Secondary, maxLines = 1)
+                }
+            }
+        }
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             FwTile("Addons", Modifier.weight(1f).fillMaxHeight(), art = ForeverArt.INTERFACE, badge = addonUpdates?.takeIf { it > 0 }?.toString(), onClick = onOpenAddons) {
                 Text(
@@ -228,16 +246,11 @@ private fun SmallTiles(
                     style = Fw.Secondary,
                 )
             }
-            FwTile(if (launcher.isPrivate) "Client and server" else "Game files", Modifier.weight(1f).fillMaxHeight(), art = ForeverArt.ASHENVALE, onClick = onOpenGame) {
-                Text(
-                    when {
-                        launcher.isPrivate -> if (launcher.filesMissing) "Not set up" else launcher.legacy.realmlist.ifBlank { "No server set" }
-                        launcher.filesMissing -> "Not installed"
-                        else -> launcher.files.product?.displayName.orEmpty()
-                    },
-                    style = Fw.Secondary,
-                )
-                if (launcher.canConvertToLaunch) Text("Launch version available", style = Fw.Secondary.copy(color = Fw.Brass))
+            if (!launcher.isPrivate) {
+                FwTile("Game files", Modifier.weight(1f).fillMaxHeight(), art = ForeverArt.ASHENVALE, onClick = onOpenGame) {
+                    Text(if (launcher.filesMissing) "Not installed" else launcher.files.product?.displayName.orEmpty(), style = Fw.Secondary)
+                    if (launcher.canConvertToLaunch) Text("Launch version available", style = Fw.Secondary.copy(color = Fw.Brass))
+                }
             }
         }
     }

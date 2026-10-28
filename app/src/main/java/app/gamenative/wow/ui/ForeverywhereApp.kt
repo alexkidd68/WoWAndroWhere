@@ -33,6 +33,7 @@ object Routes {
     const val HOME = "home"
     const val ADDONS = "addons"
     const val GAME = "game"
+    const val CLIENT = "client"
     const val NEW_PROFILE = "newprofile"
     const val SETTINGS = "settings"
     const val FIRST_RUN = "firstrun"
@@ -99,24 +100,26 @@ fun ForeverywhereApp(onLaunch: (appId: String) -> Unit) {
                         addonCount = addonsState.value?.installed?.size,
                         onOpenAddons = { nav.navigate(Routes.ADDONS) },
                         onOpenGame = openGame,
+                        onOpenClient = { nav.navigate(Routes.CLIENT) },
                         onOpenSettings = { nav.navigate(Routes.SETTINGS) },
                         onNewProfile = newProfile,
                     )
                 }
                 composable(Routes.GAME) {
                     if (launcher.isPrivate) {
-                        PrivateServerScreen(launcher, onBack = { nav.popBackStack() })
+                        LegacyServerScreen(launcher, onBack = { nav.popBackStack() })
                     } else {
                         GameFilesScreen(launcher, onBack = { nav.popBackStack() }, onInstall = { nav.navigate(Routes.INSTALL) })
                     }
                 }
+                composable(Routes.CLIENT) { LegacyClientScreen(launcher, onBack = { nav.popBackStack() }) }
                 composable(Routes.SETTINGS) { SettingsScreen(launcher, onBack = { nav.popBackStack() }, onEditLogin = { showLoginDialog = true }) }
                 composable(Routes.NEW_PROFILE) {
                     NewProfileScreen(
                         launcher,
                         onCreated = { version ->
                             toHome()
-                            nav.navigate(if (version.isPrivateServer) Routes.GAME else Routes.FIRST_RUN)
+                            nav.navigate(if (version.isPrivateServer) Routes.CLIENT else Routes.FIRST_RUN)
                         },
                         // With no profile yet there is nothing behind this screen.
                         onBack = { if (launcher.profile != null && !nav.popBackStack()) toHome() },
