@@ -1,13 +1,10 @@
-# WoW AndroWhere 0.8.1
+# WoW AndroWhere 0.8.2
 
-- **The keyboard waits for A.** Moving onto a text box with the D-pad, such as a server's Name in Client and server, now only highlights it. Press A, or tap it, to type and open the keyboard. Done or B closes it. This works the same in every text box in the launcher, including the addon search and the Battle.net login.
-- **A saved password shows.** Client and server now shows **Saved password ••••••••** once the server's password is saved, and **Password saved** right after you save it. The box below it is for changing it.
-- **Simpler profile list.** The current profile is no longer ringed, only marked Current, and the Edit buttons are gone. Press Y on a profile to edit it. The list and the profile button at the top left are wider, so longer names fit.
-- **Quieter home screen.** The Experimental label and the 3.3.5a client version are gone from the top bar. The Play card on 3.3.5a shows just the server's realmlist, without the password line.
+- **Client and server, reworked.** The long page is now a short list on the left (Server, Login, Graphics, Client) with that part's options on the right. The D-pad moves, right goes into the options and B goes back to the list. **Server** lists your servers: A selects one and opens it to edit its name, realmlist, account name and password, X adds a server and Y removes one. **Login** holds Fill in password and Log in automatically, **Graphics** the renderer, lighter graphics and the performance overlay, and **Client** the folder and logs. The explanations moved to one line at the bottom that describes whatever is highlighted.
 
 ## Install
 
-Download **WoW-AndroWhere.apk** below, or update from inside the app. It installs over 0.8.0 and keeps your settings, saved login, game files and addons.
+Download **WoW-AndroWhere.apk** below, or update from inside the app. It installs over 0.8.1 and keeps your settings, saved login, game files and addons.
 
 If Android says the app "conflicts with an existing package", your current copy came from somewhere else, such as the upstream WoW Foreverywhere releases. Uninstall it first, then install this one. Your game files and addons stay on your storage.
 
