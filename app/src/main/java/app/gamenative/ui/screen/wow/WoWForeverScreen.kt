@@ -54,6 +54,7 @@ import app.gamenative.wow.product.detectProduct
 import app.gamenative.wow.legacy.ConsolePortLK
 import app.gamenative.wow.legacy.LegacyClient
 import app.gamenative.wow.legacy.LegacySettings
+import com.winlator.box86_64.Box86_64Preset
 import com.winlator.container.Container
 import com.winlator.container.ContainerManager
 import com.winlator.contents.ContentProfile
@@ -1007,6 +1008,8 @@ internal fun prepareLegacyLaunch(
         put("executablePath", "G:\\${LegacyClient.EXE}")
         put("execArgs", settings.renderer.execArgs)
         put("emulator", LegacyClient.EMULATOR)
+        put("box64Version", LegacyClient.WOWBOX64_VERSION)
+        put("box64Preset", Box86_64Preset.PERFORMANCE)
         put("envVars", getString("envVars") + LegacyClient.envVars(settings))
     }
     val containerManager = ContainerManager(context)

@@ -23,6 +23,8 @@ data class LegacySettings(
     /** Off by default: Wine's warn and fixme output is written line by line and costs frame rate. */
     val saveLog: Boolean = false,
     val perfOverlay: Boolean = false,
+    /** Off by default: [LegacyClient.FASTER_EMULATION_ENV] trades Box64 safety checks for speed and can crash some code. */
+    val fasterEmulation: Boolean = false,
     /** Off by default: AndroWhere Login fills in the saved password, which briefly puts it in the client folder. */
     val fastLogin: Boolean = false,
     /** With [fastLogin], the login screen also presses Log in once per game start. */
@@ -37,6 +39,9 @@ object LegacyClient {
 
     /** The bundled 32-bit emulator. FEX's WoW64 DLL isn't bundled, so only Box64 (wowbox64) can run x86 code. */
     const val EMULATOR = "Box64"
+
+    /** The wowbox64 build in `assets/wowbox64`, made by the wowbox64 workflow from the official Box64 tag. */
+    const val WOWBOX64_VERSION = "0.4.4"
     private const val PREFS = "wow_legacy"
     private const val DEBUG_CLEARED = "leftover_debug_cleared"
     private const val LOG_WAITING = "log_waiting"
@@ -49,9 +54,17 @@ object LegacyClient {
     /** DXVK's own HUD: GPU load well under 100% while frame times are high means the CPU (Box64) is the limit. */
     const val PERF_OVERLAY_ENV = "DXVK_HUD=fps,frametimes,gpuload"
 
+    /**
+     * On top of Box64's Performance preset: no flag bookkeeping between blocks, longer forward jumps, deferred
+     * memory-protection checks, and the faster return path Box64 0.4.4 made its default.
+     */
+    const val FASTER_EMULATION_ENV =
+        "BOX64_DYNAREC_SAFEFLAGS=0 BOX64_DYNAREC_FORWARD=1024 BOX64_DYNAREC_DIRTY=1 BOX64_DYNAREC_CALLRET=2"
+
     /** The overlay is DXVK's, so it only shows with the DXVK renderer. */
     fun envVars(settings: LegacySettings): String =
-        if (settings.perfOverlay && settings.renderer == LegacyRenderer.DXVK) " $PERF_OVERLAY_ENV" else ""
+        (if (settings.perfOverlay && settings.renderer == LegacyRenderer.DXVK) " $PERF_OVERLAY_ENV" else "") +
+            (if (settings.fasterEmulation) " $FASTER_EMULATION_ENV" else "")
 
     private val REALMLIST_LINE = Regex("set\\s+realmlist\\s+(.*)", RegexOption.IGNORE_CASE)
 
@@ -64,6 +77,7 @@ object LegacyClient {
             renderer = LegacyRenderer.entries.firstOrNull { it.name == p.getString("renderer", null) } ?: LegacyRenderer.DXVK,
             saveLog = p.getBoolean("save_log", false),
             perfOverlay = p.getBoolean("perf_overlay", false),
+            fasterEmulation = p.getBoolean("faster_emulation", false),
             fastLogin = p.getBoolean("fast_login", false),
             autoLogin = p.getBoolean("auto_login", false),
             serverId = p.getString("server_id", null) ?: LegacyServers.MAIN,
@@ -77,6 +91,7 @@ object LegacyClient {
             .putString("renderer", settings.renderer.name)
             .putBoolean("save_log", settings.saveLog)
             .putBoolean("perf_overlay", settings.perfOverlay)
+            .putBoolean("faster_emulation", settings.fasterEmulation)
             .putBoolean("fast_login", settings.fastLogin)
             .putBoolean("auto_login", settings.autoLogin)
             .putString("server_id", settings.serverId)

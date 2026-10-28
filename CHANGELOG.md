@@ -2,6 +2,11 @@
 
 Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which this fork started from.
 
+## Unreleased
+
+- **Faster emulation for private servers.** **Client** → Graphics has a new **Faster emulation** switch. It turns off some of Box64's safety checks so the 3.3.5a client runs faster. It's off by default; if an area or addon crashes or looks wrong with it on, turn it off.
+- **Newer Box64 for private servers.** The 3.3.5a client now runs on Box64 0.4.4 (was 0.4.2), which starts and runs games a bit faster.
+
 ## 0.8.3
 
 - **Server and Client tiles.** On a 3.3.5a profile the home screen's Client and server tile is now two tiles, **Server** and **Client**, with Addons below them. **Server** has your servers, the selected server's password (with the saved dots, to change or forget it) and the login screen options. A on a server selects it and opens its name, realmlist and account name; X adds a server and Y removes one. **Client** has the client folder, graphics and logs.

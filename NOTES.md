@@ -2,6 +2,12 @@
 
 Why things are the way they are, newest first.
 
+## 2026-10-28: wowbox64 is built from source in CI, and Faster emulation is opt-in
+
+The 0.4.4 `wowbox64.dll` builds that GameNative and others pass around are CI artifacts from forks or personal repos, and the asset list of Box64's official v0.4.4 release couldn't be checked from Claude's container. So `.github/workflows/wowbox64.yml` builds it from the official `ptitSeb/box64` tag with the same toolchain and flags as Box64's own release workflow (llvm-mingw 20260311, `-DWOW64=1 -DARM_DYNAREC=1`, Release), packs it as `wowbox64-<ver>.tzst` and commits it to the branch, printing both SHA-256s in the run summary. Only the `wow_legacy` container asks for it (`box64Version`); the ARM64 retail container doesn't use Box64 at all. The container also pins Box64's Performance preset instead of relying on `Container`'s default.
+
+Faster emulation appends `BOX64_DYNAREC_SAFEFLAGS=0 FORWARD=1024 DIRTY=1 CALLRET=2` to the container's env, which the launcher applies after the preset, so they win. SAFEFLAGS=0 and DIRTY=1 can break code that relies on exact x86 flags or writes into its own code pages, so it stays off by default and its effect has to be measured on the device with the overlay. CALLRET=2 is Box64 0.4.4's own default, but the Performance preset pins 1, so it only takes effect with this switch.
+
 ## 2026-10-28: Profiles, and addons kept apart without moving files
 
 Daniel asked for profiles in place of Settings → Game version: each with its own version, folder, addons and client and server settings, switched from the top left. A profile stores its name, version and folder (`wow/profile`). The active one sets `GameVersions.selected`, the per-version game path and which 3.3.5a settings file is read, so the launch code didn't change. The first 3.3.5a profile keeps the old `wow_legacy` settings and its password vault, so nothing had to move. New 3.3.5a profiles get their own settings file and server ids, so passwords never collide. The Battle.net login stays one for the whole app, in Settings, as Daniel chose.
