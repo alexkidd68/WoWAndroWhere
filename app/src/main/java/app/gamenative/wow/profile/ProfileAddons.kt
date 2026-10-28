@@ -62,7 +62,7 @@ object ProfileAddons {
 
     /**
      * Called when [profile] starts using a folder. If others already use it, they claim what is installed
-     * now and [profile] starts with no addons and AndroWhere Login off. Each records its client patches.
+     * now and [profile] starts with no addons and Controller Menus off. Each records its client patches.
      */
     fun joined(context: Context, profile: Profile, addonsDir: File, clientRoot: File?) {
         val sharers = Profiles.sharers(profile)

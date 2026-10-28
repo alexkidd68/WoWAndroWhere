@@ -18,9 +18,9 @@ data class LoginData(val servers: List<GlueServer>, val selected: Int, val passw
 /** A patch we make for the 3.3.5a client, installed and removed from the Addons screen's Client tab. */
 enum class AndroWherePatch(val title: String, val summary: String) {
     LOGIN(
-        "AndroWhere Login",
+        "Controller Menus",
         "Controller support on the login, realm, character select and character creation screens, with button hints at the top. " +
-            "A logs you in when Fill in password is on in Server. Uses the ConsolePortLK controller layout. " +
+            "A logs you in when Fill in password is on in Server. Works with or without ConsolePortLK. " +
             "Installing it changes 5 bytes of Wow.exe so the client accepts it, and keeps the original to put back when you remove it.",
     ),
 }
@@ -31,6 +31,8 @@ enum class AndroWherePatch(val title: String, val summary: String) {
  */
 object ClientMods {
     const val DISABLED = ".disabled"
+
+    // Internal names from when the add-on was called AndroWhere Login. The player never sees them.
     private const val LOGIN_FILE = "AndroWhereLogin.lua"
     private const val PASSWORD_FILE = "AndroWhereLoginData.lua"
     private const val SERVERS_FILE = "AndroWhereServers.lua"

@@ -2,6 +2,10 @@
 
 Why things are the way they are, newest first.
 
+## 2026-10-28: Controller Menus works without ConsolePortLK
+
+Daniel wanted the login screen add-on to work on its own and to have a name about what it does. He picked Controller Menus. The add-on already read the F-keys that ConsolePortLK's controller profile sends, so the app now applies that same profile when either ConsolePortLK or Controller Menus is installed, rather than a second, menu-only profile. A second profile would have meant two key layouts and changes to the add-on's Lua for no gain, and the app can't switch profiles when the player leaves character select. Trade-off: without ConsolePortLK the profile stays on in the world, where the face buttons press F1 to F4 (target self and party members). An app-written addon that unbinds those keys in the world was built and taken out again: Daniel didn't want the block. The files inside the archive keep their AndroWhereLogin names; only the label changed, so existing installs carry on.
+
 ## 2026-10-28: wowbox64 is built from source in CI, and Faster emulation is opt-in
 
 The 0.4.4 `wowbox64.dll` builds that GameNative and others pass around are CI artifacts from forks or personal repos, and the asset list of Box64's official v0.4.4 release couldn't be checked from Claude's container. So `.github/workflows/wowbox64.yml` builds it from the official `ptitSeb/box64` tag with the same toolchain and flags as Box64's own release workflow (llvm-mingw 20260311, `-DWOW64=1 -DARM_DYNAREC=1`, Release), packs it as `wowbox64-<ver>.tzst` and commits it to the branch, printing both SHA-256s in the run summary. Only the `wow_legacy` container asks for it (`box64Version`); the ARM64 retail container doesn't use Box64 at all. The container also pins Box64's Performance preset instead of relying on `Container`'s default.

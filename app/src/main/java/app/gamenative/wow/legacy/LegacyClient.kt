@@ -25,7 +25,7 @@ data class LegacySettings(
     val perfOverlay: Boolean = false,
     /** Off by default: [LegacyClient.FASTER_EMULATION_ENV] trades Box64 safety checks for speed and can crash some code. */
     val fasterEmulation: Boolean = false,
-    /** Off by default: AndroWhere Login fills in the saved password, which briefly puts it in the client folder. */
+    /** Off by default: Controller Menus fills in the saved password, which briefly puts it in the client folder. */
     val fastLogin: Boolean = false,
     /** With [fastLogin], the login screen also presses Log in once per game start. */
     val autoLogin: Boolean = false,
@@ -119,7 +119,7 @@ object LegacyClient {
 
     /**
      * The private server password, sealed like the Battle.net login (see [LoginVault]) in its own prefs.
-     * With Fill in password, AndroWhere Login carries it to the login screen for one launch (see [app.gamenative.wow.legacy.mods.FastLogin]).
+     * With Fill in password, Controller Menus carries it to the login screen for one launch (see [app.gamenative.wow.legacy.mods.FastLogin]).
      */
     fun hasServerPassword(context: Context): Boolean = runCatching { serverPassword(context) != null }.getOrDefault(false)
 

@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /**
- * Log in with A: AndroWhere Login carries the saved server passwords into the client for one launch.
+ * Log in with A: Controller Menus carries the saved server passwords into the client for one launch.
  * It sits in our archive in the client folder from launch until the client has opened the archive, and is
  * wiped then, at a backstop, when the game ends and whenever the launcher comes back. See NOTES.md.
  */
