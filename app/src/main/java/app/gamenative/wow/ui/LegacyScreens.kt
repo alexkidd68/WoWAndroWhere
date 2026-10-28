@@ -260,7 +260,7 @@ private fun LoginSection(launcher: LauncherController, setHint: (String) -> Unit
             FwButton(
                 "Install AndroWhere Login",
                 { mods.setInstalled(AndroWherePatch.LOGIN, true) },
-                modifier = Modifier.hint("Needs ConsolePortLK. Changes 5 bytes of Wow.exe; the original is kept and put back if you remove it.", setHint),
+                modifier = Modifier.hint("Changes 5 bytes of Wow.exe; the original is kept and put back if you remove it.", setHint),
                 enabled = mods.working == null,
             )
         }

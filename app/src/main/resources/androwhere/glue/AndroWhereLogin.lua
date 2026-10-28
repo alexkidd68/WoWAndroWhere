@@ -1,5 +1,5 @@
 -- AndroWhere Login: controller support on the 3.3.5a login screens.
--- The ConsolePortLK profile sends the pad as F-keys; the stock screens already understand
+-- The app's controller profile (shared with ConsolePortLK) sends the pad as F-keys; the stock screens already understand
 -- Enter, Escape and the arrows, so pad keys are translated and passed to Blizzard's own handlers.
 
 local PAD = {

@@ -12,18 +12,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import app.gamenative.wow.legacy.ConsolePortLK
 import app.gamenative.wow.legacy.mods.AndroWherePatch
 import app.gamenative.wow.ui.components.FwButton
 import app.gamenative.wow.ui.components.FwButtonKind
 import app.gamenative.wow.ui.theme.Fw
 
-/** On the Installed list once ConsolePortLK is in: offers our patches that aren't installed yet, one press each. */
+/** On the 3.3.5a Installed list: offers our patches that aren't installed yet, one press each. */
 @Composable
 internal fun AndroWherePatchesCard(c: AddonsController) {
     val mods = c.clientMods ?: return
     LaunchedEffect(mods) { mods.refresh() }
-    if (c.mode != AddonsController.Mode.INSTALLED || !ConsolePortLK.isInstalled(c.addonsDir)) return
+    if (c.mode != AddonsController.Mode.INSTALLED) return
     val missing = mods.ours?.filterValues { !it }?.keys?.firstOrNull() ?: return
     Row(
         Modifier
