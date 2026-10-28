@@ -50,7 +50,7 @@ fun FwTextField(
             onValueChange,
             singleLine = true,
             label = { Text(label) },
-            placeholder = placeholder?.let { { Text(it) } },
+            placeholder = if (placeholder != null) { { Text(placeholder) } } else null,
             textStyle = Fw.Text,
             visualTransformation = visualTransformation,
             keyboardOptions = keyboardOptions.copy(imeAction = ImeAction.Done),
