@@ -2,7 +2,7 @@
 
 Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which this fork started from.
 
-## Unreleased
+## 0.8.0
 
 - **Profiles.** A profile is one game setup: a name, a game version and its folder. The current profile shows at the top left of the home screen. Press it to see every profile, switch to another, or press Y or Edit to rename or delete one. L1 and R1 on the home screen switch to the previous or next profile. Your existing setups become profiles on the first start, named after their version, with nothing to set up again.
 - **New profile.** Choose **New profile** in the profile list, pick the game version and give it a name. A Blizzard version then offers Download or a copy already on the device, and Private server (3.3.5a) opens Client and server to choose the client folder and add servers. Settings → Game version is gone: profiles replace it.
