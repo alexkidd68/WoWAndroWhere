@@ -80,4 +80,12 @@ class ConsolePortLKTest {
         assertTrue(used.isNotEmpty())
         assertTrue("$used", calibrated.containsAll(used))
     }
+
+    @Test
+    fun controllerMenusBlocksEveryKeyThePadSendsInTheWorld() {
+        val lua = File("src/main/assets/wow/controller-menus/Menus.lua").readText()
+        val blocked = Regex("\"([A-Z0-9]+)\"").findAll(lua.substringAfter("local KEYS = {").substringBefore("}")).map { it.groupValues[1] }.toSet()
+        val sent = bindings.values.filter { it.startsWith("KEY_F") || it in setOf("KEY_W", "KEY_A", "KEY_S", "KEY_D") }.map { it.removePrefix("KEY_") }.toSet()
+        assertEquals(sent, blocked)
+    }
 }

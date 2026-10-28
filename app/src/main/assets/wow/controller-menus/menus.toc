@@ -1,0 +1,5 @@
+## Interface: 30300
+## Title: Controller Menus (WoW AndroWhere)
+## Notes: Without ConsolePortLK, the controller only works on the login and character screens. In the world, this stops its buttons and left stick doing anything. Written by the app.
+
+Menus.lua

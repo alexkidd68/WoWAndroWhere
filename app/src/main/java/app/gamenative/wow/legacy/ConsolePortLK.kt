@@ -14,8 +14,8 @@ import org.json.JSONObject
  * ConsolePortLK, the 3.3.5a backport of ConsolePort. The 3.3.5a client can't read a gamepad, so the addon
  * expects controller buttons to arrive as keys: [applyControls] gives the legacy container a profile that
  * turns the controller into F1-F12, Shift and Ctrl (the addon's two modifiers), WASD and the mouse, and
- * a setup addon presets ConsolePortLK's calibration to those keys. Our login screen add-on reads the same keys,
- * so the profile is also used when only that is installed.
+ * a setup addon presets ConsolePortLK's calibration to those keys. Controller Menus, our login screen add-on, reads
+ * the same keys, so the profile is also used when only that is installed; then a second addon unbinds them in the world.
  */
 object ConsolePortLK {
     const val REPO_URL = "https://github.com/leoaviana/ConsolePortLK"
@@ -37,8 +37,10 @@ object ConsolePortLK {
         // On a folder shared by profiles, the app may have turned ConsolePort off for this one in AddOns.txt.
         val off = Profiles.active?.let { MAIN_FOLDER in ProfileAddons.disabledFolders(context, it.home) } ?: false
         val consolePort = isInstalled(addonsDir) && !off
-        if (consolePort) writeSetupAddon(context, addonsDir) else File(addonsDir, SETUP_FOLDER).deleteRecursively()
-        if (!consolePort && !ClientMods.loginEnabled(clientRoot)) {
+        val menus = ClientMods.loginEnabled(clientRoot)
+        if (consolePort) writeAddon(context, addonsDir, SETUP_FOLDER, SETUP_ASSETS, "setup.toc", "Setup.lua") else File(addonsDir, SETUP_FOLDER).deleteRecursively()
+        if (menus && !consolePort) writeAddon(context, addonsDir, MENUS_FOLDER, MENUS_ASSETS, "menus.toc", "Menus.lua") else File(addonsDir, MENUS_FOLDER).deleteRecursively()
+        if (!consolePort && !menus) {
             if (existing != null && current == existing.id) container.putExtra("profileId", null)
             return
         }
@@ -64,17 +66,19 @@ object ConsolePortLK {
     }
 
     /**
-     * A tiny addon that loads before ConsolePort and presets its Xbox layout and calibration to the keys
-     * the profile sends, so the player never has to calibrate. Rewritten every launch.
+     * Writes one of our small addons, rewritten every launch: the ConsolePortLK setup, which loads before ConsolePort
+     * and presets its Xbox layout and calibration to the profile's keys, or the Controller Menus one for the world.
      */
-    private fun writeSetupAddon(context: Context, addonsDir: File) {
-        val dir = File(addonsDir, SETUP_FOLDER).apply { mkdirs() }
-        File(dir, "$SETUP_FOLDER.toc").writeText(context.assets.open("$SETUP_ASSETS/setup.toc").bufferedReader().use { it.readText() })
-        File(dir, "Setup.lua").writeText(context.assets.open("$SETUP_ASSETS/Setup.lua").bufferedReader().use { it.readText() })
+    private fun writeAddon(context: Context, addonsDir: File, folder: String, assets: String, toc: String, lua: String) {
+        val dir = File(addonsDir, folder).apply { mkdirs() }
+        File(dir, "$folder.toc").writeText(context.assets.open("$assets/$toc").bufferedReader().use { it.readText() })
+        File(dir, lua).writeText(context.assets.open("$assets/$lua").bufferedReader().use { it.readText() })
     }
 
     const val SETUP_FOLDER = "!ConsolePortLK_AndroWhere"
     private const val SETUP_ASSETS = "wow/consoleportlk-setup"
+    const val MENUS_FOLDER = "AndroWhere_ControllerMenus"
+    private const val MENUS_ASSETS = "wow/controller-menus"
     private const val PREFS = "wow_consoleportlk"
     private const val MAPPING_VERSION = "mappingVersion"
 }
