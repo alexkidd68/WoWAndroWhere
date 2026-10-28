@@ -195,6 +195,8 @@ private fun PlayTile(launcher: LauncherController, onOpenGame: () -> Unit, modif
             launcher.busy -> Text(if (launcher.isUpdating) launcher.updateStatusText else launcher.statusText, style = Fw.Text)
             launcher.isPrivate && launcher.filesMissing -> Text("Choose your 3.3.5a client folder and enter your server's realmlist.", style = Fw.Secondary)
             launcher.isPrivate && launcher.legacy.realmlist.isBlank() -> Text("Enter your server's realmlist in Client and server.", style = Fw.Secondary.copy(color = Fw.Warn))
+            // The Battle.net login below is for Blizzard versions only.
+            launcher.isPrivate -> Unit
             launcher.filesMissing -> Text("Download the game, or find the copy already on this device.", style = Fw.Secondary)
             version?.isOutdated == true -> {
                 Text("Live servers need ${version.remoteVersion}. Press A to update.", style = Fw.Secondary.copy(color = Fw.Warn))

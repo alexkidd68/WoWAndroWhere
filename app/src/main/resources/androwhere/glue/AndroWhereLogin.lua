@@ -77,9 +77,9 @@ if serverLine then serverLine:SetPoint("TOP", AccountLoginUI or AccountLogin, "T
 local function updateLoginHint()
     if loginHint then
         if not password then
-            loginHint:SetText("")
+            loginHint:SetText("B or a tap outside the boxes  Stop typing       B  Quit")
         elseif AccountLoginAccountEdit:GetText() ~= "" then
-            loginHint:SetText(autoLogin and "Logging in. A  Log in again" or "A  Log in")
+            loginHint:SetText(autoLogin and "Logging in. A  Log in again       B  Quit" or "A  Log in       B  Quit")
         else
             loginHint:SetText("Type your account name and press Enter. Tick Remember Account Name to log in with A next time.")
         end
@@ -149,7 +149,13 @@ local function switchServer(step)
     prepareLogin(focusPassword)
 end
 
--- A focused box takes the keyboard, so L1 and R1 are also caught there.
+local function leaveBoxes()
+    AccountLoginAccountEdit:ClearFocus()
+    AccountLoginPasswordEdit:ClearFocus()
+end
+
+-- A focused box takes the keyboard, so L1 and R1 are also caught there, and B leaves the box
+-- (as Enter with no name does on character creation) so the pad works again.
 for _, box in ipairs({ AccountLoginAccountEdit, AccountLoginPasswordEdit }) do
     local boxKey = box:GetScript("OnKeyDown")
     box:SetScript("OnKeyDown", function(self, key, ...)
@@ -157,18 +163,28 @@ for _, box in ipairs({ AccountLoginAccountEdit, AccountLoginPasswordEdit }) do
         if pad == "PAD_L1" or pad == "PAD_R1" then
             local mapped = translate(key or arg1)
             if mapped then switchServer(mapped == "PAD_L1" and -1 or 1) end
+        elseif pad == "ESCAPE" then
+            if translate(key or arg1) then leaveBoxes() end
         elseif boxKey then
             boxKey(self, key, ...)
         end
     end)
 end
 
--- Without a password the box keeps the keyboard, so pad keys only reach this when it isn't focused.
--- B does nothing here, so the pad can't quit the game.
+-- Tapping or clicking anywhere on the screen outside a box or button leaves the boxes, as on character creation.
+AccountLogin:EnableMouse(true)
+local loginMouseDown = AccountLogin:GetScript("OnMouseDown")
+AccountLogin:SetScript("OnMouseDown", function(...)
+    leaveBoxes()
+    if loginMouseDown then loginMouseDown(...) end
+end)
+
+-- Pad keys only reach this when no box is focused. B goes to the stock Escape, which quits the game
+-- (or closes the help and survey panels first).
 local accountLoginKey = AccountLogin_OnKeyDown
 AccountLogin_OnKeyDown = function(key)
     local mapped = translate(key)
-    if not mapped or mapped == "ESCAPE" and PAD[key] then return end
+    if not mapped then return end
     if mapped == "PAD_L1" then
         switchServer(-1)
     elseif mapped == "PAD_R1" then
