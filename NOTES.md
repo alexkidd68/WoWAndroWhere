@@ -2,6 +2,23 @@
 
 Why things are the way they are, newest first.
 
+## 2026-10-28: The WotLK HD pack's patch rules
+
+The pack's own patch menu won't let some patches be on alone or together, and our Client tab switches used to ignore that. `PatchRules` now holds the rules and a one-line description per letter, and the Client tab applies them only when the client has the pack's `patchmenu/.config/config_en.json`, since other packs reuse the same letters for other things. The rules are written into the app rather than parsed from the config, because the config's `conditions` format wasn't confirmed when this was built.
+
+What each patch letter does (from the pack's config and labels, read on Daniel's PC on 2026-10-27):
+
+- **a** HD characters. **u** Undead without visible bones; needs a.
+- **f** HD creatures and NPCs. **6** HD world textures. **7** HD armor (the pack marks it dangerous). **8** HD weapons.
+- **j** Mists of Pandaria style character creation. **k** Shadowlands style character creation. Only one of j and k.
+- **9** Restyled interface windows. **d** Cursor and interface art. **i** Icons. **5** Later-expansion interface extras (raid frames, loss of control alerts, level up banner).
+- **s** Spell effects. **t** Trees. **w** Water. **x** Skies. **b** Blood.
+- **m** Dungeon maps. **n** Dungeon minimaps; needs m.
+- **q** Loading screens. **e** Music.
+- **c** The pack's login screens, with its server and account list. Its `interface/loginui.lua` keeps saved account passwords in plain text.
+
+Turning a patch on also turns on what it needs and turns off what it conflicts with; turning one off also turns off what needs it.
+
 ## 2026-10-28: The GitHub addon catalog is the fork's own, with upstream as a fallback
 
 The fork's `addon-catalog` workflow was already publishing nightly to its own `addon-catalog` branch, but the app read upstream's. Now the app reads ours and only fetches upstream's when ours is missing or broken (`GitHubProvider.fallbackCatalogUrl`), so a dead branch here doesn't empty the list. To keep upstream's additions without hand-copying, the workflow merges upstream's `catalog/sources.json` into ours before building (`tools/catalog/merge_upstream_sources.py`): our entries win on the same repo, upstream entries with an odd shape are skipped, and an unreachable upstream just means our list alone. Upstream changes land on the next nightly run, not on push. The trade-off: an addon upstream adds shows up here without review, but it is built by the same script from that repo's own GitHub releases, which is no different from what the app showed before.
