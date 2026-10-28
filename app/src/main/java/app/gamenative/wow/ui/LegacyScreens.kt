@@ -254,11 +254,11 @@ private fun LoginSection(launcher: LauncherController, setHint: (String) -> Unit
         false -> {
             Text(
                 mods.working ?: mods.message
-                    ?: "AndroWhere Login lets the controller work on the login, realm and character screens, and fills in your password.",
+                    ?: "Controller Menus lets the controller work on the login, realm and character screens, and fills in your password.",
                 style = Fw.Text,
             )
             FwButton(
-                "Install AndroWhere Login",
+                "Install Controller Menus",
                 { mods.setInstalled(AndroWherePatch.LOGIN, true) },
                 modifier = Modifier.hint("Changes 5 bytes of Wow.exe; the original is kept and put back if you remove it.", setHint),
                 enabled = mods.working == null,
