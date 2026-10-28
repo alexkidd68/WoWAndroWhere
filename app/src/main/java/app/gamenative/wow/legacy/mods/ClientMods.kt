@@ -20,7 +20,7 @@ enum class AndroWherePatch(val title: String, val summary: String) {
     LOGIN(
         "AndroWhere Login",
         "Controller support on the login, realm, character select and character creation screens, with button hints at the top. " +
-            "A logs you in when Fill in password is on in Client and server. Uses the ConsolePortLK controller layout. " +
+            "A logs you in when Fill in password is on in Server. Uses the ConsolePortLK controller layout. " +
             "Installing it changes 5 bytes of Wow.exe so the client accepts it, and keeps the original to put back when you remove it.",
     ),
 }

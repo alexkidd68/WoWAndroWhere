@@ -4,29 +4,16 @@ import android.view.KeyEvent as AndroidKey
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -35,12 +22,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
@@ -59,126 +43,51 @@ import app.gamenative.wow.ui.components.FwChip
 import app.gamenative.wow.ui.components.FwDialog
 import app.gamenative.wow.ui.components.FwRow
 import app.gamenative.wow.ui.components.FwTextField
-import app.gamenative.wow.ui.components.FwTopBar
 import app.gamenative.wow.ui.theme.Fw
 import java.io.File
 
-private enum class Pane(val title: String, val hint: String) {
-    SERVER("Server", "Your servers. Play starts on the selected one."),
-    LOGIN("Login", "How the game's login screen fills in your password."),
-    GRAPHICS("Graphics", "Renderer, lighter graphics and the performance overlay."),
-    CLIENT("Client", "Your 3.3.5a client folder and logs."),
-}
-
 /**
- * Private server "Client and server": the panes on the left, the chosen pane's options on the right.
- * The D-pad moves, right enters a pane and B goes back to the list. One line at the bottom explains
- * whatever is highlighted, so the options themselves fit without long text.
+ * The 3.3.5a "Server" screen: the profile's servers, the selected server's password and how the login
+ * screen uses it. A on a server selects it and opens its details.
  */
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
-    var pane by remember { mutableStateOf(if (launcher.legacy.root.isBlank()) Pane.CLIENT else Pane.SERVER) }
-    var hint by remember { mutableStateOf(pane.hint) }
-    var inPane by remember { mutableStateOf(false) }
+fun LegacyServerScreen(launcher: LauncherController, onBack: () -> Unit) {
     var editing by remember { mutableStateOf<String?>(null) }
-    var returnTo by remember { mutableStateOf<String?>(null) }
-    val nav = remember { Pane.entries.associateWith { FocusRequester() } }
-    LaunchedEffect(Unit) {
-        launcher.detectLegacyBuild()
-        runCatching { nav.getValue(pane).requestFocus() }
+    var returnTo by remember { mutableStateOf<String?>(launcher.legacy.serverId) }
+    val server = editing?.let { id -> launcher.servers.firstOrNull { it.id == id } }
+    BackHandler(enabled = server != null) {
+        returnTo = editing
+        editing = null
     }
-    BackHandler(enabled = inPane && editing == null) { runCatching { nav.getValue(pane).requestFocus() } }
-
-    Column(Modifier.fillMaxSize().background(Fw.Ground)) {
-        FwTopBar("Client and server", onBack)
-        HorizontalDivider(color = Fw.Rule)
-        Row(Modifier.weight(1f)) {
-            Column(
-                Modifier
-                    .width(220.dp)
-                    .fillMaxHeight()
-                    .padding(16.dp)
-                    .focusProperties { enter = { nav.getValue(pane) } }
-                    .focusGroup(),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Pane.entries.forEach { p ->
-                    FwRow(
-                        selected = p == pane,
-                        onClick = { pane = p },
-                        modifier = Modifier
-                            .focusRequester(nav.getValue(p))
-                            .onFocusChanged {
-                                if (it.hasFocus) {
-                                    if (pane != p) {
-                                        pane = p
-                                        editing = null
-                                        returnTo = null
-                                    }
-                                    hint = p.hint
-                                }
-                            },
-                    ) { Text(p.title, style = Fw.Text) }
-                }
+    HintPage("Server", onBack, launcher.errorMessage) { setHint ->
+        if (server != null) {
+            ServerPage(launcher, server, onDone = { returnTo = editing; editing = null }, setHint)
+        } else {
+            FwSection("Servers") { ServerList(launcher, returnTo, onEdit = { editing = it }, setHint) }
+            FwSection(if (launcher.servers.size > 1) "Password for ${launcher.selectedServer.name}" else "Password") {
+                PasswordFields(launcher, launcher.selectedServer, setHint)
             }
-            VerticalDivider(color = Fw.Rule)
-            Column(
-                Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .onFocusChanged { inPane = it.hasFocus }
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp, vertical = 16.dp)
-                    .widthIn(max = 720.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                val setHint: (String) -> Unit = { hint = it }
-                when (pane) {
-                    Pane.SERVER -> ServerPane(
-                        launcher,
-                        editing,
-                        returnTo,
-                        onEdit = { id ->
-                            if (id == null) returnTo = editing
-                            editing = id
-                        },
-                        setHint,
-                    )
-                    Pane.LOGIN -> LoginPane(launcher, setHint)
-                    Pane.GRAPHICS -> GraphicsPane(launcher, setHint)
-                    Pane.CLIENT -> ClientPane(launcher, setHint)
-                }
-            }
+            FwSection("Login screen") { LoginSection(launcher, setHint) }
         }
-        HorizontalDivider(color = Fw.Rule)
-        Text(
-            launcher.errorMessage ?: hint,
-            style = Fw.Secondary.copy(color = if (launcher.errorMessage != null) Fw.Warn else Fw.Ash),
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp),
-        )
     }
 }
 
-/** Shows [text] in the hint line while this item is highlighted. */
-private fun Modifier.hint(text: String, setHint: (String) -> Unit) = onFocusChanged { if (it.hasFocus) setHint(text) }
-
+/** The 3.3.5a "Client" screen: the client folder, graphics and logs. */
 @Composable
-private fun ServerPane(
-    launcher: LauncherController,
-    editing: String?,
-    returnTo: String?,
-    onEdit: (String?) -> Unit,
-    setHint: (String) -> Unit,
-) {
-    val server = editing?.let { id -> launcher.servers.firstOrNull { it.id == id } }
-    if (server != null) {
-        BackHandler { onEdit(null) }
-        ServerPage(launcher, server, onDone = { onEdit(null) }, setHint)
-    } else {
-        ServerList(launcher, returnTo, onEdit, setHint)
+fun LegacyClientScreen(launcher: LauncherController, onBack: () -> Unit) {
+    LaunchedEffect(Unit) { launcher.detectLegacyBuild() }
+    HintPage("Client", onBack, launcher.errorMessage) { setHint ->
+        FwSection("Folder") { FolderSection(launcher, setHint) }
+        FwSection("Graphics") { GraphicsSection(launcher, setHint) }
+        FwSection("Logs") {
+            val settings = launcher.legacy
+            ToggleRow(
+                "Save a log",
+                settings.saveLog,
+                hint = "Slows the game down, so use it only to track down a problem. Saves ${LegacyClient.LOG} in the client folder and offers to share it when the game closes.",
+                setHint = setHint,
+            ) { launcher.updateLegacy(settings.copy(saveLog = !settings.saveLog)) }
+        }
     }
 }
 
@@ -252,7 +161,7 @@ private fun ServerList(launcher: LauncherController, returnTo: String?, onEdit: 
     }
 }
 
-/** One server's details. It is the selected server while it's open, so the password shown is its own. */
+/** One server's name, realmlist and account name. Its password is on the Server screen while it's selected. */
 @Composable
 private fun ServerPage(launcher: LauncherController, server: LegacyServer, onDone: () -> Unit, setHint: (String) -> Unit) {
     val first = remember { FocusRequester() }
@@ -283,7 +192,6 @@ private fun ServerPage(launcher: LauncherController, server: LegacyServer, onDon
             "Account name (optional)",
             Modifier.fillMaxWidth().hint("Fills the login screen's account box. Leave it empty to use the one the game remembers.", setHint),
         )
-        PasswordFields(launcher, server, setHint)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             FwButton("Done", onDone, modifier = Modifier.hint("Back to the server list. Changes are saved as you type.", setHint))
             if (launcher.servers.size > 1) {
@@ -331,10 +239,10 @@ private fun PasswordFields(launcher: LauncherController, server: LegacyServer, s
 }
 
 @Composable
-private fun LoginPane(launcher: LauncherController, setHint: (String) -> Unit) {
+private fun LoginSection(launcher: LauncherController, setHint: (String) -> Unit) {
     val settings = launcher.legacy
     if (settings.root.isBlank()) {
-        Text("Choose your client folder under Client first.", style = Fw.Text)
+        Text("Choose your client folder on the Client screen first.", style = Fw.Text)
         return
     }
     val root = File(settings.root)
@@ -358,7 +266,7 @@ private fun LoginPane(launcher: LauncherController, setHint: (String) -> Unit) {
         }
         true -> {
             if (!launcher.hasServerPassword) {
-                Text("No password saved for ${launcher.selectedServer.name}. Save one under Server.", style = Fw.Secondary.copy(color = Fw.Warn))
+                Text("Save a password above to use these.", style = Fw.Secondary.copy(color = Fw.Warn))
             }
             ToggleRow(
                 "Fill in password",
@@ -378,9 +286,8 @@ private fun LoginPane(launcher: LauncherController, setHint: (String) -> Unit) {
 }
 
 @Composable
-private fun GraphicsPane(launcher: LauncherController, setHint: (String) -> Unit) {
+private fun GraphicsSection(launcher: LauncherController, setHint: (String) -> Unit) {
     val settings = launcher.legacy
-    Text("Renderer", style = Fw.Data)
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         LegacyRenderer.entries.forEach { r ->
             FwChip(
@@ -410,7 +317,7 @@ private fun GraphicsPane(launcher: LauncherController, setHint: (String) -> Unit
 }
 
 @Composable
-private fun ClientPane(launcher: LauncherController, setHint: (String) -> Unit) {
+private fun FolderSection(launcher: LauncherController, setHint: (String) -> Unit) {
     val context = LocalContext.current
     val settings = launcher.legacy
     var folderError by remember { mutableStateOf<String?>(null) }
@@ -423,6 +330,8 @@ private fun ClientPane(launcher: LauncherController, setHint: (String) -> Unit) 
             launcher.updateLegacy(settings.copy(root = it.absolutePath, realmlist = existing ?: settings.realmlist))
         }
     }
+    val first = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
     if (settings.root.isBlank()) {
         Text("No folder chosen.", style = Fw.Text)
     } else {
@@ -434,30 +343,11 @@ private fun ClientPane(launcher: LauncherController, setHint: (String) -> Unit) 
     FwButton(
         "Choose folder",
         { picker.launch(null) },
-        modifier = Modifier.hint(
+        modifier = Modifier.focusRequester(first).hint(
             "The folder with ${LegacyClient.EXE} and Data. The app only changes its realmlist, its settings and the client add-ons you turn on.",
             setHint,
         ),
         kind = if (settings.root.isBlank()) FwButtonKind.Primary else FwButtonKind.Ghost,
     )
     Text("Client patches are in Addons, on the Client tab.", style = Fw.Secondary)
-    ToggleRow(
-        "Save a log",
-        settings.saveLog,
-        hint = "Slows the game down, so use it only to track down a problem. Saves ${LegacyClient.LOG} in the client folder and offers to share it when the game closes.",
-        setHint = setHint,
-    ) { launcher.updateLegacy(settings.copy(saveLog = !settings.saveLog)) }
-}
-
-@Composable
-private fun ToggleRow(title: String, checked: Boolean, enabled: Boolean = true, hint: String, setHint: (String) -> Unit, onToggle: () -> Unit) {
-    FwRow(selected = false, onClick = { if (enabled) onToggle() }, modifier = Modifier.hint(hint, setHint)) {
-        Checkbox(
-            checked = checked,
-            onCheckedChange = null,
-            enabled = enabled,
-            colors = CheckboxDefaults.colors(checkedColor = Fw.Brass, uncheckedColor = Fw.Ash, checkmarkColor = Fw.BrassInk),
-        )
-        Text(title, style = if (enabled) Fw.Text else Fw.Text.copy(color = Fw.Ash), modifier = Modifier.weight(1f))
-    }
 }

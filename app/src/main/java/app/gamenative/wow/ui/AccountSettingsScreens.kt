@@ -60,79 +60,108 @@ internal fun FwSection(title: String, content: @Composable () -> Unit) {
     }
 }
 
+private val settingsPanes = listOf(
+    PaneSpec("App", "App version and updates."),
+    PaneSpec("Battle.net", "One saved login for every Blizzard profile."),
+    PaneSpec("Addon sources", "Where Addons searches, and your CurseForge key or proxy."),
+    PaneSpec("About", "This device, the project and its source code."),
+)
+
 @Composable
 fun SettingsScreen(
     launcher: LauncherController,
     onBack: () -> Unit,
     onEditLogin: () -> Unit,
 ) {
-    FwPage("Settings", onBack) {
-        FwSection("App") {
-            Text("${AppName.FULL} v${BuildConfig.VERSION_NAME}", style = Fw.Text)
-            val update = launcher.appUpdate
-            if (update == null) {
-                Text("No app update found.", style = Fw.Secondary)
-                FwButton("Check for app update", launcher::checkAppUpdate, kind = FwButtonKind.Ghost)
-            } else {
-                Text("Version ${update.version} is available.", style = Fw.Text.copy(color = Fw.Brass))
-                if (update.notes.isNotBlank()) Text(renderReleaseNotes(update.notes), style = Fw.Secondary)
-                if (launcher.isDownloadingAppUpdate) {
-                    Text("Downloading ${(launcher.appUpdateProgress * 100).toInt()}%", style = Fw.Data)
-                    FwProgress(launcher.appUpdateProgress)
-                } else {
-                    FwButton(if (launcher.downloadedApk?.exists() == true) "Install update" else "Update app", launcher::performAppUpdate)
-                }
+    PaneScreen("Settings", settingsPanes, onBack) { pane, setHint ->
+        when (pane) {
+            0 -> AppPane(launcher, setHint)
+            1 -> BattleNetPane(launcher, onEditLogin, setHint)
+            2 -> {
+                ProviderLine("CurseForge", launcher.curseForge.enabled, offText = "Off: no key or proxy")
+                ProviderLine("Wago Addons", BuildConfig.WAGO_API_KEY.isNotBlank())
+                ProviderLine("WoWInterface", true)
+                ProviderLine("GitHub (addon catalog and links)", true)
+                CurseForgeSection(launcher, setHint)
             }
+            else -> AboutPane(launcher, setHint)
         }
-        BattleNetSection(launcher, onEditLogin)
-        FwSection("Support WoW Foreverywhere") {
-            val context = LocalContext.current
-            Text("${AppName.FULL} is built on WoW Foreverywhere, a free and open source project. If it saves you some time, you can support its development on Ko-fi.", style = Fw.Text)
-            FwButton("Support on Ko-fi", { Links.open(context, Links.KOFI) }, kind = FwButtonKind.Ghost, icon = Icons.Filled.LocalCafe)
-        }
-        FwSection("Addon sources") {
-            ProviderLine("CurseForge", launcher.curseForge.enabled, offText = "Off: no key or proxy")
-            ProviderLine("Wago Addons", BuildConfig.WAGO_API_KEY.isNotBlank())
-            ProviderLine("WoWInterface", true)
-            ProviderLine("GitHub (addon catalog and links)", true)
-            Text("Wago needs an API key built into the app. Builds without one still use the other sources.", style = Fw.Secondary)
-        }
-        CurseForgeSection(launcher)
-        FwSection("Device") {
-            Text("${launcher.gpu.edition} profile · render size ${launcher.gpu.screenSize}", style = Fw.Data)
-        }
-        FwSection("About") {
-            Text(
-                "Unofficial community project, not affiliated with Blizzard Entertainment. The game is downloaded from Blizzard's own servers and needs your own Battle.net account. Based on jaredgei/wow-forever-android (GPL-3.0).",
-                style = Fw.Secondary,
+    }
+}
+
+@Composable
+private fun AppPane(launcher: LauncherController, setHint: (String) -> Unit) {
+    Text("${AppName.FULL} v${BuildConfig.VERSION_NAME}", style = Fw.Text)
+    val update = launcher.appUpdate
+    if (update == null) {
+        Text("No app update found.", style = Fw.Secondary)
+        FwButton(
+            "Check for app update",
+            launcher::checkAppUpdate,
+            modifier = Modifier.hint("Looks for a newer release of this app on GitHub.", setHint),
+            kind = FwButtonKind.Ghost,
+        )
+    } else {
+        Text("Version ${update.version} is available.", style = Fw.Text.copy(color = Fw.Brass))
+        if (update.notes.isNotBlank()) Text(renderReleaseNotes(update.notes), style = Fw.Secondary)
+        if (launcher.isDownloadingAppUpdate) {
+            Text("Downloading ${(launcher.appUpdateProgress * 100).toInt()}%", style = Fw.Data)
+            FwProgress(launcher.appUpdateProgress)
+        } else {
+            FwButton(
+                if (launcher.downloadedApk?.exists() == true) "Install update" else "Update app",
+                launcher::performAppUpdate,
+                modifier = Modifier.hint("Installs over this version and keeps your settings, logins, game files and addons.", setHint),
             )
-            val context = LocalContext.current
-            FwButton("Source code on GitHub", { Links.open(context, Links.REPO) }, kind = FwButtonKind.Ghost, icon = Icons.AutoMirrored.Filled.OpenInNew)
         }
     }
 }
 
 /** Settings, Battle.net login: one saved login for every Blizzard profile. */
 @Composable
-private fun BattleNetSection(launcher: LauncherController, onEditLogin: () -> Unit) {
-    FwSection("Battle.net login") {
-        Text(
-            if (launcher.hasSavedLogin) {
-                "Your email and password are saved on this device, encrypted with the Android keystore. Every WoW Forever and other Blizzard profile logs in with it. Authenticator codes are still typed in the game."
-            } else {
-                "No login saved. Save one to skip the login screen in every Blizzard profile, or sign in inside the game each time."
-            },
-            style = Fw.Text,
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            FwButton(if (launcher.hasSavedLogin) "Change login" else "Save login", onEditLogin)
-            if (launcher.hasSavedLogin) FwButton("Forget login", launcher::forgetLogin, kind = FwButtonKind.Danger)
-        }
-        Text(
-            "When you press Play the app hands your login to the game in a temporary file, then wipes it as soon as the game has read it, or after three minutes at most. Private servers use the password in their profile's Client and server instead.",
-            style = Fw.Secondary,
-        )
+private fun BattleNetPane(launcher: LauncherController, onEditLogin: () -> Unit, setHint: (String) -> Unit) {
+    if (launcher.hasSavedLogin) {
+        Text("Login saved  ••••••••", style = Fw.Text.copy(color = Fw.Ok))
+    } else {
+        Text("No login saved. You'll sign in inside the game.", style = Fw.Text)
     }
+    val how = "Saved encrypted with the Android keystore. At Play the game gets it in a temporary file, wiped once read or after three minutes at most."
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        FwButton(if (launcher.hasSavedLogin) "Change login" else "Save login", onEditLogin, modifier = Modifier.hint(how, setHint))
+        if (launcher.hasSavedLogin) {
+            FwButton(
+                "Forget login",
+                launcher::forgetLogin,
+                modifier = Modifier.hint("Removes the saved login from this device.", setHint),
+                kind = FwButtonKind.Danger,
+            )
+        }
+    }
+    Text("Authenticator codes are still typed in the game. Private servers use the password on their Server screen.", style = Fw.Secondary)
+}
+
+@Composable
+private fun AboutPane(launcher: LauncherController, setHint: (String) -> Unit) {
+    val context = LocalContext.current
+    Text("${launcher.gpu.edition} profile · render size ${launcher.gpu.screenSize}", style = Fw.Data)
+    Text(
+        "Unofficial community project, not affiliated with Blizzard Entertainment. The game is downloaded from Blizzard's own servers and needs your own Battle.net account. Based on jaredgei/wow-forever-android (GPL-3.0).",
+        style = Fw.Secondary,
+    )
+    FwButton(
+        "Source code on GitHub",
+        { Links.open(context, Links.REPO) },
+        modifier = Modifier.hint("Opens the project on GitHub in your browser.", setHint),
+        kind = FwButtonKind.Ghost,
+        icon = Icons.AutoMirrored.Filled.OpenInNew,
+    )
+    FwButton(
+        "Support on Ko-fi",
+        { Links.open(context, Links.KOFI) },
+        modifier = Modifier.hint("${AppName.FULL} is built on WoW Foreverywhere, a free and open source project you can support on Ko-fi.", setHint),
+        kind = FwButtonKind.Ghost,
+        icon = Icons.Filled.LocalCafe,
+    )
 }
 
 @Composable
@@ -145,7 +174,7 @@ private fun ProviderLine(name: String, enabled: Boolean, offText: String = "Off:
 
 /** Settings, CurseForge: the player's own API key or proxy. There is no shared one. */
 @Composable
-private fun CurseForgeSection(launcher: LauncherController) {
+private fun CurseForgeSection(launcher: LauncherController, setHint: (String) -> Unit) {
     val setup = launcher.curseForge
     var useProxy by remember { mutableStateOf(setup.usesProxy) }
     var input by remember { mutableStateOf("") }
@@ -164,9 +193,10 @@ private fun CurseForgeSection(launcher: LauncherController) {
             },
             style = Fw.Text,
         )
+        val modeHint = "A free key from console.curseforge.com, for you only, or a proxy you run (server/curseforge-proxy in the source) so no key is on the device."
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FwChip("Your API key", !useProxy, { pick(false) })
-            FwChip("Your proxy", useProxy, { pick(true) })
+            FwChip("Your API key", !useProxy, { pick(false) }, Modifier.hint(modeHint, setHint))
+            FwChip("Your proxy", useProxy, { pick(true) }, Modifier.hint(modeHint, setHint))
         }
         FwTextField(
             input,
@@ -179,7 +209,7 @@ private fun CurseForgeSection(launcher: LauncherController) {
                 setup.usesKey -> "New API key"
                 else -> "API key"
             },
-            Modifier.fillMaxWidth(),
+            Modifier.fillMaxWidth().hint(if (useProxy) "Searches then go through your server." else "Saving a key replaces a saved proxy.", setHint),
             visualTransformation = if (useProxy) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = if (useProxy) KeyboardType.Uri else KeyboardType.Password),
         )
@@ -210,13 +240,5 @@ private fun CurseForgeSection(launcher: LauncherController) {
             }
         }
         error?.let { Text(it, style = Fw.Secondary.copy(color = Fw.Warn)) }
-        Text(
-            if (useProxy) {
-                "A proxy keeps the key on a server you run, so it's never on the device. The source code includes one in server/curseforge-proxy. Searches then go through that server."
-            } else {
-                "Apply for a free API key at console.curseforge.com. CurseForge's terms say a key is for its owner only, so don't share it. Saving a key replaces a saved proxy."
-            },
-            style = Fw.Secondary,
-        )
     }
 }
