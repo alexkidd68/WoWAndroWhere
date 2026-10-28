@@ -4,8 +4,14 @@ Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which thi
 
 ## Unreleased
 
-- **Faster emulation for private servers.** **Client** → Graphics has a new **Faster emulation** switch. It turns off some of Box64's safety checks so the 3.3.5a client runs faster. It's off by default; if an area or addon crashes or looks wrong with it on, turn it off.
 - **HD pack patches explained.** With the WotLK HD client, each patch in **Addons** → **Client** now says what it changes, and the switches follow the pack's own rules. Turning on undead without bones also turns on HD characters, dungeon minimaps turn on dungeon maps, and turning off the one a patch needs turns that patch off too. Only one of the two character creation styles can be on at a time.
+
+## 0.8.4
+
+- **Controller Menus (3.3.5a), formerly AndroWhere Login.** The add-on that lets the controller work on the login, realm and character screens has a new name and no longer needs ConsolePortLK. With only Controller Menus installed, the app now turns on its controller layout too. Without ConsolePortLK, that layout stays on in the world: the sticks move you and aim the mouse, and the face buttons press F1 to F4. With ConsolePortLK installed nothing changes.
+
+- **Faster emulation for private servers.** **Client** → Graphics has a new **Faster emulation** switch. It turns off some of Box64's safety checks so the 3.3.5a client runs faster. It's off by default; if an area or addon crashes or looks wrong with it on, turn it off.
+- **Our own addon catalog.** The GitHub addon list now comes from WoW AndroWhere's own nightly build instead of upstream's. It still lists every addon upstream does, and if ours can't be reached the app falls back to upstream's.
 - **Newer Box64 for private servers.** The 3.3.5a client now runs on Box64 0.4.4 (was 0.4.2), which starts and runs games a bit faster.
 
 ## 0.8.3

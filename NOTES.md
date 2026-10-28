@@ -19,6 +19,14 @@ What each patch letter does (from the pack's config and labels, read on Daniel's
 
 Turning a patch on also turns on what it needs and turns off what it conflicts with; turning one off also turns off what needs it.
 
+## 2026-10-28: The GitHub addon catalog is the fork's own, with upstream as a fallback
+
+The fork's `addon-catalog` workflow was already publishing nightly to its own `addon-catalog` branch, but the app read upstream's. Now the app reads ours and only fetches upstream's when ours is missing or broken (`GitHubProvider.fallbackCatalogUrl`), so a dead branch here doesn't empty the list. To keep upstream's additions without hand-copying, the workflow merges upstream's `catalog/sources.json` into ours before building (`tools/catalog/merge_upstream_sources.py`): our entries win on the same repo, upstream entries with an odd shape are skipped, and an unreachable upstream just means our list alone. Upstream changes land on the next nightly run, not on push. The trade-off: an addon upstream adds shows up here without review, but it is built by the same script from that repo's own GitHub releases, which is no different from what the app showed before.
+
+## 2026-10-28: Controller Menus works without ConsolePortLK
+
+Daniel wanted the login screen add-on to work on its own and to have a name about what it does. He picked Controller Menus. The add-on already read the F-keys that ConsolePortLK's controller profile sends, so the app now applies that same profile when either ConsolePortLK or Controller Menus is installed, rather than a second, menu-only profile. A second profile would have meant two key layouts and changes to the add-on's Lua for no gain, and the app can't switch profiles when the player leaves character select. Trade-off: without ConsolePortLK the profile stays on in the world, where the face buttons press F1 to F4 (target self and party members). An app-written addon that unbinds those keys in the world was built and taken out again: Daniel didn't want the block. The files inside the archive keep their AndroWhereLogin names; only the label changed, so existing installs carry on.
+
 ## 2026-10-28: wowbox64 is built from source in CI, and Faster emulation is opt-in
 
 The 0.4.4 `wowbox64.dll` builds that GameNative and others pass around are CI artifacts from forks or personal repos, and the asset list of Box64's official v0.4.4 release couldn't be checked from Claude's container. So `.github/workflows/wowbox64.yml` builds it from the official `ptitSeb/box64` tag with the same toolchain and flags as Box64's own release workflow (llvm-mingw 20260311, `-DWOW64=1 -DARM_DYNAREC=1`, Release), packs it as `wowbox64-<ver>.tzst` and commits it to the branch, printing both SHA-256s in the run summary. Only the `wow_legacy` container asks for it (`box64Version`); the ARM64 retail container doesn't use Box64 at all. The container also pins Box64's Performance preset instead of relying on `Container`'s default.

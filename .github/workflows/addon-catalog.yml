@@ -2,6 +2,7 @@ name: Addon catalog
 
 # Rebuilds the GitHub addon catalog the app browses without API keys, and publishes it to the
 # `addon-catalog` branch as catalog.json (fetched by the app from raw.githubusercontent.com).
+# Upstream's sources are merged in first, so the fork lists everything upstream does plus its own.
 on:
   schedule:
     - cron: "17 6 * * *"
@@ -29,7 +30,9 @@ jobs:
       - name: Build catalog
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python3 tools/catalog/build_catalog.py catalog/sources.json "$RUNNER_TEMP/catalog.json"
+        run: |
+          python3 tools/catalog/merge_upstream_sources.py catalog/sources.json "$RUNNER_TEMP/sources.json"
+          python3 tools/catalog/build_catalog.py "$RUNNER_TEMP/sources.json" "$RUNNER_TEMP/catalog.json"
 
       - name: Publish to addon-catalog branch
         run: |
