@@ -2,6 +2,23 @@
 
 Why things are the way they are, newest first.
 
+## 2026-10-28: The WotLK HD pack's patch rules
+
+The pack's own patch menu won't let some patches be on alone or together, and our Client tab switches used to ignore that. `PatchRules` now holds the rules and a one-line description per letter, and the Client tab applies them only when the client has the pack's `patchmenu/.config/config_en.json`, since other packs reuse the same letters for other things. The rules are written into the app rather than parsed from the config, because the config's `conditions` format wasn't confirmed when this was built.
+
+What each patch letter does (from the pack's config and labels, read on Daniel's PC on 2026-10-27):
+
+- **a** HD characters. **u** Undead without visible bones; needs a.
+- **f** HD creatures and NPCs. **6** HD world textures. **7** HD armor (the pack marks it dangerous). **8** HD weapons.
+- **j** Mists of Pandaria style character creation. **k** Shadowlands style character creation. Only one of j and k.
+- **9** Restyled interface windows. **d** Cursor and interface art. **i** Icons. **5** Later-expansion interface extras (raid frames, loss of control alerts, level up banner).
+- **s** Spell effects. **t** Trees. **w** Water. **x** Skies. **b** Blood.
+- **m** Dungeon maps. **n** Dungeon minimaps; needs m.
+- **q** Loading screens. **e** Music.
+- **c** The pack's login screens, with its server and account list. Its `interface/loginui.lua` keeps saved account passwords in plain text.
+
+Turning a patch on also turns on what it needs and turns off what it conflicts with; turning one off also turns off what needs it.
+
 ## 2026-10-28: wowbox64 is built from source in CI, and Faster emulation is opt-in
 
 The 0.4.4 `wowbox64.dll` builds that GameNative and others pass around are CI artifacts from forks or personal repos, and the asset list of Box64's official v0.4.4 release couldn't be checked from Claude's container. So `.github/workflows/wowbox64.yml` builds it from the official `ptitSeb/box64` tag with the same toolchain and flags as Box64's own release workflow (llvm-mingw 20260311, `-DWOW64=1 -DARM_DYNAREC=1`, Release), packs it as `wowbox64-<ver>.tzst` and commits it to the branch, printing both SHA-256s in the run summary. Only the `wow_legacy` container asks for it (`box64Version`); the ARM64 retail container doesn't use Box64 at all. The container also pins Box64's Performance preset instead of relying on `Container`'s default.

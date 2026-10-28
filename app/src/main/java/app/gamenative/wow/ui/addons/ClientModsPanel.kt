@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.gamenative.wow.legacy.mods.AndroWherePatch
 import app.gamenative.wow.legacy.mods.ClientPatch
+import app.gamenative.wow.legacy.mods.PatchRules
 import app.gamenative.wow.ui.components.FwButton
 import app.gamenative.wow.ui.components.FwButtonKind
 import app.gamenative.wow.ui.components.FwChip
@@ -69,8 +70,11 @@ internal fun ClientModsPanel(c: ClientModsController, modifier: Modifier = Modif
         when {
             patches == null -> item { Text("Reading the client's Data folder…", style = Fw.Secondary) }
             patches.isEmpty() -> item { Text("No extra patch files in this client.", style = Fw.Secondary) }
-            else -> items(patches, key = { it.key }) { patch ->
-                Toggle(patch.name, detail(patch), patch.enabled, { c.setPatch(patch, !patch.enabled) })
+            else -> {
+                val names = patches.associate { it.key to it.name }.takeIf { c.hdPack }
+                items(patches, key = { it.key }) { patch ->
+                    Toggle(patch.name, detail(patch, names), patch.enabled, { c.setPatch(patch, !patch.enabled) })
+                }
             }
         }
     }
@@ -87,7 +91,13 @@ private fun Toggle(title: String, detail: String, on: Boolean, onToggle: () -> U
     }
 }
 
-private fun detail(patch: ClientPatch) = "Patch ${patch.key}, ${size(patch.size)}"
+/** With [names], the client is the HD pack and the row also says what the patch does and what it needs. */
+private fun detail(patch: ClientPatch, names: Map<String, String>?) =
+    listOfNotNull(
+        names?.let { PatchRules.description(patch.key) },
+        names?.let { PatchRules.hint(patch.key, it) }?.let { "$it." },
+        "Patch ${patch.key}, ${size(patch.size)}",
+    ).joinToString(" ")
 
 private fun size(bytes: Long) = when {
     bytes >= 1L shl 30 -> "%.1f GB".format(bytes / (1L shl 30).toDouble())

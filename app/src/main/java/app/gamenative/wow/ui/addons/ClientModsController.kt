@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import app.gamenative.wow.legacy.mods.AndroWherePatch
 import app.gamenative.wow.legacy.mods.ClientMods
 import app.gamenative.wow.legacy.mods.ClientPatch
+import app.gamenative.wow.legacy.mods.PatchRules
 import java.io.File
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -21,6 +22,9 @@ class ClientModsController(val root: File, private val scope: CoroutineScope, pr
         private set
     var patches by mutableStateOf<List<ClientPatch>?>(null)
         private set
+    /** Whether the client is the WotLK HD pack, whose patch rules and descriptions apply. */
+    var hdPack by mutableStateOf(false)
+        private set
     var working by mutableStateOf<String?>(null)
         private set
     var message by mutableStateOf<String?>(null)
@@ -28,6 +32,7 @@ class ClientModsController(val root: File, private val scope: CoroutineScope, pr
 
     fun refresh() {
         scope.launch {
+            hdPack = withContext(Dispatchers.IO) { PatchRules.applies(root) }
             val (installed, found) = withContext(Dispatchers.IO) {
                 AndroWherePatch.entries.associateWith { runCatching { ClientMods.installed(root, it) }.getOrDefault(false) } to
                     runCatching { ClientMods.patches(root) }.onFailure { Timber.w(it, "Listing client patches failed") }.getOrDefault(emptyList())
@@ -44,7 +49,13 @@ class ClientModsController(val root: File, private val scope: CoroutineScope, pr
 
     fun setPatch(patch: ClientPatch, enabled: Boolean) =
         act(if (enabled) "Turning on ${patch.name}" else "Turning off ${patch.name}") {
-            ClientMods.setPatchEnabled(patch, enabled)
+            val all = patches.orEmpty()
+            val changes = if (hdPack) {
+                PatchRules.plan(all.associate { it.key to it.enabled }, patch.key, enabled)
+            } else {
+                mapOf(patch.key to enabled)
+            }
+            all.filter { it.key in changes }.forEach { ClientMods.setPatchEnabled(it, changes.getValue(it.key)) }
             ClientMods.refresh(root)
         }
 

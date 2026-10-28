@@ -61,6 +61,7 @@ What the app does, by area, with the version each feature came in. Versions up t
 - On the 3.3.5a login screen, B or a tap outside the boxes stops typing, and B with no box in use quits (0.8.2)
 - Several saved private servers (name, realmlist, account name, own sealed password), switched with L1 and R1 on the login screen through AndroWhere Login (0.7.0)
 - Switches for the patch archives in the player's 3.3.5a client, such as HD packs, named from the pack's own labels (0.6.0)
+- WotLK HD pack patches in the Client tab say what each changes and follow the pack's rules: undead without bones turns on HD characters, dungeon minimaps turn on dungeon maps, and only one character creation style is on (unreleased)
 
 ## Sign-in and security
 
