@@ -314,6 +314,12 @@ private fun GraphicsSection(launcher: LauncherController, setHint: (String) -> U
         hint = "Frame rate, frame times and GPU load in the game, DXVK only. Low GPU load with a low frame rate means the processor is the limit.",
         setHint = setHint,
     ) { launcher.updateLegacy(settings.copy(perfOverlay = !settings.perfOverlay)) }
+    ToggleRow(
+        "Faster emulation",
+        settings.fasterEmulation,
+        hint = "Skips some of Box64's safety checks so the game runs faster. Some areas or addons can crash or glitch with it; turn it off if they do.",
+        setHint = setHint,
+    ) { launcher.updateLegacy(settings.copy(fasterEmulation = !settings.fasterEmulation)) }
 }
 
 @Composable

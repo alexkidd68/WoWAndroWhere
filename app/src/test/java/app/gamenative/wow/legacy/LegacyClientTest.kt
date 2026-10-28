@@ -127,6 +127,19 @@ class LegacyClientTest {
     }
 
     @Test
+    fun fasterEmulationAddsBox64FlagsOnlyWhenOn() {
+        assertTrue("BOX64" !in LegacyClient.envVars(LegacySettings()))
+        val env = LegacyClient.envVars(LegacySettings(fasterEmulation = true, renderer = LegacyRenderer.OPENGL))
+        assertEquals(" ${LegacyClient.FASTER_EMULATION_ENV}", env)
+        assertTrue("BOX64_DYNAREC_SAFEFLAGS=0" in env)
+    }
+
+    @Test
+    fun bundledWowbox64MatchesTheVersionTheContainerAsksFor() {
+        assertTrue(File("src/main/assets/wowbox64/wowbox64-${LegacyClient.WOWBOX64_VERSION}.tzst").isFile)
+    }
+
+    @Test
     fun handheldGraphicsReplaceOnlyTheirKeys() {
         val existing = listOf("SET farclip \"1277\"", "SET realmList \"logon.example.com\"", "SET ffxGlow \"1\"")
         val lines = LegacyClient.withValues(existing, LegacyClient.HANDHELD_GRAPHICS)

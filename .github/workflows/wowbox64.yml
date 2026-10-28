@@ -1,0 +1,63 @@
+name: wowbox64
+
+# Builds wowbox64.dll (Box64's WoW64 emulator for 32-bit x86 games) from an official ptitSeb/box64 tag,
+# the same way Box64's own release workflow does, and commits it as app/src/main/assets/wowbox64/wowbox64-<ver>.tzst
+# to the branch it ran on. Built from source so the app never bundles a third-party binary.
+# Runs when this file changes on a working branch, or by hand.
+on:
+  push:
+    branches-ignore: [main]
+    paths: [.github/workflows/wowbox64.yml]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "ptitSeb/box64 tag"
+        default: "v0.4.4"
+
+env:
+  BOX64_TAG: ${{ inputs.tag || 'v0.4.4' }}
+  LLVM_MINGW_VERSION: "20260311"
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04-arm
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ptitSeb/box64
+          ref: ${{ env.BOX64_TAG }}
+          path: box64-src
+      - name: Toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install git cmake make python3 gcc-aarch64-linux-gnu zstd
+          wget -q https://github.com/mstorsjo/llvm-mingw/releases/download/${LLVM_MINGW_VERSION}/llvm-mingw-${LLVM_MINGW_VERSION}-ucrt-ubuntu-22.04-aarch64.tar.xz
+          tar -xf llvm-mingw-${LLVM_MINGW_VERSION}-ucrt-ubuntu-22.04-aarch64.tar.xz
+          echo "$PWD/llvm-mingw-${LLVM_MINGW_VERSION}-ucrt-ubuntu-22.04-aarch64/bin" >> "$GITHUB_PATH"
+      - name: Build
+        working-directory: box64-src
+        run: |
+          mkdir build && cd build
+          cmake .. -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc -DWOW64=1 -DARM_DYNAREC=1 -DCMAKE_BUILD_TYPE=Release
+          make -j"$(nproc)"
+          ls -la wowbox64-prefix/src/wowbox64-build/wowbox64.dll
+      - name: Package and commit
+        run: |
+          VER="${BOX64_TAG#v}"
+          OUT="app/src/main/assets/wowbox64/wowbox64-$VER.tzst"
+          STAGE="$(mktemp -d)"
+          cp box64-src/build/wowbox64-prefix/src/wowbox64-build/wowbox64.dll "$STAGE/"
+          chmod 755 "$STAGE/wowbox64.dll"
+          tar -C "$STAGE" --owner=0 --group=0 -cf - wowbox64.dll | zstd -19 -q -o "$OUT" -f
+          COMMIT="$(git -C box64-src rev-parse HEAD)"
+          sha256sum "$STAGE/wowbox64.dll" "$OUT" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Box64 $BOX64_TAG ($COMMIT)" >> "$GITHUB_STEP_SUMMARY"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$OUT"
+          if git diff --cached --quiet; then echo "No change"; exit 0; fi
+          git commit -m "wowbox64 $VER built from ptitSeb/box64 $BOX64_TAG ($COMMIT)"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
