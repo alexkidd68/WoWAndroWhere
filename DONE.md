@@ -72,8 +72,8 @@ What the app does, by area, with the version each feature came in. Versions up t
 - Dashboard home with Play, Addons and Game files tiles, controller-first (0.2.0)
 - Battle.net login managed in Settings, shared by every Blizzard profile; no Account tile (0.8.0)
 - Text boxes open the keyboard only when A is pressed or the box is tapped, never when the D-pad passes over them (0.8.1)
-- 3.3.5a Server and Client as two home tiles (0.8.2 two-pane screen, split in unreleased): servers, password and login screen options on Server, folder, graphics and logs on Client; X adds, Y removes, a hint line instead of long text
-- Settings in two panes (App, Battle.net, Addon sources, About) with a hint line (unreleased)
+- 3.3.5a Server and Client as two home tiles (0.8.2 two-pane screen, split in 0.8.3): servers, password and login screen options on Server, folder, graphics and logs on Client; X adds, Y removes, a hint line instead of long text
+- Settings in two panes (App, Battle.net, Addon sources, About) with a hint line (0.8.3)
 - Quieter top bar: no Experimental label, no 3.3.5a client version; the Play card shows only the server (0.8.1)
 - First-run flow: welcome and device check, find game, install, sign in (0.2.0)
 - Art-led look in WoW Forever's colours, applied to upstream screens too (0.2.0)

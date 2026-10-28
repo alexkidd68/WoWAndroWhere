@@ -2,7 +2,7 @@
 
 Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which this fork started from.
 
-## Unreleased
+## 0.8.3
 
 - **Server and Client tiles.** On a 3.3.5a profile the home screen's Client and server tile is now two tiles, **Server** and **Client**, with Addons below them. **Server** has your servers, the selected server's password (with the saved dots, to change or forget it) and the login screen options. A on a server selects it and opens its name, realmlist and account name; X adds a server and Y removes one. **Client** has the client folder, graphics and logs.
 - **Settings in two panes.** Settings now has App, Battle.net, Addon sources and About on the left, like the old Client and server, with one hint line at the bottom instead of paragraphs.
