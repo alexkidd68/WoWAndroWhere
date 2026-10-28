@@ -35,8 +35,8 @@ What the app does, by area, with the version each feature came in. Versions up t
 - Private server launches can save a Wine log (off by default, it costs frame rate) and offer to share it when the game closes (0.5.0)
 - Performance overlay for private server launches: DXVK frame rate, frame times and GPU load (0.5.0)
 - Use lighter graphics: one tap writes CPU-light 3.3.5a settings to Config.wtf (0.5.0)
-- Faster emulation: opt-in Box64 flags on top of the Performance preset for 3.3.5a (unreleased)
-- 3.3.5a runs on wowbox64 0.4.4, built in CI from the official Box64 tag (unreleased)
+- Faster emulation: opt-in Box64 flags on top of the Performance preset for 3.3.5a (0.8.4)
+- 3.3.5a runs on wowbox64 0.4.4, built in CI from the official Box64 tag (0.8.4)
 
 ## Addons
 

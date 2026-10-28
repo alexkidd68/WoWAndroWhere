@@ -2,7 +2,7 @@
 
 Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which this fork started from.
 
-## Unreleased
+## 0.8.4
 
 - **Controller Menus (3.3.5a), formerly AndroWhere Login.** The add-on that lets the controller work on the login, realm and character screens has a new name and no longer needs ConsolePortLK. With only Controller Menus installed, the app now turns on its controller layout too. Without ConsolePortLK, that layout stays on in the world: the sticks move you and aim the mouse, and the face buttons press F1 to F4. With ConsolePortLK installed nothing changes.
 
