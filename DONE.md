@@ -23,8 +23,10 @@ What the app does, by area, with the version each feature came in. Versions up t
 
 ## Game versions
 
-- Settings → Game version: Classic Era, Burning Crusade Anniversary, Mists of Pandaria Classic and Retail, experimental, with a warning (0.4.0)
-- Each version keeps its own install, addons and addon database; launch, first run and detection follow the selected version (0.4.0)
+- Classic Era, Burning Crusade Anniversary, Mists of Pandaria Classic and Retail, experimental (0.4.0)
+- Profiles: name, game version and folder each, switched from the home top bar or with L1 and R1; older setups become profiles on first start (unreleased)
+- New profile screen: pick the version and name, then that version's download, find or 3.3.5a folder setup; replaces Settings → Game version (unreleased)
+- Profiles sharing a folder keep their own addons (AddOns.txt written at launch), server list, passwords and 3.3.5a client patches (unreleased)
 - Private server (3.3.5a) game version: your own client folder and realmlist, its own home screen, Play, and Client and server screen (0.5.0)
 - 3.3.5a clients run through Box64 WoW64, started directly instead of through winhandler; DXVK renderer, OpenGL as a fallback (0.5.0)
 - Saved, encrypted private server password for each server, in Client and server, used by AndroWhere Login's Fill in password; Install is offered until the add-on is in (0.5.0, Type password replaced 0.7.0)
@@ -66,7 +68,8 @@ What the app does, by area, with the version each feature came in. Versions up t
 
 ## App
 
-- Dashboard home with Play, Addons, Game files, Account and Settings tiles, controller-first (0.2.0)
+- Dashboard home with Play, Addons and Game files tiles, controller-first (0.2.0)
+- Battle.net login managed in Settings, shared by every Blizzard profile; no Account tile (unreleased)
 - First-run flow: welcome and device check, find game, install, sign in (0.2.0)
 - Art-led look in WoW Forever's colours, applied to upstream screens too (0.2.0)
 - In-app app updater from GitHub releases (base)

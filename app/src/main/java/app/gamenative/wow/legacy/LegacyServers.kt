@@ -2,6 +2,7 @@ package app.gamenative.wow.legacy
 
 import android.content.Context
 import app.gamenative.wow.LoginVault
+import app.gamenative.wow.profile.Profiles
 import java.util.UUID
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -18,20 +19,20 @@ data class LegacyServer(val id: String, val name: String, val realmlist: String,
 object LegacyServers {
     /** The first server, whose password lives in the vault the app used before servers could be saved. */
     const val MAIN = "main"
-    private const val PREFS = "wow_legacy"
     private const val KEY = "servers"
     private const val VAULT = "legacy_server_vault"
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    fun load(context: Context, settings: LegacySettings): List<LegacyServer> {
-        val stored = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY, null)
-            ?.let { runCatching { json.decodeFromString<List<LegacyServer>>(it) }.getOrNull() }
-        return withSelected(stored.orEmpty(), settings)
-    }
+    fun load(context: Context, settings: LegacySettings): List<LegacyServer> = withSelected(loadStored(context), settings)
 
-    fun save(context: Context, servers: List<LegacyServer>) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY, json.encodeToString(servers)).apply()
+    /** The list as saved in [prefs], the active profile's by default. */
+    fun loadStored(context: Context, prefs: String = Profiles.legacyPrefs): List<LegacyServer> =
+        context.getSharedPreferences(prefs, Context.MODE_PRIVATE).getString(KEY, null)
+            ?.let { runCatching { json.decodeFromString<List<LegacyServer>>(it) }.getOrNull() }.orEmpty()
+
+    fun save(context: Context, servers: List<LegacyServer>, prefs: String = Profiles.legacyPrefs) {
+        context.getSharedPreferences(prefs, Context.MODE_PRIVATE).edit().putString(KEY, json.encodeToString(servers)).apply()
     }
 
     /** Keeps the selected server in step with the realmlist in [settings], and makes sure there is one. */

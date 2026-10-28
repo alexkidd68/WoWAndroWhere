@@ -52,6 +52,7 @@ fun GameFilesScreen(launcher: LauncherController, onBack: () -> Unit, onInstall:
             } else {
                 Text(files.product?.displayName ?: "Unknown product", style = Fw.Text)
                 Text(launcher.gamePath, style = Fw.Data)
+                SharedFolderNote(launcher)
                 launcher.versionStatus?.let { Text("Version ${it.localVersion}", style = Fw.Data) }
                 if (!files.exeExists) Text("The game program downloads when you press Play.", style = Fw.Secondary)
             }

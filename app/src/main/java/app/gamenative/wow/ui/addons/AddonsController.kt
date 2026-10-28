@@ -34,17 +34,18 @@ class AddonsController(
     val version: GameVersion,
     private val scope: CoroutineScope,
     curseForge: CurseForgeSetup = CurseForgeSetup(),
+    private val profile: AddonProfile = AddonProfile.ALL,
 ) {
     enum class Mode { INSTALLED, BROWSE, CLIENT }
 
-    constructor(gameRoot: File, product: WowProduct, scope: CoroutineScope, curseForge: CurseForgeSetup) :
-        this(File(gameRoot, "${product.flavorDir}/Interface/AddOns"), GameVersion.of(product), scope, curseForge)
+    constructor(gameRoot: File, product: WowProduct, scope: CoroutineScope, curseForge: CurseForgeSetup, profile: AddonProfile = AddonProfile.ALL) :
+        this(File(gameRoot, "${product.flavorDir}/Interface/AddOns"), GameVersion.of(product), scope, curseForge, profile)
 
     /** CurseForge applies to this version but has no key or proxy set in Settings. */
     val curseForgeOff = !version.isPrivateServer && !curseForge.enabled
 
     /** 3.3.5a only: add-ons that change the client itself. [addonsDir] is `<client>/Interface/AddOns`. */
-    val clientMods = addonsDir.parentFile?.parentFile?.takeIf { version == GameVersion.PRIVATE_335 }?.let { ClientModsController(it, scope) }
+    val clientMods = addonsDir.parentFile?.parentFile?.takeIf { version == GameVersion.PRIVATE_335 }?.let { ClientModsController(it, scope, profile::modsChanged) }
 
     private val target = version.addonTarget()
     private val manager = AddonManager(
@@ -91,9 +92,16 @@ class AddonsController(
 
     private var loadJob: Job? = null
 
+    /** The installed addons this profile uses. */
+    private suspend fun installedForProfile(): List<AddonListing> {
+        val all = manager.installed()
+        val visible = profile.visibility()
+        return all.filter { listing -> listing.installed?.let { visible(it.id) } ?: true }
+    }
+
     fun refreshInstalled() {
         scope.launch {
-            installed = runCatching { withContext(Dispatchers.IO) { manager.installed() } }
+            installed = runCatching { withContext(Dispatchers.IO) { installedForProfile() } }
                 .onFailure { Timber.w(it, "Listing installed addons failed") }
                 .getOrDefault(emptyList())
             if (mode == Mode.INSTALLED) show(installed.orEmpty())
@@ -185,26 +193,40 @@ class AddonsController(
     }
 
     /** Shows the new state right away; the full refresh after the action fills in the rest. */
+    /** The record an install or update just wrote, claimed even when its id was already on disk. */
+    @Volatile
+    private var installedNow: String? = null
+
     private suspend fun markInstalled(listing: AddonListing, record: app.gamenative.wow.addons.InstalledAddon) = withContext(Dispatchers.Main) {
+        installedNow = record.id
         val key = keyOf(listing)
         val patch = { l: AddonListing -> if (keyOf(l) == key) l.copy(installed = record, updateAvailable = false) else l }
         listings = listings.map(patch)
         selected = selected?.let(patch)
     }
 
-    fun remove(listing: AddonListing) = act("Removing ${listing.remote.name}") { listing.installed?.let { manager.remove(it) } }
+    fun remove(listing: AddonListing) = act("Removing ${listing.remote.name}") {
+        listing.installed?.let { if (!profile.release(it)) manager.remove(it) }
+    }
 
     fun updateAll() = act("Updating all addons") { manager.updateAll() }
 
-    fun installFromUrl(url: String) = act("Installing from link") { manager.installFromUrl(url.trim()) }
+    fun installFromUrl(url: String) = act("Installing from link") { installedNow = manager.installFromUrl(url.trim()).id }
 
     private fun act(label: String, block: suspend () -> Unit) {
         if (working != null) return
         working = label
         message = null
+        val db = AddonDb.forAddonsDir(addonsDir)
         scope.launch {
             try {
-                withContext(Dispatchers.IO) { block() }
+                withContext(Dispatchers.IO) {
+                    val before = db.load().map { it.id }.toSet()
+                    block()
+                    // What this action installed, dependencies included, belongs to this profile.
+                    profile.claim(db.load().map { it.id }.toSet() - before + listOfNotNull(installedNow))
+                    installedNow = null
+                }
                 message = "$label: done."
             } catch (e: CancellationException) {
                 throw e
@@ -213,7 +235,7 @@ class AddonsController(
                 message = "$label failed: ${e.message ?: "unknown error"}"
             } finally {
                 working = null
-                installed = runCatching { withContext(Dispatchers.IO) { manager.installed() } }.getOrDefault(installed.orEmpty())
+                installed = runCatching { withContext(Dispatchers.IO) { installedForProfile() } }.getOrDefault(installed.orEmpty())
                 if (mode == Mode.INSTALLED) show(installed.orEmpty()) else show(listings.map { l -> refreshed(l) })
             }
         }
@@ -222,5 +244,27 @@ class AddonsController(
     private fun refreshed(listing: AddonListing): AddonListing {
         val record = installed?.firstOrNull { it.remote.provider == listing.remote.provider && it.remote.projectId == listing.remote.projectId }
         return listing.copy(installed = record?.installed, updateAvailable = record?.updateAvailable ?: false)
+    }
+}
+
+/** How the addon screen sees a game folder that several profiles may share. Every addon belongs to everyone by default. */
+interface AddonProfile {
+    /** Which installed addon ids the profile uses; read again after each change. */
+    fun visibility(): (String) -> Boolean
+
+    fun claim(ids: Set<String>)
+
+    /** True when the addon's files must stay because another profile uses it. */
+    fun release(addon: app.gamenative.wow.addons.InstalledAddon): Boolean
+
+    fun modsChanged()
+
+    companion object {
+        val ALL = object : AddonProfile {
+            override fun visibility(): (String) -> Boolean = { true }
+            override fun claim(ids: Set<String>) = Unit
+            override fun release(addon: app.gamenative.wow.addons.InstalledAddon) = false
+            override fun modsChanged() = Unit
+        }
     }
 }

@@ -2,6 +2,7 @@ package app.gamenative.wow.legacy
 
 import android.content.Context
 import app.gamenative.wow.LoginVault
+import app.gamenative.wow.profile.Profiles
 import java.io.File
 import java.io.RandomAccessFile
 
@@ -54,8 +55,9 @@ object LegacyClient {
 
     private val REALMLIST_LINE = Regex("set\\s+realmlist\\s+(.*)", RegexOption.IGNORE_CASE)
 
+    /** The active profile's settings. */
     fun load(context: Context): LegacySettings {
-        val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val p = context.getSharedPreferences(Profiles.legacyPrefs, Context.MODE_PRIVATE)
         return LegacySettings(
             root = p.getString("root", "").orEmpty(),
             realmlist = p.getString("realmlist", "").orEmpty(),
@@ -69,7 +71,7 @@ object LegacyClient {
     }
 
     fun save(context: Context, settings: LegacySettings) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+        context.getSharedPreferences(Profiles.legacyPrefs, Context.MODE_PRIVATE).edit()
             .putString("root", settings.root)
             .putString("realmlist", settings.realmlist)
             .putString("renderer", settings.renderer.name)

@@ -15,7 +15,7 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 /** UI state for the 3.3.5a client add-ons: our login screen add-on and the client's own patch archives. */
-class ClientModsController(val root: File, private val scope: CoroutineScope) {
+class ClientModsController(val root: File, private val scope: CoroutineScope, private val onChanged: () -> Unit = {}) {
     /** Our patches and whether each is installed; null until read. */
     var ours by mutableStateOf<Map<AndroWherePatch, Boolean>?>(null)
         private set
@@ -62,6 +62,7 @@ class ClientModsController(val root: File, private val scope: CoroutineScope) {
                 message = "$label failed: ${e.message ?: "unknown error"}"
             } finally {
                 working = null
+                onChanged()
                 refresh()
             }
         }

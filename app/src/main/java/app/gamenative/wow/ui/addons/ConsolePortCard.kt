@@ -19,7 +19,8 @@ import app.gamenative.wow.ui.theme.Fw
 /** On the 3.3.5a client, which has no controller support of its own: offers ConsolePortLK until it's installed. */
 @Composable
 internal fun ConsolePortCard(c: AddonsController) {
-    if (c.version != GameVersion.PRIVATE_335 || c.installed == null || ConsolePortLK.isInstalled(c.addonsDir)) return
+    val installed = c.installed ?: return
+    if (c.version != GameVersion.PRIVATE_335 || installed.any { ConsolePortLK.MAIN_FOLDER in it.installed?.folders.orEmpty() }) return
     Row(
         Modifier
             .fillMaxWidth()

@@ -65,6 +65,7 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
                 Text("No folder chosen.", style = Fw.Text)
             } else {
                 Text(settings.root, style = Fw.Data)
+                SharedFolderNote(launcher)
                 Text(launcher.legacyBuild?.let { "Client build $it" } ?: "Client build unknown", style = Fw.Data)
             }
             folderError?.let { Text(it, style = Fw.Secondary.copy(color = Fw.Warn)) }
@@ -171,7 +172,7 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
 @Composable
 private fun LoginSection(launcher: LauncherController, root: File) {
     val scope = rememberCoroutineScope()
-    val mods = remember(root) { ClientModsController(root, scope) }
+    val mods = remember(root) { ClientModsController(root, scope, launcher::recordClientMods) }
     LaunchedEffect(root) { mods.refresh() }
     when (mods.ours?.get(AndroWherePatch.LOGIN)) {
         null -> Unit

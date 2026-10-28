@@ -1,6 +1,8 @@
 package app.gamenative.wow.legacy
 
 import android.content.Context
+import app.gamenative.wow.profile.ProfileAddons
+import app.gamenative.wow.profile.Profiles
 import com.winlator.container.Container
 import com.winlator.inputcontrols.ControlsProfile
 import com.winlator.inputcontrols.InputControlsManager
@@ -17,7 +19,7 @@ object ConsolePortLK {
     const val REPO_URL = "https://github.com/leoaviana/ConsolePortLK"
     const val PROFILE_NAME = "ConsolePortLK"
     private const val PROFILE_ASSET = "wow/consoleportlk.icp"
-    private const val MAIN_FOLDER = "ConsolePort"
+    const val MAIN_FOLDER = "ConsolePort"
 
     fun isInstalled(addonsDir: File) = File(addonsDir, "$MAIN_FOLDER/$MAIN_FOLDER.toc").isFile
 
@@ -30,7 +32,9 @@ object ConsolePortLK {
         val current = container.getExtra("profileId", "0").toIntOrNull() ?: 0
         val existing = manager.getProfiles(false).firstOrNull { it.name == PROFILE_NAME }
         val addonsDir = File(clientRoot, "Interface/AddOns")
-        if (!isInstalled(addonsDir)) {
+        // On a folder shared by profiles, the app may have turned ConsolePort off for this one in AddOns.txt.
+        val off = Profiles.active?.let { MAIN_FOLDER in ProfileAddons.disabledFolders(context, it.home) } ?: false
+        if (!isInstalled(addonsDir) || off) {
             if (existing != null && current == existing.id) container.putExtra("profileId", null)
             File(addonsDir, SETUP_FOLDER).deleteRecursively()
             return

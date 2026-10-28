@@ -286,7 +286,9 @@ fun InstallStep(launcher: LauncherController, onDone: () -> Unit, onBack: () -> 
                     "Download and install",
                     {
                         val p = product ?: return@FwButton
-                        start(InstallRequest(File(roots[rootIndex], launcher.version.defaultFolder), p, locale))
+                        val root = File(roots[rootIndex], launcher.version.defaultFolder)
+                        launcher.startedInstall(root.absolutePath)
+                        start(InstallRequest(root, p, locale))
                     },
                     enabled = product != null && roots.isNotEmpty(),
                 )
