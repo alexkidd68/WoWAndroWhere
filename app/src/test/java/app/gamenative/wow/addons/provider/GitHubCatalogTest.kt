@@ -19,16 +19,23 @@ class GitHubCatalogTest {
     private var catalogAvailable = true
     private var now = 0L
 
-    private fun start(): GitHubProvider {
+    private fun start(fallback: Boolean = false): GitHubProvider {
         server.dispatcher = Fixtures.dispatcher { req ->
             requests += req.url.encodedPath
             when (req.url.encodedPath) {
                 "/catalog.json" -> if (catalogAvailable) Fixtures.json(Fixtures.load("github-catalog.json")) else null
+                "/upstream/catalog.json" -> Fixtures.json(Fixtures.load("github-catalog.json"))
                 else -> null
             }
         }
         server.start()
-        return GitHubProvider(OkHttpClient(), apiBase = server.base(), catalogUrl = "${server.base()}/catalog.json", clock = { now })
+        return GitHubProvider(
+            OkHttpClient(),
+            apiBase = server.base(),
+            catalogUrl = "${server.base()}/catalog.json",
+            fallbackCatalogUrl = if (fallback) "${server.base()}/upstream/catalog.json" else null,
+            clock = { now },
+        )
     }
 
     @After
@@ -84,5 +91,18 @@ class GitHubCatalogTest {
     fun missingCatalogMeansNoResults() = runBlocking {
         catalogAvailable = false
         assertTrue(start().popular(0).isEmpty())
+    }
+
+    @Test
+    fun fallbackCatalogIsNotFetchedWhenOursWorks() = runBlocking {
+        assertEquals(3, start(fallback = true).popular(0).size)
+        assertTrue(requests.none { it == "/upstream/catalog.json" })
+    }
+
+    @Test
+    fun fallbackCatalogIsUsedWhenOursIsMissing() = runBlocking {
+        catalogAvailable = false
+        assertEquals(3, start(fallback = true).popular(0).size)
+        assertTrue("/upstream/catalog.json" in requests)
     }
 }

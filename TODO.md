@@ -2,10 +2,6 @@
 
 Only work that's left. Shipped items move to DONE.md, rejected ones to DROPPED.md.
 
-## Fork housekeeping
-
-1. **Addon catalog link.** The GitHub addon catalog (`GitHubProvider.CATALOG_URL`) still points at upstream. It can stay on upstream's nightly build (no cost, but it's their branch) or the fork's `addon-catalog` workflow can publish its own.
-
 ## Client add-ons (3.3.5a)
 
 1. **The HD pack's rules.** The WotLK HD pack's menu keeps some patches together (u needs a, n needs m) and apart (j and k). The Client tab doesn't yet; its config file has the rules to read.

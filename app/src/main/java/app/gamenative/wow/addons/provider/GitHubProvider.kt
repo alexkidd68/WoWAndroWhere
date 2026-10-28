@@ -29,6 +29,7 @@ class GitHubProvider(
     private val http: OkHttpClient = Net.http,
     private val apiBase: String = "https://api.github.com",
     private val catalogUrl: String = CATALOG_URL,
+    private val fallbackCatalogUrl: String? = null,
     private val clock: () -> Long = System::currentTimeMillis,
     private val target: AddonTarget = AddonTarget.FOREVER,
 ) : AddonProvider {
@@ -59,8 +60,9 @@ class GitHubProvider(
     private suspend fun catalog(): List<RemoteAddon> = catalogLock.withLock {
         val now = clock()
         catalog?.takeIf { now - catalogAt < CATALOG_TTL_MS }?.let { return@withLock it }
-        val parsed = runCatching { http.fetchText(catalogUrl)?.let { ProviderJson.decodeFromString<Catalog>(it) } }.getOrNull()
-            ?: return@withLock catalog.orEmpty()
+        val parsed = listOfNotNull(catalogUrl, fallbackCatalogUrl).firstNotNullOfOrNull { url ->
+            runCatching { http.fetchText(url)?.let { ProviderJson.decodeFromString<Catalog>(it) } }.getOrNull()
+        } ?: return@withLock catalog.orEmpty()
         parsed.addons.mapNotNull { it.toRemote() }.also {
             catalog = it
             catalogAt = now
@@ -200,7 +202,10 @@ class GitHubProvider(
     private data class ReleaseMetaFlavor(val flavor: String)
 
     companion object {
-        const val CATALOG_URL = "https://raw.githubusercontent.com/YoruDev-Ryland/WoWForeverywhere/addon-catalog/catalog.json"
+        const val CATALOG_URL = "https://raw.githubusercontent.com/danielnoam/WoWAndroWhere/addon-catalog/catalog.json"
+
+        /** Upstream's nightly build, used when the fork's catalog can't be fetched. */
+        const val UPSTREAM_CATALOG_URL = "https://raw.githubusercontent.com/YoruDev-Ryland/WoWForeverywhere/addon-catalog/catalog.json"
         private const val CATALOG_TTL_MS = 6 * 60 * 60 * 1000L
         private val headers = Headers.headersOf("Accept", "application/vnd.github+json")
         private val zipTypes = setOf("application/zip", "application/x-zip-compressed")

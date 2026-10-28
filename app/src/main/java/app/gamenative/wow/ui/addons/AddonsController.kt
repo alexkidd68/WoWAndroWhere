@@ -55,7 +55,11 @@ class AddonsController(
             curseForge.provider(target).takeUnless { version.isPrivateServer },
             WagoProvider(BuildConfig.WAGO_API_KEY, target = target).takeUnless { version.isPrivateServer },
             WowInterfaceProvider(target = target),
-            GitHubProvider(target = target, catalogUrl = if (version.isPrivateServer) LegacyClient.ADDON_CATALOG_URL else GitHubProvider.CATALOG_URL),
+            if (version.isPrivateServer) {
+                GitHubProvider(target = target, catalogUrl = LegacyClient.ADDON_CATALOG_URL)
+            } else {
+                GitHubProvider(target = target, fallbackCatalogUrl = GitHubProvider.UPSTREAM_CATALOG_URL)
+            },
         ),
         http = Net.http,
         target = target,
