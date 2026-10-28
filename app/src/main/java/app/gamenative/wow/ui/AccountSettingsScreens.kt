@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.LocalCafe
 import androidx.compose.ui.platform.LocalContext
 import app.gamenative.wow.AppName
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -37,6 +36,7 @@ import app.gamenative.wow.ui.components.FwChip
 import app.gamenative.wow.ui.components.Links
 import app.gamenative.wow.ui.components.FwButtonKind
 import app.gamenative.wow.ui.components.FwProgress
+import app.gamenative.wow.ui.components.FwTextField
 import app.gamenative.wow.ui.components.FwTopBar
 import app.gamenative.wow.ui.theme.Fw
 
@@ -168,26 +168,20 @@ private fun CurseForgeSection(launcher: LauncherController) {
             FwChip("Your API key", !useProxy, { pick(false) })
             FwChip("Your proxy", useProxy, { pick(true) })
         }
-        OutlinedTextField(
+        FwTextField(
             input,
             {
                 input = it
                 error = null
             },
-            singleLine = true,
-            label = {
-                Text(
-                    when {
-                        useProxy -> "Proxy address, e.g. https://cf.example.com"
-                        setup.usesKey -> "New API key"
-                        else -> "API key"
-                    },
-                )
+            when {
+                useProxy -> "Proxy address, e.g. https://cf.example.com"
+                setup.usesKey -> "New API key"
+                else -> "API key"
             },
+            Modifier.fillMaxWidth(),
             visualTransformation = if (useProxy) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = if (useProxy) KeyboardType.Uri else KeyboardType.Password),
-            textStyle = Fw.Text,
-            modifier = Modifier.fillMaxWidth(),
         )
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             FwButton(

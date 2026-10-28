@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -18,14 +17,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import app.gamenative.Crypto
 import app.gamenative.wow.LoginVault
 import app.gamenative.wow.product.WowProduct
+import app.gamenative.wow.ui.components.FwTextField
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -159,11 +157,9 @@ fun BattleNetCredentialDialog(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val emailFocus = remember { FocusRequester() }
-    val keyboard = LocalSoftwareKeyboardController.current
     LaunchedEffect(Unit) {
         delay(DIALOG_SETTLE_MS)
         emailFocus.requestFocus()
-        keyboard?.show()
     }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -174,19 +170,17 @@ fun BattleNetCredentialDialog(
             Column {
                 Text("Saved encrypted on this device. WoW will automatically log in on launch.")
                 Spacer(Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = { Text("Email") },
-                    singleLine = true,
-                    modifier = Modifier.focusRequester(emailFocus),
+                FwTextField(
+                    email,
+                    { email = it },
+                    "Email",
+                    focusRequester = emailFocus,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 )
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text("Password") },
-                    singleLine = true,
+                FwTextField(
+                    password,
+                    { password = it },
+                    "Password",
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 )

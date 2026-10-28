@@ -22,7 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,6 +40,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import app.gamenative.wow.product.GameVersion
 import app.gamenative.wow.profile.Profile
 import app.gamenative.wow.profile.Profiles
@@ -48,6 +48,7 @@ import app.gamenative.wow.ui.components.FwButton
 import app.gamenative.wow.ui.components.FwButtonKind
 import app.gamenative.wow.ui.components.FwDialog
 import app.gamenative.wow.ui.components.FwRow
+import app.gamenative.wow.ui.components.FwTextField
 import app.gamenative.wow.ui.components.GameIconImage
 import app.gamenative.wow.ui.components.icon
 import app.gamenative.wow.ui.theme.Fw
@@ -71,7 +72,7 @@ fun ProfileButton(launcher: LauncherController, onClick: () -> Unit, modifier: M
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         GameIconImage(launcher.version.icon, 30.dp) { Box(Modifier.size(30.dp)) }
-        Column(Modifier.widthIn(max = 220.dp)) {
+        Column(Modifier.widthIn(max = 360.dp)) {
             Text(profile?.name ?: "No profile", style = Fw.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(launcher.version.displayName, style = Fw.Data, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
@@ -83,39 +84,35 @@ fun ProfileButton(launcher: LauncherController, onClick: () -> Unit, modifier: M
 @Composable
 fun ProfileMenu(launcher: LauncherController, onDismiss: () -> Unit, onNew: () -> Unit) {
     var editing by remember { mutableStateOf<Profile?>(null) }
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         val first = remember { FocusRequester() }
         LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
         Column(
-            Modifier.widthIn(max = 520.dp).background(Fw.Stone, RoundedCornerShape(20.dp)).padding(20.dp),
+            Modifier.fillMaxWidth(0.9f).widthIn(max = 680.dp).background(Fw.Stone, RoundedCornerShape(20.dp)).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text("Profiles", style = Fw.Title)
             Column(Modifier.heightIn(max = 380.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 launcher.profiles.forEachIndexed { index, p ->
                     val current = p.id == launcher.profile?.id
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FwRow(
-                            selected = current,
-                            onClick = { if (launcher.switchProfile(p.id)) onDismiss() },
-                            modifier = Modifier
-                                .weight(1f)
-                                .then(if (index == 0) Modifier.focusRequester(first) else Modifier)
-                                .onPreviewKeyEvent { e -> e.pressed(AndroidKey.KEYCODE_BUTTON_Y).also { if (it) editing = p } },
-                        ) {
-                            GameIconImage(p.gameVersion.icon, 28.dp) { Box(Modifier.size(28.dp)) }
-                            Column(Modifier.weight(1f)) {
-                                Text(p.name, style = Fw.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Text(
-                                    p.gameVersion.displayName + if (p.root.isBlank()) " · not set up" else "",
-                                    style = Fw.Data,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                            if (current) Text("Current", style = Fw.Data.copy(color = Fw.Brass))
+                    FwRow(
+                        selected = false,
+                        onClick = { if (launcher.switchProfile(p.id)) onDismiss() },
+                        modifier = Modifier
+                            .then(if (index == 0) Modifier.focusRequester(first) else Modifier)
+                            .onPreviewKeyEvent { e -> e.pressed(AndroidKey.KEYCODE_BUTTON_Y).also { if (it) editing = p } },
+                    ) {
+                        GameIconImage(p.gameVersion.icon, 28.dp) { Box(Modifier.size(28.dp)) }
+                        Column(Modifier.weight(1f)) {
+                            Text(p.name, style = Fw.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(
+                                p.gameVersion.displayName + if (p.root.isBlank()) " · not set up" else "",
+                                style = Fw.Data,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
                         }
-                        FwButton("Edit", { editing = p }, kind = FwButtonKind.Ghost)
+                        if (current) Text("Current", style = Fw.Data.copy(color = Fw.Brass))
                     }
                 }
             }
@@ -158,7 +155,7 @@ private fun ProfileEditDialog(launcher: LauncherController, profile: Profile, on
         },
         onDismiss = onDismiss,
     ) {
-        OutlinedTextField(name, { name = it }, singleLine = true, label = { Text("Name") }, textStyle = Fw.Text, modifier = Modifier.fillMaxWidth())
+        FwTextField(name, { name = it }, "Name", Modifier.fillMaxWidth())
         if (current) {
             Text("Switch to another profile to delete this one.", style = Fw.Secondary)
         } else {
@@ -193,14 +190,12 @@ fun NewProfileScreen(launcher: LauncherController, onCreated: (GameVersion) -> U
             }
         }
         FwSection("Name") {
-            OutlinedTextField(
+            FwTextField(
                 name,
                 { name = it },
-                singleLine = true,
-                label = { Text("Name") },
-                placeholder = { Text(version?.let { Profiles.freeName(it.displayName) } ?: "Pick a version first") },
-                textStyle = Fw.Text,
-                modifier = Modifier.fillMaxWidth(),
+                "Name",
+                Modifier.fillMaxWidth(),
+                placeholder = version?.let { Profiles.freeName(it.displayName) } ?: "Pick a version first",
             )
             Text("Leave it empty to use the version's name.", style = Fw.Secondary)
         }

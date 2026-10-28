@@ -23,9 +23,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
@@ -38,7 +39,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -65,6 +69,8 @@ import app.gamenative.wow.ui.components.FwChip
 import app.gamenative.wow.ui.components.FwButtonKind
 import app.gamenative.wow.ui.components.FwDialog
 import app.gamenative.wow.ui.components.FwRow
+import app.gamenative.wow.ui.components.FwTextField
+import app.gamenative.wow.ui.components.TypeOnA
 import app.gamenative.wow.ui.theme.Fw
 import java.io.File
 
@@ -166,7 +172,7 @@ fun AddonsScreen(c: AddonsController, onBack: () -> Unit) {
             },
             onDismiss = { showUrlDialog = false },
         ) {
-            OutlinedTextField(url, { url = it }, singleLine = true, label = { Text("Link") }, textStyle = Fw.Text)
+            FwTextField(url, { url = it }, "Link", Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri))
         }
     }
 }
@@ -342,9 +348,25 @@ private fun Facts(rows: List<Pair<String, String>>) {
 
 @Composable
 private fun SearchField(value: String, onChange: (String) -> Unit, hint: String, modifier: Modifier) {
-    Box(modifier.widthIn(min = 160.dp).background(Fw.Stone, Fw.Pill).padding(horizontal = 18.dp, vertical = 12.dp)) {
-        if (value.isEmpty()) Text(hint, style = Fw.Text.copy(color = Fw.Ash), maxLines = 1, overflow = TextOverflow.Ellipsis)
-        BasicTextField(value, onChange, singleLine = true, textStyle = Fw.Text, cursorBrush = SolidColor(Fw.Brass), modifier = Modifier.fillMaxWidth())
+    TypeOnA(modifier.widthIn(min = 160.dp)) { fieldModifier, focused, stop ->
+        Box(
+            Modifier
+                .border(2.dp, if (focused) Fw.Brass else Color.Transparent, Fw.Pill)
+                .background(Fw.Stone, Fw.Pill)
+                .padding(horizontal = 18.dp, vertical = 12.dp),
+        ) {
+            if (value.isEmpty()) Text(hint, style = Fw.Text.copy(color = Fw.Ash), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            BasicTextField(
+                value,
+                onChange,
+                singleLine = true,
+                textStyle = Fw.Text,
+                cursorBrush = SolidColor(Fw.Brass),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { stop() }),
+                modifier = fieldModifier.fillMaxWidth(),
+            )
+        }
     }
 }
 
