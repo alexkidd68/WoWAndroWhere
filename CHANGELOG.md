@@ -4,7 +4,7 @@ Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which thi
 
 ## Unreleased
 
-- **Controller Menus (3.3.5a), formerly AndroWhere Login.** The add-on that lets the controller work on the login, realm and character screens has a new name and no longer needs ConsolePortLK. With only Controller Menus installed, the app now turns on its controller layout too, and a small add-on it writes stops the buttons and left stick doing anything once you are in the world. The right stick still moves the mouse there. With ConsolePortLK installed nothing changes.
+- **Controller Menus (3.3.5a), formerly AndroWhere Login.** The add-on that lets the controller work on the login, realm and character screens has a new name and no longer needs ConsolePortLK. With only Controller Menus installed, the app now turns on its controller layout too. Without ConsolePortLK, that layout stays on in the world: the sticks move you and aim the mouse, and the face buttons press F1 to F4. With ConsolePortLK installed nothing changes.
 
 - **Faster emulation for private servers.** **Client** → Graphics has a new **Faster emulation** switch. It turns off some of Box64's safety checks so the 3.3.5a client runs faster. It's off by default; if an area or addon crashes or looks wrong with it on, turn it off.
 - **Newer Box64 for private servers.** The 3.3.5a client now runs on Box64 0.4.4 (was 0.4.2), which starts and runs games a bit faster.
