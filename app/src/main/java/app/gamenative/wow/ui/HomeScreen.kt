@@ -18,13 +18,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -36,11 +37,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import app.gamenative.wow.AppName
 import app.gamenative.wow.ui.components.ForeverArt
-import app.gamenative.wow.ui.components.GameIcon
-import app.gamenative.wow.ui.components.GameIconImage
-import app.gamenative.wow.ui.components.icon
 import app.gamenative.wow.ui.components.Links
 import app.gamenative.wow.ui.components.FwActionBar
 import app.gamenative.wow.ui.components.FwButton
@@ -56,19 +53,33 @@ fun HomeScreen(
     addonCount: Int?,
     onOpenAddons: () -> Unit,
     onOpenGame: () -> Unit,
-    onOpenAccount: () -> Unit,
     onOpenSettings: () -> Unit,
+    onNewProfile: () -> Unit,
 ) {
     val playFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { playFocus.requestFocus() } }
+    var showProfiles by remember { mutableStateOf(false) }
 
-    Column(Modifier.fillMaxSize().background(Fw.Ground).padding(horizontal = 24.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Header(launcher, onOpenSettings)
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(Fw.Ground)
+            .onPreviewKeyEvent { e ->
+                when {
+                    e.pressed(android.view.KeyEvent.KEYCODE_BUTTON_L1) -> true.also { launcher.cycleProfile(-1) }
+                    e.pressed(android.view.KeyEvent.KEYCODE_BUTTON_R1) -> true.also { launcher.cycleProfile(1) }
+                    else -> false
+                }
+            }
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Header(launcher, onOpenSettings, onOpenProfiles = { showProfiles = true })
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
             val wide = maxWidth >= 600.dp
             val play: @Composable (Modifier) -> Unit = { m -> PlayTile(launcher, onOpenGame, m.focusRequester(playFocus)) }
             val tiles: @Composable (Modifier) -> Unit = { m ->
-                SmallTiles(launcher, addonUpdates, addonCount, onOpenAddons, onOpenGame, onOpenAccount, m)
+                SmallTiles(launcher, addonUpdates, addonCount, onOpenAddons, onOpenGame, m)
             }
             if (wide) {
                 Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -79,14 +90,24 @@ fun HomeScreen(
                 // Portrait: the small tiles keep a fixed height and Play takes all the rest.
                 Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     play(Modifier.fillMaxWidth().weight(1f))
-                    tiles(Modifier.fillMaxWidth().height(if (launcher.isPrivate) 163.dp else 340.dp))
+                    tiles(Modifier.fillMaxWidth().height(163.dp))
                 }
             }
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("A  Select      B  Back", style = Fw.Data, modifier = Modifier.weight(1f))
+            Text(if (launcher.profiles.size > 1) "A  Select      B  Back      L1 R1  Profile" else "A  Select      B  Back", style = Fw.Data, modifier = Modifier.weight(1f))
             SupportLink()
         }
+    }
+    if (showProfiles) {
+        ProfileMenu(
+            launcher,
+            onDismiss = { showProfiles = false },
+            onNew = {
+                showProfiles = false
+                onNewProfile()
+            },
+        )
     }
 }
 
@@ -110,14 +131,12 @@ private fun SupportLink() {
 }
 
 @Composable
-private fun Header(launcher: LauncherController, onOpenSettings: () -> Unit) {
+private fun Header(launcher: LauncherController, onOpenSettings: () -> Unit, onOpenProfiles: () -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            GameIconImage(launcher.version.icon, 34.dp) { Box(Modifier.size(34.dp)) }
-            Text(AppName.SHORT, style = Fw.Title.copy(fontSize = 21.sp))
+            ProfileButton(launcher, onOpenProfiles, Modifier.weight(1f, fill = false))
             if (launcher.version.isExperimental) {
-                Text(launcher.version.displayName, style = Fw.Data, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-                Text("Experimental", style = Fw.Data.copy(color = Fw.Warn), modifier = Modifier.background(Fw.Stone, Fw.Pill).padding(horizontal = 10.dp, vertical = 4.dp))
+                Text("Experimental", style = Fw.Data.copy(color = Fw.Warn), maxLines = 1, modifier = Modifier.background(Fw.Stone, Fw.Pill).padding(horizontal = 10.dp, vertical = 4.dp))
             }
         }
         val version = launcher.versionStatus
@@ -202,7 +221,6 @@ private fun SmallTiles(
     addonCount: Int?,
     onOpenAddons: () -> Unit,
     onOpenGame: () -> Unit,
-    onOpenAccount: () -> Unit,
     modifier: Modifier,
 ) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -227,12 +245,6 @@ private fun SmallTiles(
                     style = Fw.Secondary,
                 )
                 if (launcher.canConvertToLaunch) Text("Launch version available", style = Fw.Secondary.copy(color = Fw.Brass))
-            }
-        }
-        // Private servers keep their password in Client and server, and Settings is in the top bar.
-        if (!launcher.isPrivate) {
-            FwTile("Account", Modifier.weight(1f).fillMaxWidth(), art = ForeverArt.SKYBORNE, onClick = onOpenAccount) {
-                Text(if (launcher.hasSavedLogin) "Login saved on this device" else "No login saved", style = Fw.Secondary)
             }
         }
     }

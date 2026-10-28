@@ -33,7 +33,7 @@ object Routes {
     const val HOME = "home"
     const val ADDONS = "addons"
     const val GAME = "game"
-    const val ACCOUNT = "account"
+    const val NEW_PROFILE = "newprofile"
     const val SETTINGS = "settings"
     const val FIRST_RUN = "firstrun"
     const val INSTALL = "install"
@@ -47,8 +47,13 @@ fun ForeverywhereApp(onLaunch: (appId: String) -> Unit) {
     val launcher = remember { LauncherController(context, scope, onLaunch) }
     val nav = rememberNavController()
     var showLoginDialog by remember { mutableStateOf(false) }
-    val addonsNow = remember(launcher.version, launcher.gamePath, launcher.files.product, launcher.legacy.root, launcher.curseForge) {
-        if (launcher.isPrivate) legacyAddonsControllerFor(launcher.legacy.root, scope) else addonsControllerFor(launcher.gamePath, launcher.files.product, scope, launcher.curseForge)
+    val addonsNow = remember(launcher.profile?.id, launcher.version, launcher.gamePath, launcher.files.product, launcher.legacy.root, launcher.curseForge) {
+        val profile = launcher.addonProfile()
+        if (launcher.isPrivate) {
+            legacyAddonsControllerFor(launcher.legacy.root, scope, profile)
+        } else {
+            addonsControllerFor(launcher.gamePath, launcher.files.product, scope, launcher.curseForge, profile)
+        }
     }
     LaunchedEffect(addonsNow) { addonsNow?.refreshInstalled() }
     // The nav graph is built once, so destinations read this state instead of capturing a stale value.
@@ -56,14 +61,18 @@ fun ForeverywhereApp(onLaunch: (appId: String) -> Unit) {
 
     // Decided once: recomputing it would rebuild the graph and drop first-run mid-way when an install appears.
     val startRoute = remember {
-        if (!launcher.isPrivate && launcher.registry.active() == null && launcher.filesMissing) Routes.FIRST_RUN else Routes.HOME
+        when {
+            launcher.profile == null -> Routes.NEW_PROFILE
+            needsFirstRun(launcher) -> Routes.FIRST_RUN
+            else -> Routes.HOME
+        }
     }
     var appUpdateDismissed by remember { mutableStateOf(false) }
-    // After a game version switch: that version's Home, or its first run when it has no install yet.
-    val onVersionChanged = {
-        val route = if (!launcher.isPrivate && launcher.registry.active() == null && launcher.filesMissing) Routes.FIRST_RUN else Routes.HOME
-        nav.navigate(route) { popUpTo(nav.graph.id) { inclusive = true } }
+    val toHome = {
+        if (!nav.popBackStack(Routes.HOME, inclusive = false)) nav.navigate(Routes.HOME) { popUpTo(nav.graph.id) { inclusive = true } }
     }
+    val openGame = { nav.navigate(if (needsFirstRun(launcher)) Routes.FIRST_RUN else Routes.GAME) }
+    val newProfile = { nav.navigate(Routes.NEW_PROFILE) }
 
     LaunchedEffect(Unit) { launcher.start() }
     LifecycleResumeEffect(launcher.gamePath) {
@@ -89,9 +98,9 @@ fun ForeverywhereApp(onLaunch: (appId: String) -> Unit) {
                         addonUpdates = addonsState.value?.updates,
                         addonCount = addonsState.value?.installed?.size,
                         onOpenAddons = { nav.navigate(Routes.ADDONS) },
-                        onOpenGame = { nav.navigate(Routes.GAME) },
-                        onOpenAccount = { nav.navigate(Routes.ACCOUNT) },
+                        onOpenGame = openGame,
                         onOpenSettings = { nav.navigate(Routes.SETTINGS) },
+                        onNewProfile = newProfile,
                     )
                 }
                 composable(Routes.GAME) {
@@ -101,14 +110,18 @@ fun ForeverywhereApp(onLaunch: (appId: String) -> Unit) {
                         GameFilesScreen(launcher, onBack = { nav.popBackStack() }, onInstall = { nav.navigate(Routes.INSTALL) })
                     }
                 }
-                composable(Routes.ACCOUNT) {
-                    if (launcher.isPrivate) {
-                        PrivateServerScreen(launcher, onBack = { nav.popBackStack() })
-                    } else {
-                        AccountScreen(launcher, onBack = { nav.popBackStack() }, onEditLogin = { showLoginDialog = true })
-                    }
+                composable(Routes.SETTINGS) { SettingsScreen(launcher, onBack = { nav.popBackStack() }, onEditLogin = { showLoginDialog = true }) }
+                composable(Routes.NEW_PROFILE) {
+                    NewProfileScreen(
+                        launcher,
+                        onCreated = { version ->
+                            toHome()
+                            nav.navigate(if (version.isPrivateServer) Routes.GAME else Routes.FIRST_RUN)
+                        },
+                        // With no profile yet there is nothing behind this screen.
+                        onBack = { if (launcher.profile != null && !nav.popBackStack()) toHome() },
+                    )
                 }
-                composable(Routes.SETTINGS) { SettingsScreen(launcher, onBack = { nav.popBackStack() }, onVersionChanged = onVersionChanged) }
                 composable(Routes.ADDONS) { AddonsRoute(launcher, addonsState.value, onBack = { nav.popBackStack() }) }
                 composable(Routes.INSTALL) {
                     val back = { nav.popBackStack(); Unit }
@@ -123,8 +136,9 @@ fun ForeverywhereApp(onLaunch: (appId: String) -> Unit) {
                     FirstRunScreen(
                         launcher = launcher,
                         onEditLogin = { showLoginDialog = true },
-                        onDone = { nav.navigate(Routes.HOME) { popUpTo(Routes.FIRST_RUN) { inclusive = true } } },
-                        onOpenSettings = { nav.navigate(Routes.SETTINGS) },
+                        onDone = toHome,
+                        // "Playing another version of WoW?": a new profile replaces this one while it has no folder.
+                        onOpenSettings = newProfile,
                     )
                 }
             }
@@ -194,3 +208,7 @@ fun ForeverywhereApp(onLaunch: (appId: String) -> Unit) {
         }
     }
 }
+
+/** A WoW Forever or other Blizzard profile with no game folder yet starts at the first-run steps. */
+private fun needsFirstRun(launcher: LauncherController) =
+    !launcher.isPrivate && launcher.profile?.root.isNullOrBlank() && launcher.filesMissing

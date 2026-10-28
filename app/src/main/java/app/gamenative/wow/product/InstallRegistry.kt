@@ -24,6 +24,13 @@ class InstallRegistry(context: Context) {
         return installs.firstOrNull { it.root == root } ?: installs.firstOrNull()
     }
 
+    /** [version]'s active install, whatever version is selected. */
+    fun activeFor(version: GameVersion): GameInstall? {
+        val installs = stored().filter { GameVersion.of(it.product) == version }
+        val root = prefs.getString(activeKey(version), null)
+        return installs.firstOrNull { it.root == root } ?: installs.firstOrNull()
+    }
+
     fun setActive(root: String, version: GameVersion = GameVersions.selected) = saveActive(version, root)
 
     /**

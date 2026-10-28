@@ -120,7 +120,7 @@ The GitHub catalog lives in [`catalog/sources.json`](catalog/sources.json) and i
 
 ### How your login is stored
 
-Saving your login is optional, and you can remove it any time under **Account**.
+Saving your login is optional, and you can remove it any time under **Settings**. Every WoW Forever and other Blizzard profile uses the same saved login.
 
 - The email and password are sealed together with AES-256-GCM using a key held by the Android Keystore. The key can't be exported, and it stays in the device's secure hardware where the device has it.
 - The saved login is excluded from cloud backups and from phone-to-phone transfers.
@@ -139,11 +139,13 @@ Because the game needs the password in plain text for those few seconds, any app
 - **Game files** shows where the game is installed and its version. **Install or repair** checks every file and downloads only what's missing or damaged. Once WoW Forever launches, this screen also offers to switch a beta install to the launch version, reusing the game data you already have.
 - **Settings** shows the app version, checks for app updates, and lists which addon sources are available in your build.
 
-### Other WoW versions (experimental)
+### Profiles and other WoW versions
 
-WoW AndroWhere is made for WoW Forever, but **Settings → Game version** can switch the app to another official version: Classic Era, Burning Crusade Anniversary, Mists of Pandaria Classic or Retail. The whole app then works with that version, including installing, updating, playing and the addon browser. Each version keeps its own install and addons, and switching back to WoW Forever leaves your Forever setup as it was.
+A profile is one game setup: a name, a game version and its folder. The current profile shows at the top left of the home screen. Press it to switch profiles, edit one or add a **New profile**, or press **L1** and **R1** on the home screen to switch to the previous or next one. The whole app then works with that profile, including installing, updating, playing and the addon browser.
 
-These versions are experimental and get little support. They may run poorly or not start at all, and automatic sign-in may not work on every version.
+WoW AndroWhere is made for WoW Forever, but a profile can also run Classic Era, Burning Crusade Anniversary, Mists of Pandaria Classic, Retail or your own 3.3.5a client for a private server. These versions are experimental and get little support. They may run poorly or not start at all, and automatic sign-in may not work on every version.
+
+Two profiles can use the same game folder. Each keeps its own addons, server list and passwords: when you press Play, the app turns off the other profile's addons in the game's own addon list (`AddOns.txt`). The addon files are shared, so updating an addon updates it for both.
 
 ## Troubleshooting
 

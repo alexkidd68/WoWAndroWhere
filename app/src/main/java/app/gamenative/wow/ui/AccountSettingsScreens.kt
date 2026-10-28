@@ -16,20 +16,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import app.gamenative.wow.install.InstallController
-import app.gamenative.wow.install.InstallUiState
-import app.gamenative.wow.product.GameVersion
-import app.gamenative.wow.ui.components.FwDialog
-import app.gamenative.wow.ui.components.FwRow
-import app.gamenative.wow.ui.components.GameIconImage
-import app.gamenative.wow.ui.components.icon
 import app.gamenative.BuildConfig
 import app.gamenative.utils.renderReleaseNotes
 import androidx.compose.material.icons.Icons
@@ -71,36 +61,10 @@ internal fun FwSection(title: String, content: @Composable () -> Unit) {
 }
 
 @Composable
-fun AccountScreen(launcher: LauncherController, onBack: () -> Unit, onEditLogin: () -> Unit) {
-    FwPage("Account", onBack) {
-        FwSection("Battle.net login") {
-            Text(
-                if (launcher.hasSavedLogin) {
-                    "Your email and password are saved on this device, encrypted with the Android keystore. The game logs you in automatically. Authenticator codes are still typed in the game."
-                } else {
-                    "No login saved. Save one to skip the login screen, or sign in inside the game each time."
-                },
-                style = Fw.Text,
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                FwButton(if (launcher.hasSavedLogin) "Change login" else "Save login", onEditLogin)
-                if (launcher.hasSavedLogin) FwButton("Forget login", launcher::forgetLogin, kind = FwButtonKind.Danger)
-            }
-        }
-        FwSection("How it works") {
-            Text(
-                "When you press Play the app hands your login to the game in a temporary file, then wipes it as soon as the game has read it, or after three minutes at most.",
-                style = Fw.Secondary,
-            )
-        }
-    }
-}
-
-@Composable
 fun SettingsScreen(
     launcher: LauncherController,
     onBack: () -> Unit,
-    onVersionChanged: () -> Unit = {},
+    onEditLogin: () -> Unit,
 ) {
     FwPage("Settings", onBack) {
         FwSection("App") {
@@ -120,7 +84,7 @@ fun SettingsScreen(
                 }
             }
         }
-        GameVersionSection(launcher, onVersionChanged)
+        BattleNetSection(launcher, onEditLogin)
         FwSection("Support WoW Foreverywhere") {
             val context = LocalContext.current
             Text("${AppName.FULL} is built on WoW Foreverywhere, a free and open source project. If it saves you some time, you can support its development on Ko-fi.", style = Fw.Text)
@@ -148,50 +112,25 @@ fun SettingsScreen(
     }
 }
 
-/** Settings, Game version: WoW Forever or one of the experimental official versions. */
+/** Settings, Battle.net login: one saved login for every Blizzard profile. */
 @Composable
-private fun GameVersionSection(launcher: LauncherController, onVersionChanged: () -> Unit) {
-    val install by InstallController.state.collectAsState()
-    val downloading = install is InstallUiState.Running || install is InstallUiState.Paused
-    var pending by remember { mutableStateOf<GameVersion?>(null) }
-    fun switch(to: GameVersion) {
-        pending = null
-        if (launcher.switchVersion(to)) onVersionChanged()
-    }
-    FwSection("Game version") {
-        Text("${AppName.FULL} is made for WoW Forever. You can also try other official versions of WoW, which are experimental.", style = Fw.Secondary)
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            GameVersion.entries.forEach { v ->
-                val current = v == launcher.version
-                FwRow(
-                    selected = current,
-                    onClick = {
-                        when {
-                            current || downloading || launcher.busy -> Unit
-                            v.isExperimental -> pending = v
-                            else -> switch(v)
-                        }
-                    },
-                ) {
-                    GameIconImage(v.icon, 24.dp) { Box(Modifier.size(24.dp)) }
-                    Text(v.displayName, style = Fw.Text, modifier = Modifier.weight(1f))
-                    if (v.isExperimental) Text("Experimental", style = Fw.Data.copy(color = Fw.Ash))
-                    if (current) Text("Selected", style = Fw.Data.copy(color = Fw.Brass))
-                }
-            }
+private fun BattleNetSection(launcher: LauncherController, onEditLogin: () -> Unit) {
+    FwSection("Battle.net login") {
+        Text(
+            if (launcher.hasSavedLogin) {
+                "Your email and password are saved on this device, encrypted with the Android keystore. Every WoW Forever and other Blizzard profile logs in with it. Authenticator codes are still typed in the game."
+            } else {
+                "No login saved. Save one to skip the login screen in every Blizzard profile, or sign in inside the game each time."
+            },
+            style = Fw.Text,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            FwButton(if (launcher.hasSavedLogin) "Change login" else "Save login", onEditLogin)
+            if (launcher.hasSavedLogin) FwButton("Forget login", launcher::forgetLogin, kind = FwButtonKind.Danger)
         }
-        when {
-            downloading -> Text("Finish or cancel the current download before switching.", style = Fw.Secondary.copy(color = Fw.Warn))
-            launcher.busy -> Text("Wait for the game to start or the update to finish before switching.", style = Fw.Secondary.copy(color = Fw.Warn))
-        }
-    }
-    pending?.let { v ->
-        FwDialog(
-            title = "Other WoW versions are experimental",
-            message = "${AppName.FULL} is made for WoW Forever. Other versions may run poorly or not start at all, and they get little support. Your WoW Forever install and addons stay as they are, and you can switch back any time.",
-            confirm = "Switch to ${v.displayName}",
-            onConfirm = { switch(v) },
-            onDismiss = { pending = null },
+        Text(
+            "When you press Play the app hands your login to the game in a temporary file, then wipes it as soon as the game has read it, or after three minutes at most. Private servers use the password in their profile's Client and server instead.",
+            style = Fw.Secondary,
         )
     }
 }

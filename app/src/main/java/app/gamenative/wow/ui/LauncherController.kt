@@ -41,6 +41,11 @@ import app.gamenative.wow.product.GameVersions
 import app.gamenative.wow.product.InstallRegistry
 import app.gamenative.wow.product.ProductConverter
 import app.gamenative.wow.product.WowProduct
+import app.gamenative.wow.addons.InstalledAddon
+import app.gamenative.wow.profile.Profile
+import app.gamenative.wow.ui.addons.AddonProfile
+import app.gamenative.wow.profile.ProfileAddons
+import app.gamenative.wow.profile.Profiles
 import java.io.File
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -65,11 +70,16 @@ class LauncherController(
     val registry = InstallRegistry(context)
     internal val gpu by lazy { GpuProfile.detect(context) }
 
-    /** The game version the whole app works with (Settings, Game version). */
-    var version by mutableStateOf(GameVersions.selected)
+    /** The saved profiles and the active one, whose version and folder the whole app works with. */
+    var profiles by mutableStateOf(Profiles.all)
+        private set
+    var profile by mutableStateOf(Profiles.active)
         private set
 
-    var gamePath by mutableStateOf(registry.active()?.root ?: GamePath.load(context))
+    var version by mutableStateOf(profile?.gameVersion ?: GameVersions.selected)
+        private set
+
+    var gamePath by mutableStateOf(profile?.root.orEmpty())
         private set
     var files by mutableStateOf(GamePath.Status())
         private set
@@ -151,7 +161,7 @@ class LauncherController(
     val busy get() = isLaunching || isUpdating
 
     fun checkFiles(): Boolean {
-        if (isPrivate) {
+        if (isPrivate || gamePath.isBlank()) {
             files = GamePath.Status()
             return !filesMissing
         }
@@ -160,26 +170,138 @@ class LauncherController(
         return files.isReady
     }
 
-    /** True while a game download is running or paused; switching versions waits for it. */
+    /** True while a game download is running or paused; switching profiles waits for it. */
     val installInProgress get() = InstallController.state.value.let { it is InstallUiState.Running || it is InstallUiState.Paused }
 
-    /**
-     * Switches the whole app to [to] and points it at that version's install. Refused (false) while a
-     * download, update or launch is under way.
-     */
-    fun switchVersion(to: GameVersion): Boolean {
-        if (to == version) return true
-        if (busy || installInProgress) return false
-        GameVersions.save(context, to)
-        version = to
+    /** Why profiles can't be switched right now, or null when they can. */
+    val switchBlocked: String?
+        get() = when {
+            installInProgress -> "Finish or cancel the download before switching profiles."
+            busy -> "Wait for the game to start or the update to finish before switching profiles."
+            else -> null
+        }
+
+    /** Switches the whole app to the profile [id]. Refused (false) while a download, update or launch is under way. */
+    fun switchProfile(id: String): Boolean {
+        if (id == profile?.id) return true
+        if (switchBlocked != null) return false
+        FastLogin.wipe(context)
+        Profiles.activate(context, id)
+        loadProfile()
+        return true
+    }
+
+    /** The profile before or after the active one, for L1 and R1 on the home screen. */
+    fun cycleProfile(step: Int) {
+        val list = profiles
+        if (list.size < 2) return
+        val index = list.indexOfFirst { it.id == profile?.id }
+        switchProfile(list[Math.floorMod(index + step, list.size)].id)
+    }
+
+    /** Makes and switches to a new profile. A Blizzard profile left without a folder is replaced by it. */
+    fun createProfile(name: String, version: GameVersion): Boolean {
+        if (switchBlocked != null) return false
+        val unset = profile?.takeIf { it.root.isBlank() && !it.gameVersion.isPrivateServer }
+        val created = Profiles.create(context, name, version, replacing = unset?.id)
+        FastLogin.wipe(context)
+        Profiles.activate(context, created.id)
+        unset?.let { Profiles.remove(context, it.id) }
+        loadProfile()
+        return true
+    }
+
+    fun renameProfile(id: String, name: String) {
+        val target = profiles.firstOrNull { it.id == id } ?: return
+        Profiles.update(context, target.copy(name = Profiles.freeName(name.trim().ifBlank { target.gameVersion.displayName }, except = id)))
+        profiles = Profiles.all
+        profile = Profiles.active
+    }
+
+    fun deleteProfile(id: String) {
+        Profiles.remove(context, id)
+        profiles = Profiles.all
+    }
+
+    private fun loadProfile() {
+        profiles = Profiles.all
+        profile = Profiles.active
+        version = profile?.gameVersion ?: GameVersions.selected
         errorMessage = null
         versionStatus = null
         versionChecked = false
         canConvertToLaunch = false
-        gamePath = registry.active()?.root ?: GamePath.load(context)
+        gamePath = profile?.root.orEmpty()
+        legacy = LegacyClient.load(context)
+        servers = LegacyServers.load(context, legacy)
+        hasServerPassword = LegacyClient.hasServerPassword(context)
+        legacyBuild = null
+        legacyGraphicsApplied = false
         if (checkFiles()) checkVersionStatus()
-        if (isPrivate) detectLegacyBuild()
-        return true
+        if (isPrivate) {
+            detectLegacyBuild()
+            applyClientMods()
+        }
+    }
+
+    /** Sets the active profile's folder, and splits addons and client patches when another profile already uses it. */
+    private fun setProfileRoot(root: String) {
+        val current = profile ?: return
+        if (current.root == root) return
+        val updated = current.copy(root = root)
+        Profiles.update(context, updated)
+        profiles = Profiles.all
+        profile = updated
+        val addonsDir = addonsDir(updated) ?: return
+        val clientRoot = File(root).takeIf { updated.gameVersion.isPrivateServer }
+        scope.launch(Dispatchers.IO) {
+            runCatching { ProfileAddons.joined(context, updated, addonsDir, clientRoot) }.onFailure { Timber.w(it, "Sharing a folder") }
+        }
+    }
+
+    /** Called before a fresh download into [root], so the profile follows it even if the download finishes in the background. */
+    fun startedInstall(root: String) {
+        setProfileRoot(root)
+        gamePath = root
+    }
+
+    private fun addonsDir(p: Profile): File? = when {
+        p.root.isBlank() -> null
+        p.gameVersion.isPrivateServer -> File(p.root, "Interface/AddOns")
+        else -> (files.product ?: p.gameVersion.products.firstOrNull())?.let { File(p.root, "${it.flavorDir}/Interface/AddOns") }
+    }
+
+    /** The addon screen's view of the active profile's folder. */
+    fun addonProfile(): AddonProfile {
+        val current = profile ?: return AddonProfile.ALL
+        return object : AddonProfile {
+            override fun visibility() = ProfileAddons.visibility(context, current)
+            override fun claim(ids: Set<String>) = ProfileAddons.claim(context, current, ids)
+            override fun release(addon: InstalledAddon) = ProfileAddons.release(context, current, addon)
+            override fun modsChanged() = recordClientMods()
+        }
+    }
+
+    /** Saves the 3.3.5a client patches the player set for this profile. */
+    fun recordClientMods() {
+        val current = profile ?: return
+        val root = legacy.root.takeIf { it.isNotBlank() } ?: return
+        scope.launch(Dispatchers.IO) { runCatching { ProfileAddons.recordMods(context, current, File(root)) } }
+    }
+
+    private fun applyClientMods() {
+        val current = profile ?: return
+        val root = legacy.root.takeIf { it.isNotBlank() } ?: return
+        scope.launch(Dispatchers.IO) {
+            runCatching { ProfileAddons.applyMods(context, current, File(root)) }.onFailure { Timber.w(it, "Applying client patches") }
+        }
+    }
+
+    /** Turns off the addons this profile doesn't use, when its folder is shared. Runs as part of the launch. */
+    private fun applyProfileAddons(wtfDir: File) {
+        val current = profile ?: return
+        val dir = addonsDir(current) ?: return
+        runCatching { ProfileAddons.applyAtLaunch(context, current, dir, wtfDir) }.onFailure { Timber.w(it, "Writing AddOns.txt") }
     }
 
     fun refresh() {
@@ -201,6 +323,7 @@ class LauncherController(
         GamePath.save(context, root)
         versionStatus = null
         val ok = checkFiles()
+        setProfileRoot(root)
         files.product?.let { registry.add(GameInstall(root, it, versionStatus?.localVersion.orEmpty())) }
         registry.setActive(root)
         if (!files.hasStorageAccess) needsStoragePermission = true else if (ok) checkVersionStatus()
@@ -216,7 +339,7 @@ class LauncherController(
 
     fun forgetLogin() {
         BattleNetSignIn.forget(context)
-        BattleNetSignIn.removeLoginFile(File(gamePath))
+        if (gamePath.isNotBlank()) BattleNetSignIn.removeLoginFile(File(gamePath))
         hasSavedLogin = false
     }
 
@@ -253,7 +376,10 @@ class LauncherController(
             needsStoragePermission = true
             return
         }
-        launch { screenSize, onStatus -> prepareLaunch(context, File(gamePath), product, gpu, screenSize, onStatus) }
+        launch { screenSize, onStatus ->
+            applyProfileAddons(File(gamePath, "${product.flavorDir}/WTF"))
+            prepareLaunch(context, File(gamePath), product, gpu, screenSize, onStatus)
+        }
     }
 
     fun saveServerPassword(password: String) {
@@ -319,7 +445,12 @@ class LauncherController(
             legacyLogToShare = null
             listOf(wineLog(), sharedLegacyLog(), File(settings.root, LegacyClient.LOG)).forEach { it.delete() }
         }
-        launch { screenSize, onStatus -> prepareLegacyLaunch(context, settings, gpu, screenSize, onStatus) }
+        val current = profile
+        launch { screenSize, onStatus ->
+            if (current != null && settings.root.isNotBlank()) runCatching { ProfileAddons.applyMods(context, current, File(settings.root)) }.onFailure { Timber.w(it, "Applying client patches") }
+            applyProfileAddons(File(settings.root, "WTF"))
+            prepareLegacyLaunch(context, settings, gpu, screenSize, onStatus)
+        }
     }
 
     private fun wineLog() = File(context.getExternalFilesDir(null), "wine_logs/wine_debug.log")
@@ -385,7 +516,10 @@ class LauncherController(
             LegacyServers.save(context, it)
         }
         if (fastLoginOff) FastLogin.wipe(context)
-        if (rootChanged) detectLegacyBuild()
+        if (rootChanged) {
+            setProfileRoot(settings.root)
+            detectLegacyBuild()
+        }
     }
 
     fun detectLegacyBuild() {
@@ -546,12 +680,12 @@ class LauncherController(
     }
 
     fun onResume() {
-        // An install may have finished in the background service while another screen was showing.
-        if (!isPrivate) registry.active()?.root?.takeIf { it != gamePath && !files.isReady }?.let { useGameRoot(it) }
+        // An install may have finished in the background service while another screen was showing: the
+        // profile already points at its folder (see startedInstall), so checking the files picks it up.
         checkFiles()
         isLaunching = false
         statusText = READY
-        BattleNetSignIn.removeLoginFile(File(gamePath))
+        if (gamePath.isNotBlank()) BattleNetSignIn.removeLoginFile(File(gamePath))
         FastLogin.wipe(context)
         if (versionStatus == null && !WoWLauncherState.shouldAutoLaunch) checkVersionStatus()
         if (appUpdate == null && !WoWLauncherState.shouldAutoLaunch) checkAppUpdate()
@@ -569,7 +703,7 @@ class LauncherController(
     fun onGameEnded() {
         resetLaunch()
         saveLegacyLog()
-        BattleNetSignIn.removeLoginFile(File(gamePath))
+        if (gamePath.isNotBlank()) BattleNetSignIn.removeLoginFile(File(gamePath))
         FastLogin.wipe(context)
     }
 
