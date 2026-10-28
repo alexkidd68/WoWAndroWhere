@@ -46,7 +46,7 @@ What the app does, by area, with the version each feature came in. Versions up t
 - Forever and Classic marks with Blizzard's round game icons (0.2.0)
 - WoWInterface source (0.2.0)
 - Keyless GitHub addon catalog with nightly rebuild (0.2.0)
-- GitHub addon catalog built and hosted by this fork, with upstream's addons merged in and upstream's copy as a fallback (unreleased)
+- GitHub addon catalog built and hosted by this fork, with upstream's addons merged in and upstream's copy as a fallback (0.8.5)
 - Open addon pages on their source site, Ko-fi support links (0.2.0)
 - CurseForge source through a key-holding proxy (0.3.0)
 - CurseForge with your own API key (stored encrypted) or your own proxy, set in Settings; no shared default (0.5.1)
@@ -61,7 +61,7 @@ What the app does, by area, with the version each feature came in. Versions up t
 - Controller on 3.3.5a character creation through Controller Menus: rows for gender, race, class, looks and name, X for a new character on character select (0.6.0)
 - On the 3.3.5a login screen, B or a tap outside the boxes stops typing, and B with no box in use quits (0.8.2)
 - Several saved private servers (name, realmlist, account name, own sealed password), switched with L1 and R1 on the login screen through Controller Menus (0.7.0)
-- Controller Menus works without ConsolePortLK: the app turns on its controller profile when either is installed, and the add-on was renamed from AndroWhere Login (unreleased)
+- Controller Menus works without ConsolePortLK: the app turns on its controller profile when either is installed, and the add-on was renamed from AndroWhere Login (0.8.5)
 - Switches for the patch archives in the player's 3.3.5a client, such as HD packs, named from the pack's own labels (0.6.0)
 
 ## Sign-in and security
