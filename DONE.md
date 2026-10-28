@@ -46,6 +46,7 @@ What the app does, by area, with the version each feature came in. Versions up t
 - Forever and Classic marks with Blizzard's round game icons (0.2.0)
 - WoWInterface source (0.2.0)
 - Keyless GitHub addon catalog with nightly rebuild (0.2.0)
+- GitHub addon catalog built and hosted by this fork, with upstream's addons merged in and upstream's copy as a fallback (unreleased)
 - Open addon pages on their source site, Ko-fi support links (0.2.0)
 - CurseForge source through a key-holding proxy (0.3.0)
 - CurseForge with your own API key (stored encrypted) or your own proxy, set in Settings; no shared default (0.5.1)

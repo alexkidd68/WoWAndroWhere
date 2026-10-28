@@ -2,10 +2,6 @@
 
 Only work that's left. Shipped items move to DONE.md, rejected ones to DROPPED.md.
 
-## Fork housekeeping
-
-1. **Addon catalog link.** The GitHub addon catalog (`GitHubProvider.CATALOG_URL`) still points at upstream. It can stay on upstream's nightly build (no cost, but it's their branch) or the fork's `addon-catalog` workflow can publish its own.
-
 ## Client add-ons (3.3.5a)
 
 1. **Controller without ConsolePortLK.** The pad only sends keys while ConsolePortLK's profile is in use. A small profile for players without it (D-pad as arrows, A as Enter, B as Escape) would let the login screens work on their own.

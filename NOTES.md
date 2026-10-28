@@ -2,6 +2,10 @@
 
 Why things are the way they are, newest first.
 
+## 2026-10-28: The GitHub addon catalog is the fork's own, with upstream as a fallback
+
+The fork's `addon-catalog` workflow was already publishing nightly to its own `addon-catalog` branch, but the app read upstream's. Now the app reads ours and only fetches upstream's when ours is missing or broken (`GitHubProvider.fallbackCatalogUrl`), so a dead branch here doesn't empty the list. To keep upstream's additions without hand-copying, the workflow merges upstream's `catalog/sources.json` into ours before building (`tools/catalog/merge_upstream_sources.py`): our entries win on the same repo, upstream entries with an odd shape are skipped, and an unreachable upstream just means our list alone. Upstream changes land on the next nightly run, not on push. The trade-off: an addon upstream adds shows up here without review, but it is built by the same script from that repo's own GitHub releases, which is no different from what the app showed before.
+
 ## 2026-10-28: wowbox64 is built from source in CI, and Faster emulation is opt-in
 
 The 0.4.4 `wowbox64.dll` builds that GameNative and others pass around are CI artifacts from forks or personal repos, and the asset list of Box64's official v0.4.4 release couldn't be checked from Claude's container. So `.github/workflows/wowbox64.yml` builds it from the official `ptitSeb/box64` tag with the same toolchain and flags as Box64's own release workflow (llvm-mingw 20260311, `-DWOW64=1 -DARM_DYNAREC=1`, Release), packs it as `wowbox64-<ver>.tzst` and commits it to the branch, printing both SHA-256s in the run summary. Only the `wow_legacy` container asks for it (`box64Version`); the ARM64 retail container doesn't use Box64 at all. The container also pins Box64's Performance preset instead of relying on `Container`'s default.
