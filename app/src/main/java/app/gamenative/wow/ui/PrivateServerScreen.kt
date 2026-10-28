@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.material3.Text
@@ -34,6 +33,7 @@ import app.gamenative.wow.ui.components.FwButton
 import app.gamenative.wow.ui.components.FwButtonKind
 import app.gamenative.wow.ui.components.FwChip
 import app.gamenative.wow.ui.components.FwRow
+import app.gamenative.wow.ui.components.FwTextField
 import app.gamenative.wow.ui.theme.Fw
 import java.io.File
 
@@ -93,23 +93,9 @@ fun PrivateServerScreen(launcher: LauncherController, onBack: () -> Unit) {
                 var account by remember { mutableStateOf(selected.account) }
                 LaunchedEffect(settings.realmlist) { if (settings.realmlist != realmlist) realmlist = settings.realmlist }
                 val save = { launcher.updateServer(selected.copy(name = name.ifBlank { "Server" }, realmlist = realmlist.trim(), account = account.trim())) }
-                OutlinedTextField(name, { name = it; save() }, singleLine = true, label = { Text("Name") }, textStyle = Fw.Text, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(
-                    realmlist,
-                    { realmlist = it; save() },
-                    singleLine = true,
-                    label = { Text("Realmlist, e.g. logon.example.com") },
-                    textStyle = Fw.Text,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    account,
-                    { account = it; save() },
-                    singleLine = true,
-                    label = { Text("Account name (optional)") },
-                    textStyle = Fw.Text,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                FwTextField(name, { name = it; save() }, "Name", Modifier.fillMaxWidth())
+                FwTextField(realmlist, { realmlist = it; save() }, "Realmlist, e.g. logon.example.com", Modifier.fillMaxWidth())
+                FwTextField(account, { account = it; save() }, "Account name (optional)", Modifier.fillMaxWidth())
             }
             Text(
                 "The account name fills the login screen's account box for this server. Leave it empty to use the one the game remembers. Each server's password is saved under Password.",
@@ -190,7 +176,8 @@ private fun LoginSection(launcher: LauncherController, root: File) {
 
 @Composable
 private fun PasswordSection(launcher: LauncherController) {
-    var password by remember { mutableStateOf("") }
+    var password by remember(launcher.selectedServer.id) { mutableStateOf("") }
+    var justSaved by remember(launcher.selectedServer.id) { mutableStateOf(false) }
     val settings = launcher.legacy
     FwSection(if (launcher.servers.size > 1) "Password for ${launcher.selectedServer.name}" else "Password") {
         Text(
@@ -201,15 +188,19 @@ private fun PasswordSection(launcher: LauncherController) {
             },
             style = Fw.Text,
         )
-        OutlinedTextField(
+        if (launcher.hasServerPassword) {
+            Text(
+                if (justSaved) "Password saved  ••••••••" else "Saved password  ••••••••",
+                style = Fw.Text.copy(color = Fw.Ok),
+            )
+        }
+        FwTextField(
             password,
-            { password = it },
-            singleLine = true,
-            label = { Text(if (launcher.hasServerPassword) "New password" else "Password") },
+            { password = it; justSaved = false },
+            if (launcher.hasServerPassword) "Change password" else "Password",
+            Modifier.fillMaxWidth(),
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            textStyle = Fw.Text,
-            modifier = Modifier.fillMaxWidth(),
         )
         CheckRow(
             "Fill in password",
@@ -235,6 +226,7 @@ private fun PasswordSection(launcher: LauncherController) {
                 {
                     launcher.saveServerPassword(password)
                     password = ""
+                    justSaved = true
                 },
                 enabled = password.isNotEmpty(),
             )

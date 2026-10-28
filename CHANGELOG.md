@@ -2,6 +2,13 @@
 
 Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which this fork started from.
 
+## 0.8.1
+
+- **The keyboard waits for A.** Moving onto a text box with the D-pad, such as a server's Name in Client and server, now only highlights it. Press A, or tap it, to type and open the keyboard. Done or B closes it. This works the same in every text box in the launcher, including the addon search and the Battle.net login.
+- **A saved password shows.** Client and server now shows **Saved password ••••••••** once the server's password is saved, and **Password saved** right after you save it. The box below it is for changing it.
+- **Simpler profile list.** The current profile is no longer ringed, only marked Current, and the Edit buttons are gone. Press Y on a profile to edit it. The list and the profile button at the top left are wider, so longer names fit.
+- **Quieter home screen.** The Experimental label and the 3.3.5a client version are gone from the top bar. The Play card on 3.3.5a shows just the server's realmlist, without the password line.
+
 ## 0.8.0
 
 - **Profiles.** A profile is one game setup: a name, a game version and its folder. The current profile shows at the top left of the home screen. Press it to see every profile, switch to another, or press Y or Edit to rename or delete one. L1 and R1 on the home screen switch to the previous or next profile. Your existing setups become profiles on the first start, named after their version, with nothing to set up again.

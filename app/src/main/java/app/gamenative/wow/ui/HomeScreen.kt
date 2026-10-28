@@ -133,22 +133,20 @@ private fun SupportLink() {
 @Composable
 private fun Header(launcher: LauncherController, onOpenSettings: () -> Unit, onOpenProfiles: () -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             ProfileButton(launcher, onOpenProfiles, Modifier.weight(1f, fill = false))
-            if (launcher.version.isExperimental) {
-                Text("Experimental", style = Fw.Data.copy(color = Fw.Warn), maxLines = 1, modifier = Modifier.background(Fw.Stone, Fw.Pill).padding(horizontal = 10.dp, vertical = 4.dp))
-            }
         }
         val version = launcher.versionStatus
+        // A 3.3.5a client never updates, so there's no status to show for it.
         val (text, color) = when {
-            launcher.isPrivate -> (if (launcher.filesMissing) "Client not set up" else launcher.legacyBuild?.let { "Client $it" } ?: "Client 3.3.5a") to Fw.Ash
+            launcher.isPrivate -> null to Fw.Ash
             launcher.filesMissing -> "Game not installed" to Fw.Ash
             launcher.isCheckingVersion || !launcher.versionChecked -> "Checking for game updates…" to Fw.Ash
             version == null -> "Game version unknown (offline?)" to Fw.Ash
             version.isOutdated -> "Game update ${version.remoteVersion} available" to Fw.Warn
             else -> "Game up to date" to Fw.Ok
         }
-        Text(text, style = Fw.Data.copy(color = color), modifier = Modifier.background(Fw.Stone, Fw.Pill).padding(horizontal = 14.dp, vertical = 6.dp))
+        text?.let { Text(it, style = Fw.Data.copy(color = color), modifier = Modifier.background(Fw.Stone, Fw.Pill).padding(horizontal = 14.dp, vertical = 6.dp)) }
         FwButton(
             if (launcher.appUpdate != null) "Settings · Update" else "Settings",
             onOpenSettings,
@@ -197,13 +195,6 @@ private fun PlayTile(launcher: LauncherController, onOpenGame: () -> Unit, modif
             launcher.busy -> Text(if (launcher.isUpdating) launcher.updateStatusText else launcher.statusText, style = Fw.Text)
             launcher.isPrivate && launcher.filesMissing -> Text("Choose your 3.3.5a client folder and enter your server's realmlist.", style = Fw.Secondary)
             launcher.isPrivate && launcher.legacy.realmlist.isBlank() -> Text("Enter your server's realmlist in Client and server.", style = Fw.Secondary.copy(color = Fw.Warn))
-            launcher.isPrivate -> Text(
-                when {
-                    launcher.hasServerPassword && launcher.legacy.fastLogin -> "Password saved: press A on the login screen."
-                    else -> "Log in inside the game."
-                },
-                style = Fw.Secondary,
-            )
             launcher.filesMissing -> Text("Download the game, or find the copy already on this device.", style = Fw.Secondary)
             version?.isOutdated == true -> {
                 Text("Live servers need ${version.remoteVersion}. Press A to update.", style = Fw.Secondary.copy(color = Fw.Warn))
