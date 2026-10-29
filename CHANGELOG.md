@@ -2,7 +2,7 @@
 
 Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which this fork started from.
 
-## Unreleased
+## 0.8.6
 
 - **HD pack patches explained.** With the WotLK HD client, each patch in **Addons** → **Client** now says what it changes, and the switches follow the pack's own rules. Turning on undead without bones also turns on HD characters, dungeon minimaps turn on dungeon maps, and turning off the one a patch needs turns that patch off too. Only one of the two character creation styles can be on at a time.
 
