@@ -1,0 +1,75 @@
+name: Thor test build
+
+# Test APK for the AYN Thor (Adreno 740) 3.3.5a driver change, published as a pre-release on this fork.
+# Signed with a debug key kept in the Actions cache, so later test builds install over earlier ones.
+on:
+  push:
+    branches:
+      - thor-adreno740
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: thor-build
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Restore the test signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: thor-test-debug-keystore
+
+      - name: Create the test signing key if missing
+        run: |
+          mkdir -p ~/.android
+          if [ ! -s ~/.android/debug.keystore ]; then
+            keytool -genkeypair -v -keystore ~/.android/debug.keystore -storepass android -keypass android \
+              -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+      - name: Install the NDK
+        run: |
+          NDK=$(sed -n 's/.*ndkVersion = "\(.*\)".*/\1/p' app/build.gradle.kts)
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$NDK" > /dev/null
+
+      - name: Fetch runtime components
+        run: tools/fetch_components.sh
+
+      - run: echo "sdk.dir=$ANDROID_HOME" > local.properties
+
+      - name: Build
+        run: ./gradlew --no-daemon assembleModernRelease
+
+      - name: Prepare the APK
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/modern/release/app-modern-release.apk dist/WoW-AndroWhere-Thor.apk
+          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs dist/WoW-AndroWhere-Thor.apk | grep -i "SHA-256" | head -1
+
+      - name: Publish the test build
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: thor-test-${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: Thor test build ${{ github.run_number }}
+          body: |
+            Test build for the AYN Thor (Adreno 740): the private server (3.3.5a) profile uses Turnip v26.2.0 R4 instead of the WoW Forever test driver, so DXVK can run.
+            Commit ${{ github.sha }}.
+          prerelease: true
+          make_latest: false
+          files: dist/WoW-AndroWhere-Thor.apk

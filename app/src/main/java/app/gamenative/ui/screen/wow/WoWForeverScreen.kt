@@ -1007,7 +1007,8 @@ internal fun prepareLegacyLaunch(
     }
 
     onStatus("Configuring legacy container...")
-    val config = baseContainerConfig(LEGACY_CONTAINER_ID, "WoW Private Server", root, gpu, screenSize).apply {
+    val legacyGpu = gpu.copy(driver = app.gamenative.wow.legacy.LegacyDriver.pick(root, gpu.driver, DEFAULT_DRIVER))
+    val config = baseContainerConfig(LEGACY_CONTAINER_ID, "WoW Private Server", root, legacyGpu, screenSize).apply {
         put("dxwrapper", settings.renderer.dxwrapper)
         put("dxwrapperConfig", Container.DEFAULT_DXWRAPPERCONFIG)
         put("executablePath", "G:\\${exe.name}")
@@ -1192,6 +1193,7 @@ internal fun fitsScreen(resolution: String, screenSize: String): Boolean {
 private fun installBundledComponents(context: Context, onStatus: (String) -> Unit) {
     installDriver(context, DEFAULT_DRIVER, "turnip-wow-scheduler-test.zip", onStatus)
     installDriver(context, ADRENO_8XX_DRIVER, "turnip-V32-RP6sched.zip", onStatus)
+    installDriver(context, app.gamenative.wow.legacy.LegacyDriver.ADRENO_740, "turnip-v26.2.0-R4.zip", onStatus)
 
     val protonDir = File(ImageFs.getSharedProtonDir(context), PROTON_VERSION)
     if (!File(protonDir, "profile.json").exists() || !File(protonDir, "bin/wine").exists()) {

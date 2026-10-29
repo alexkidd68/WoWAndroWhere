@@ -2,6 +2,10 @@
 
 Why things are the way they are, newest first.
 
+## 2026-10-29: Adreno 740 private servers use GameNative's Turnip v26.2.0 R4
+
+On an AYN Thor (Snapdragon 8 Gen 2, Adreno 740) the 3.3.5a client with DXVK showed a black screen and closed. The Wine log ends right after DXVK's d3d9.dll loads with the Mesa assertion `image_view->format == image->format` in `vk_image_view_init`, so the test Turnip the app uses for WoW Forever on Adreno 740 (`Turnip-WoW-scheduler-test`, built with assertions on) aborts on a view format the release drivers accept. Faster emulation was off, and OpenGL worked. The same Warmane client was reported to run with DXVK on the same Thor in GameNative 1.4 (Wrapper, Turnip v26.2.0 R4, DXVK 2.4.1-gplasync). So `LegacyDriver` gives the private server container that driver on Adreno 740, fetched by `tools/fetch_components.sh` from GameNative's download server and repacked with `meta.json` at the root. WoW Forever keeps its own driver. Not checked: whether the different wrapper build in GameNative 1.4 also mattered. `androwhere-driver.txt` next to `Wow.exe` overrides the driver for testing (a driver folder name or `System`). Its hash isn't pinned yet; CI prints it so it can be added to `tools/components.sha256`.
+
 ## 2026-10-29: 1.12.1 and 2.4.3 private servers, and what they don't get yet
 
 Daniel asked for older WoW versions after looking at Dad's MMO Lab. 1.12.1 (including Turtle WoW) and 2.4.3 are 32-bit D3D9 clients with a realmlist, like 3.3.5a, so they are two more game versions (`PRIVATE_112`, `PRIVATE_243`) on the same launch path, with `LegacyGame` holding what differs. Profiles, servers, passwords, the Client screen, Faster emulation and the patch MPQ switches work the same.
