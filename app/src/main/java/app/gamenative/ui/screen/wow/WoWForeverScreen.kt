@@ -54,6 +54,8 @@ import app.gamenative.wow.product.detectProduct
 import app.gamenative.wow.legacy.ConsolePortLK
 import app.gamenative.wow.legacy.LegacyClient
 import app.gamenative.wow.legacy.LegacySettings
+import app.gamenative.wow.legacy.PadKeyboardButton
+import app.gamenative.wow.legacy.mods.ClientMods
 import com.winlator.box86_64.Box86_64Preset
 import com.winlator.container.Container
 import com.winlator.container.ContainerManager
@@ -1025,6 +1027,7 @@ internal fun prepareLegacyLaunch(
     }
     legacy.putExtra("skipWinHandler", "1")
     legacy.putExtra("wineLog", if (settings.saveLog) "1" else null)
+    legacy.putExtra(PadKeyboardButton.EXTRA, if (ClientMods.loginEnabled(root)) "1" else null)
     hideMouseToggle(legacy)
     runCatching { ConsolePortLK.applyControls(context, legacy, root) }.onFailure { Timber.w(it, "ConsolePortLK controls") }
     legacy.saveData()

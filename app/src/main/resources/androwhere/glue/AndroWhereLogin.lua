@@ -77,11 +77,11 @@ if serverLine then serverLine:SetPoint("TOP", AccountLoginUI or AccountLogin, "T
 local function updateLoginHint()
     if loginHint then
         if not password then
-            loginHint:SetText("B or a tap outside the boxes  Stop typing       B  Quit")
+            loginHint:SetText("B or a tap outside the boxes  Stop typing       Hold Select  Keyboard       B  Quit")
         elseif AccountLoginAccountEdit:GetText() ~= "" then
-            loginHint:SetText(autoLogin and "Logging in. A  Log in again       B  Quit" or "A  Log in       B  Quit")
+            loginHint:SetText(autoLogin and "Logging in. A  Log in again       B  Quit" or "A  Log in       Hold Select  Keyboard       B  Quit")
         else
-            loginHint:SetText("Type your account name and press Enter. Tick Remember Account Name to log in with A next time.")
+            loginHint:SetText("Hold Select for the keyboard, type your account name and press Enter. Tick Remember Account Name to log in with A next time.")
         end
     end
     if serverLine then
@@ -365,7 +365,7 @@ CharacterCreate_OnKeyDown = function(key)
         characterCreateKey(mapped)
     end
 end
-hint(CharacterCreate, "D-pad  Choose and change       A  Name, then create       X  Random look       L1 R1  Turn       B  Back")
+hint(CharacterCreate, "D-pad  Choose and change       A  Name, then create       Hold Select  Keyboard       X  Random look       L1 R1  Turn       B  Back")
 createStatus = hint(CharacterCreate, "")
 if createStatus then createStatus:SetPoint("TOP", CharacterCreate, "TOP", 0, -30) end
 

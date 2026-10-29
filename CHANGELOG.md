@@ -2,6 +2,10 @@
 
 Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which this fork started from.
 
+## Unreleased
+
+- **Keyboard on a button (3.3.5a).** With Controller Menus installed, hold Select for half a second to open the Android keyboard, and again to close it. It works on the login screen, the email code box, character names and in game, so you no longer need Back, then Keyboard. A quick press of Select still reaches the game as before. The login and character creation hints show it.
+
 ## 0.8.7
 
 - **Raid frames and loss of control alerts for 3.3.5a.** Two extras from the WotLK HD pack are now in the 3.3.5a addon list for any client: Compact Raid Frames, the party and raid frames from later expansions, and Loss of Control Alerts, which shows what is stopping you and for how long when you are stunned, feared or silenced. If your HD pack already has its patch 5 on, you have these already.

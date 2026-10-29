@@ -13,3 +13,4 @@ Ideas decided against, with the reason. Any of these can come back if its reason
 
 - **Test builds** (a release-signed APK published as a `test-build` pre-release, with its own in-app update channel). Daniel, 2026-10-24: stop with test builds and ship full releases instead. Removed in 0.5.1, along with the old releases.
 - **Type password.** The on-screen button and menu item that typed the saved 3.3.5a password as keys. Daniel had them removed once Fill in password and Log in automatically worked. Comes back if a player needs the password without AndroWhere Login. (2026-10-27)
+- **Open the keyboard by itself when the 3.3.5a client starts.** The other way to type on the login screen without Back, then Keyboard. Daniel picked holding Select instead, so the keyboard never pops up on its own. (2026-10-29)
