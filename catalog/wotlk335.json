@@ -17,6 +17,8 @@
     { "repo": "bkader/Dominos", "name": "Dominos", "category": "ACTION_BARS", "summary": "Movable, configurable action bars." },
     { "repo": "sirus-addons/MoveAnything", "name": "MoveAnything", "category": "INTERFACE", "summary": "Move, scale and hide any frame in the interface." },
     { "repo": "bkader/RUF-WoTLK", "name": "Raeli's Unit Frames", "category": "UNIT_FRAMES", "summary": "Configurable unit frames." },
+    { "repo": "RomanSpector/CompactRaidFrame", "name": "Compact Raid Frames", "category": "UNIT_FRAMES", "summary": "Party and raid frames from later expansions, with dispel and role icons." },
+    { "repo": "RomanSpector/LossOfControl", "name": "Loss of Control Alerts", "category": "COMBAT", "summary": "A centered alert with a timer when you are stunned, feared, silenced or rooted." },
     { "repo": "bkader/Grid2-WoTLK", "name": "Grid2", "category": "UNIT_FRAMES", "summary": "Compact party and raid frames for healers." },
     { "repo": "bkader/TidyPlates_WoTLK", "name": "Tidy Plates", "category": "UNIT_FRAMES", "summary": "Cleaner, themeable nameplates." },
     { "repo": "KhalGH/PlateBuffs-WoTLK", "name": "PlateBuffs", "category": "BUFFS", "summary": "Shows buffs and debuffs on nameplates." },

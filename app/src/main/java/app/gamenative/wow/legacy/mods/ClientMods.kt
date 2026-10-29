@@ -23,6 +23,11 @@ enum class AndroWherePatch(val title: String, val summary: String) {
             "A logs you in when Fill in password is on in Server. Works with or without ConsolePortLK. " +
             "Installing it changes 5 bytes of Wow.exe so the client accepts it, and keeps the original to put back when you remove it.",
     ),
+    LEVEL_UP(
+        "Level Up Banner",
+        "Shows the level you reached across the top of the screen, like later expansions, with a line when you get a talent point. " +
+            "A plain add-on, so it leaves the client alone. Type /levelbanner in game to see it.",
+    ),
 }
 
 /**
@@ -63,10 +68,12 @@ object ClientMods {
 
     fun installed(root: File, patch: AndroWherePatch) = when (patch) {
         AndroWherePatch.LOGIN -> loginEnabled(root)
+        AndroWherePatch.LEVEL_UP -> LevelUpBanner.installed(root)
     }
 
     fun setInstalled(root: File, patch: AndroWherePatch, installed: Boolean) = when (patch) {
         AndroWherePatch.LOGIN -> if (installed) enableLogin(root) else disableLogin(root)
+        AndroWherePatch.LEVEL_UP -> if (installed) LevelUpBanner.install(root) else LevelUpBanner.remove(root)
     }
 
     /** Writes our login add-on and patches the exe so the client accepts it. */

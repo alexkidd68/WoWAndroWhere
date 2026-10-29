@@ -2,6 +2,11 @@
 
 Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which this fork started from.
 
+## Unreleased
+
+- **Raid frames and loss of control alerts for 3.3.5a.** Two extras from the WotLK HD pack are now in the 3.3.5a addon list for any client: Compact Raid Frames, the party and raid frames from later expansions, and Loss of Control Alerts, which shows what is stopping you and for how long when you are stunned, feared or silenced. If your HD pack already has its patch 5 on, you have these already.
+- **Level Up Banner (3.3.5a).** A new AndroWhere add-on in **Addons** → **Client**: when you level up, "Level N" shows across the top of the screen like in later expansions, with a line when you get a talent point. Type /levelbanner in game to see it without levelling.
+
 ## 0.8.6
 
 - **HD pack patches explained.** With the WotLK HD client, each patch in **Addons** → **Client** now says what it changes, and the switches follow the pack's own rules. Turning on undead without bones also turns on HD characters, dungeon minimaps turn on dungeon maps, and turning off the one a patch needs turns that patch off too. Only one of the two character creation styles can be on at a time.
