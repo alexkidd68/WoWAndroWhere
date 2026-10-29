@@ -2,6 +2,10 @@
 
 Why things are the way they are, newest first.
 
+## 2026-10-29: The solo server downloads prebuilt map data
+
+AzerothCore needs map data (dbc, maps, vmaps, mmaps) taken from a 3.3.5a client. It is the same for every 3.3.5a client, so extracting it from the player's own folder gains nothing but time: 20 to 40 minutes on the phone, plus hours for mob pathing, and the extractor tools would need porting to ARM. Daniel chose to download AzerothCore's prebuilt `wowgaming/client-data` release instead, as Dad's MMO Lab does. That data is Blizzard's, extracted and re-hosted by a third party. Nothing goes into the APK or the repo, so the no-Blizzard-files rule holds as written, but the app does fetch Blizzard-derived files from someone else's GitHub at the player's request. The release is pinned and its sha256 checked, so a changed file is refused rather than used. Only GitHub sees the download; the server itself listens on 127.0.0.1.
+
 ## 2026-10-29: Hold Select for the keyboard on 3.3.5a
 
 Addons can't reach the app from the login, code and character screens, so typing there meant Back, then Keyboard. Claude offered two ways: open the keyboard by itself when the client starts, or a controller button. Daniel picked the button and asked for it to be part of Controller Menus, so it is only on while that add-on is installed (`PadKeyboardButton`, flagged on the container by `prepareLegacyLaunch`). The Lua can't open the keyboard, so the app watches the pad itself, before the controller profile turns buttons into keys.
