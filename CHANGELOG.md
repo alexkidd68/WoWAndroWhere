@@ -2,6 +2,10 @@
 
 Releases up to 0.4.0 are upstream's (YoruDev-Ryland/WoWForeverywhere), which this fork started from.
 
+## Unreleased
+
+- **Vanilla 1.12.1 and Burning Crusade 2.4.3 private servers, experimental.** Two new game versions when you make a profile, next to 3.3.5a: Private server (1.12.1), which includes Turtle WoW, and Private server (2.4.3). Choose your own client folder and add your servers as you do for 3.3.5a. The app sets the realm, the resolution and the renderer, and warns you if the folder holds a different version. Addons has a small starter catalog for each (pfUI, pfQuest, ShaguDPS and more), and the Client tab has the switches for your client's patch files. Controller Menus and the Level Up Banner are 3.3.5a only for now, so you type your account and password in the game. The controller layout from 3.3.5a is always on: the sticks move you and aim the mouse, the stick buttons click, and the other buttons press F1 to F12, which you can bind in the game's Key Bindings.
+
 ## 0.8.8
 
 - **Keyboard on a button (3.3.5a).** With Controller Menus installed, hold Select for half a second to open the Android keyboard, and again to close it. It works on the login screen, the email code box, character names and in game, so you no longer need Back, then Keyboard. A quick press of Select still reaches the game as before. The login and character creation hints show it.

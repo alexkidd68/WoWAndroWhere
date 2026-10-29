@@ -2,6 +2,18 @@
 
 Why things are the way they are, newest first.
 
+## 2026-10-29: 1.12.1 and 2.4.3 private servers, and what they don't get yet
+
+Daniel asked for older WoW versions after looking at Dad's MMO Lab. 1.12.1 (including Turtle WoW) and 2.4.3 are 32-bit D3D9 clients with a realmlist, like 3.3.5a, so they are two more game versions (`PRIVATE_112`, `PRIVATE_243`) on the same launch path, with `LegacyGame` holding what differs. Profiles, servers, passwords, the Client screen, Faster emulation and the patch MPQ switches work the same.
+
+What differs, and what is a guess:
+- 1.12 keeps `realmlist.wtf` next to the exe and has no locale folder, and names its exe `WoW.exe`. The app writes that root file on 1.12 only and finds the exe whatever its case. Android's shared storage ignores case anyway, so that is belt and braces.
+- 1.12's `gxApi` values may not include `d3d9` (a guess, not checked on a client), so with DXVK the app drops the line and lets the client use its Direct3D default; OpenGL still writes `opengl` and passes `-opengl`.
+- Choosing a folder now reads the exe's version and refuses one whose major version is another game's, so a 3.3.5a folder can't land in a 1.12 profile and get the wrong addons. An exe without a readable version is let through. Turtle WoW's exe version wasn't checked; if it doesn't say 1.x, it will be refused and this needs loosening.
+- Addon flavours: 1.12 counts Interface 10000 to 11299 and 2.4.3 counts 20000 to 20499, below Classic Era (113xx and up) and Anniversary (205xx), so Blizzard Classic addons don't show as installable. Both load only `<Folder>.toc`. The starter catalogs (`catalog/vanilla112.json`, `catalog/tbc243.json`) list shagu's addons, picked from memory; the workflow drops any repo whose TOC doesn't match, so its log is the check. They publish next to catalog-335.json on the `addon-catalog-335` branch.
+- Controller Menus, the login password fill and the Level Up Banner stay 3.3.5a only: the first patches five bytes of the 12340 exe and both use 3.3.5a's login and frame Lua. Porting needs the 1.12 and 2.4.3 offsets found and tested on Daniel's PC, the way the 3.3.5a ones were. ConsolePortLK is 3.3.5a only too. So the app turns the shared controller layout on for these clients all the time; without it the controller did nothing in them.
+- Untested on the Odin 3: all of it. The launch path is 3.3.5a's, but neither client has been started under wowbox64 here.
+
 ## 2026-10-29: Hold Select for the keyboard on 3.3.5a
 
 Addons can't reach the app from the login, code and character screens, so typing there meant Back, then Keyboard. Claude offered two ways: open the keyboard by itself when the client starts, or a controller button. Daniel picked the button and asked for it to be part of Controller Menus, so it is only on while that add-on is installed (`PadKeyboardButton`, flagged on the container by `prepareLegacyLaunch`). The Lua can't open the keyboard, so the app watches the pad itself, before the controller profile turns buttons into keys.

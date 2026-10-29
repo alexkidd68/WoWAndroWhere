@@ -31,6 +31,7 @@ import app.gamenative.utils.AppUpdater
 import app.gamenative.utils.StorageUtils
 import app.gamenative.wow.legacy.ClientBuild
 import app.gamenative.wow.legacy.LegacyClient
+import app.gamenative.wow.legacy.LegacyGame
 import app.gamenative.wow.legacy.LegacyServer
 import app.gamenative.wow.legacy.LegacyServers
 import app.gamenative.wow.legacy.LegacySettings
@@ -156,6 +157,7 @@ class LauncherController(
 
     /** The private server version runs the player's own client from [legacy]: no Blizzard install, updates or login. */
     val isPrivate get() = version.isPrivateServer
+    val legacyGame get() = LegacyGame.of(version)
     val filesMissing get() = if (isPrivate) legacy.root.isBlank() else !(files.dataExists && files.buildInfoExists)
     val canPlay get() = !isLaunching && !isUpdating && !filesMissing && if (isPrivate) legacy.realmlist.isNotBlank() else !files.isWrongGame
     val busy get() = isLaunching || isUpdating
@@ -446,10 +448,11 @@ class LauncherController(
             listOf(wineLog(), sharedLegacyLog(), File(settings.root, LegacyClient.LOG)).forEach { it.delete() }
         }
         val current = profile
+        val game = legacyGame
         launch { screenSize, onStatus ->
             if (current != null && settings.root.isNotBlank()) runCatching { ProfileAddons.applyMods(context, current, File(settings.root)) }.onFailure { Timber.w(it, "Applying client patches") }
             applyProfileAddons(File(settings.root, "WTF"))
-            prepareLegacyLaunch(context, settings, gpu, screenSize, onStatus)
+            prepareLegacyLaunch(context, settings, game, gpu, screenSize, onStatus)
         }
     }
 
@@ -526,7 +529,7 @@ class LauncherController(
         val root = legacy.root
         scope.launch {
             legacyBuild = withContext(Dispatchers.IO) {
-                root.takeIf { it.isNotBlank() }?.let { LegacyClient.detectBuild(File(it, LegacyClient.EXE)) }
+                root.takeIf { it.isNotBlank() }?.let { LegacyClient.detectBuild(LegacyClient.exe(File(it))) }
             }
         }
     }

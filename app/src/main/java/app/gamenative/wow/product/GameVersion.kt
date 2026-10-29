@@ -13,7 +13,9 @@ enum class GameVersion(val key: String, val displayName: String, val products: L
     MISTS("mists", "Mists of Pandaria Classic", listOf(WowProduct.MISTS), "World of Warcraft"),
     RETAIL("retail", "Retail", listOf(WowProduct.RETAIL), "World of Warcraft"),
 
-    /** A 3.3.5a client the player brings, for private servers. No Blizzard product: see `wow/legacy`. */
+    /** Clients the player brings, for private servers. No Blizzard product: see `wow/legacy`. */
+    PRIVATE_112("private_112", "Private server (1.12.1)", emptyList(), ""),
+    PRIVATE_243("private_243", "Private server (2.4.3)", emptyList(), ""),
     PRIVATE_335("private_335", "Private server (3.3.5a)", emptyList(), ""),
     ;
 
