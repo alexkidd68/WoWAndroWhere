@@ -26,13 +26,14 @@ class ExternalDisplayInputController(
     private val xServer: XServer,
     private val touchpadViewProvider: () -> TouchpadView?,
 ) {
-    enum class Mode { OFF, TOUCHPAD, KEYBOARD, HYBRID }
+    enum class Mode { OFF, TOUCHPAD, KEYBOARD, HYBRID, BUTTONS }
 
     companion object {
         fun fromConfig(value: String?): Mode = when (value?.lowercase()) {
             Container.EXTERNAL_DISPLAY_MODE_TOUCHPAD -> Mode.TOUCHPAD
             Container.EXTERNAL_DISPLAY_MODE_KEYBOARD -> Mode.KEYBOARD
             Container.EXTERNAL_DISPLAY_MODE_HYBRID -> Mode.HYBRID
+            Container.EXTERNAL_DISPLAY_MODE_BUTTONS -> Mode.BUTTONS
             else -> Mode.OFF
         }
     }
@@ -60,12 +61,18 @@ class ExternalDisplayInputController(
         }
     }
 
+    private var started = false
+
     fun start() {
-        displayManager?.registerDisplayListener(displayListener, Handler(Looper.getMainLooper()))
+        if (!started) {
+            started = true
+            displayManager?.registerDisplayListener(displayListener, Handler(Looper.getMainLooper()))
+        }
         updatePresentation()
     }
 
     fun stop() {
+        started = false
         dismissPresentation()
         try {
             displayManager?.unregisterDisplayListener(displayListener)
@@ -200,6 +207,9 @@ private class ExternalInputPresentation(
                     touchpadViewProvider = touchpadViewProvider,
                 )
                 setContentView(hybrid)
+            }
+            ExternalDisplayInputController.Mode.BUTTONS -> {
+                setContentView(ExternalActionPad(context, xServer, PadTheme.DEFAULT, touchpadViewProvider))
             }
             else -> {
                 setContentView(FrameLayout(context))

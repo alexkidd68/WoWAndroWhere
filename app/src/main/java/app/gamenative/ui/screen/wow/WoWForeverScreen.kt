@@ -1033,6 +1033,7 @@ internal fun prepareLegacyLaunch(
     legacy.putExtra("wineLog", if (settings.saveLog) "1" else null)
     legacy.putExtra(PadKeyboardButton.EXTRA, if (ClientMods.loginEnabled(root)) "1" else null)
     hideMouseToggle(legacy)
+    runCatching { app.gamenative.wow.legacy.LegacyPad.prepare(context, legacy, root) }.onFailure { Timber.w(it, "Second-screen pad") }
     runCatching { ConsolePortLK.applyControls(context, legacy, root, always = !game.hasAndroWherePatches) }.onFailure { Timber.w(it, "ConsolePortLK controls") }
     legacy.saveData()
     return LEGACY_CONTAINER_ID

@@ -68,7 +68,7 @@ jobs:
           target_commitish: ${{ github.sha }}
           name: Thor test build ${{ github.run_number }}
           body: |
-            Test build for the AYN Thor (Adreno 740): the private server (3.3.5a) profile uses Turnip v26.2.0 R4 instead of the WoW Forever test driver, so DXVK can run.
+            Test build for the AYN Thor (Adreno 740): the private server (3.3.5a) profile uses Turnip v26.2.0 R4 instead of the WoW Forever test driver, so DXVK can run, and shows the second-screen pad from wyattabuntjer/AYN-Thor-WoW-Launcher on the bottom screen.
             Commit ${{ github.sha }}.
           prerelease: true
           make_latest: false
