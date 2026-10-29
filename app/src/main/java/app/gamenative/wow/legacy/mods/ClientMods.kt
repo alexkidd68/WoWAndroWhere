@@ -20,7 +20,8 @@ enum class AndroWherePatch(val title: String, val summary: String) {
     LOGIN(
         "Controller Menus",
         "Controller support on the login, realm, character select and character creation screens, with button hints at the top. " +
-            "A logs you in when Fill in password is on in Server. Works with or without ConsolePortLK. " +
+            "A logs you in when Fill in password is on in Server. Hold Select to open or close the keyboard, in game too. " +
+            "Works with or without ConsolePortLK. " +
             "Installing it changes 5 bytes of Wow.exe so the client accepts it, and keeps the original to put back when you remove it.",
     ),
     LEVEL_UP(

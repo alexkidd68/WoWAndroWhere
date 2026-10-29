@@ -117,6 +117,7 @@ import app.gamenative.utils.BrightnessManager
 import app.gamenative.utils.downloader.WinComponentDownloader
 import app.gamenative.utils.WineProcessSnapshotHelper
 import com.winlator.alsaserver.ALSAClient
+import app.gamenative.wow.legacy.PadKeyboardButton
 import com.winlator.container.Container
 import com.winlator.container.ContainerFiles
 import com.winlator.container.ContainerManager
@@ -512,6 +513,14 @@ fun XServerScreen(
     var physicalControllerHandler: PhysicalControllerHandler? by remember { mutableStateOf(null) }
     var exitWatchJob: Job? by remember { mutableStateOf(null) }
     val keyboardEscMenuHandler = remember(scope) { KeyboardEscMenuHandler(scope) }
+    val padKeyboardButton = remember(container.id) {
+        if (!PadKeyboardButton.isOn(container)) return@remember null
+        PadKeyboardButton {
+            val anchor = PluviaApp.touchpadView ?: return@PadKeyboardButton
+            if (anchor.windowToken == null) return@PadKeyboardButton
+            imeInputReceiver?.showKeyboard() ?: imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0)
+        }
+    }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -522,6 +531,7 @@ fun XServerScreen(
             exitWatchJob?.cancel()
             exitWatchJob = null
             keyboardEscMenuHandler.cancel()
+            padKeyboardButton?.cancel()
         }
     }
     var isKeyboardVisible = false
@@ -1515,16 +1525,19 @@ fun XServerScreen(
                 ) {
                     winHandler.refreshControllerMappingsForHotplug()
                 }
-                val assignedSlot = ControllerManager.getInstance().getSlotForDevice(it.event.device.id)
-                if (assignedSlot > 0) {
-                    handled = winHandler.onKeyEvent(it.event)
-                } else {
-                    winHandler.setCurrentController(it.event.device.id)
-                    handled = physicalControllerHandler?.onKeyEvent(it.event) == true
-                    if (!handled) handled = PluviaApp.inputControlsView?.onKeyEvent(it.event) == true
-                    // Final fallback to WinHandler passthrough
-                    if (!handled) handled = winHandler.onKeyEvent(it.event)
+                val sendToGame: (KeyEvent) -> Boolean = { event ->
+                    val assignedSlot = ControllerManager.getInstance().getSlotForDevice(event.device.id)
+                    if (assignedSlot > 0) {
+                        winHandler.onKeyEvent(event)
+                    } else {
+                        winHandler.setCurrentController(event.device.id)
+                        physicalControllerHandler?.onKeyEvent(event) == true ||
+                            PluviaApp.inputControlsView?.onKeyEvent(event) == true ||
+                            // Final fallback to WinHandler passthrough
+                            winHandler.onKeyEvent(event)
+                    }
                 }
+                handled = padKeyboardButton?.onKeyEvent(it.event, sendToGame) == true || sendToGame(it.event)
             }
             if (!handled && isKeyboard) {
                 val isShiftEscPressed = it.event.keyCode == KeyEvent.KEYCODE_ESCAPE &&
