@@ -53,6 +53,7 @@ What the app does, by area, with the version each feature came in. Versions up t
 - Addon sources follow the selected game version (0.4.0)
 - 3.3.5a addons: WoWInterface filtered to 3.3, GitHub links without releases install from the default branch and get renamed after their TOC (0.5.0)
 - 3.3.5a addon catalog: over 30 GitHub backports from `catalog/wotlk335.json`, snapshotted nightly by commit and kept only when their TOC says Interface 303xx (0.5.0)
+- Compact Raid Frames and Loss of Control Alerts (RomanSpector's 3.3.5a backports, the ones the WotLK HD pack bundles) in the 3.3.5a addon catalog (unreleased)
 - One-tap ConsolePortLK install on the 3.3.5a client, with a controller-to-keyboard profile used automatically while it is installed (0.5.0)
 - Immersion's quest and gossip windows work with the controller on 3.3.5a when ConsolePortLK is installed (0.5.0)
 - Client tab in Addons on 3.3.5a, for add-ons that change the client itself, with an AndroWhere patches section (Install and Remove) and a card on the Installed list for ones not installed yet (0.6.0)
