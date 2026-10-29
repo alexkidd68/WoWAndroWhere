@@ -123,5 +123,9 @@ class AddonTargetTest {
         assertEquals(AddonFlavor.MAIN, FlavorRules.classify(toc(20400), tbc))
         assertEquals(AddonFlavor.OTHER, FlavorRules.classify(toc(20505), tbc))
         assertEquals(AddonFlavor.OTHER, FlavorRules.classify(toc(30300), tbc))
+        assertEquals(AddonFlavor.MAIN, FlavorRules.classify(toc(40300), GameVersion.PRIVATE_434.addonTarget()))
+        assertEquals(AddonFlavor.OTHER, FlavorRules.classify(toc(40402), GameVersion.PRIVATE_434.addonTarget()))
+        assertEquals(AddonFlavor.MAIN, FlavorRules.classify(toc(50400), GameVersion.PRIVATE_548.addonTarget()))
+        assertEquals(AddonFlavor.OTHER, FlavorRules.classify(toc(50500), GameVersion.PRIVATE_548.addonTarget()))
     }
 }

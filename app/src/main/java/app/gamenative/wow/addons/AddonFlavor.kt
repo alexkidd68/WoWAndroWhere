@@ -73,6 +73,12 @@ class FlavorSpec(
 
         /** Below Burning Crusade Anniversary's 205xx. */
         val TBC_243 = FlavorSpec(0, "", "tbc243", emptyList(), 20000..20499, branchZips = true) { major, minor, _ -> major == 2 && minor == 4 }
+
+        /** Below Cataclysm Classic's 404xx. */
+        val CATA_434 = FlavorSpec(0, "", "cata434", emptyList(), 40000..40399, branchZips = true) { major, minor, _ -> major == 4 && minor == 3 }
+
+        /** Below Mists of Pandaria Classic's 505xx. */
+        val MOP_548 = FlavorSpec(0, "", "mop548", emptyList(), 50000..50499, branchZips = true) { major, minor, _ -> major == 5 && minor == 4 }
     }
 }
 
@@ -95,6 +101,8 @@ fun GameVersion.addonTarget(): AddonTarget = when (this) {
     GameVersion.PRIVATE_112 -> AddonTarget(FlavorSpec.VANILLA_112, null)
     GameVersion.PRIVATE_243 -> AddonTarget(FlavorSpec.TBC_243, null)
     GameVersion.PRIVATE_335 -> AddonTarget(FlavorSpec.WOTLK_335, null)
+    GameVersion.PRIVATE_434 -> AddonTarget(FlavorSpec.CATA_434, null)
+    GameVersion.PRIVATE_548 -> AddonTarget(FlavorSpec.MOP_548, null)
 }
 
 object FlavorRules {

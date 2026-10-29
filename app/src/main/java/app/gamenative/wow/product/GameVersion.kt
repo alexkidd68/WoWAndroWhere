@@ -17,6 +17,8 @@ enum class GameVersion(val key: String, val displayName: String, val products: L
     PRIVATE_112("private_112", "Private server (1.12.1)", emptyList(), ""),
     PRIVATE_243("private_243", "Private server (2.4.3)", emptyList(), ""),
     PRIVATE_335("private_335", "Private server (3.3.5a)", emptyList(), ""),
+    PRIVATE_434("private_434", "Private server (4.3.4)", emptyList(), ""),
+    PRIVATE_548("private_548", "Private server (5.4.8)", emptyList(), ""),
     ;
 
     val isExperimental get() = this != FOREVER
