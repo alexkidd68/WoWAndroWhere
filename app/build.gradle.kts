@@ -64,8 +64,8 @@ android {
         manifestPlaceholders["screenOrientation"] = "unspecified"
         buildConfigField("boolean", "XR_BUILD", "false")
 
-        versionCode = 16
-        versionName = "0.8.5"
+        versionCode = 17
+        versionName = "0.8.6"
 
         buildConfigField("boolean", "GOLD", "false")
         buildConfigField("String", "WAGO_API_KEY", "\"${javaString(apiKey("WAGO_API_KEY"))}\"")

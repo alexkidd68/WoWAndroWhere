@@ -63,7 +63,7 @@ What the app does, by area, with the version each feature came in. Versions up t
 - Several saved private servers (name, realmlist, account name, own sealed password), switched with L1 and R1 on the login screen through Controller Menus (0.7.0)
 - Controller Menus works without ConsolePortLK: the app turns on its controller profile when either is installed, and the add-on was renamed from AndroWhere Login (0.8.5)
 - Switches for the patch archives in the player's 3.3.5a client, such as HD packs, named from the pack's own labels (0.6.0)
-- WotLK HD pack patches in the Client tab say what each changes and follow the pack's rules: undead without bones turns on HD characters, dungeon minimaps turn on dungeon maps, and only one character creation style is on (unreleased)
+- WotLK HD pack patches in the Client tab say what each changes and follow the pack's rules: undead without bones turns on HD characters, dungeon minimaps turn on dungeon maps, and only one character creation style is on (0.8.6)
 
 ## Sign-in and security
 
