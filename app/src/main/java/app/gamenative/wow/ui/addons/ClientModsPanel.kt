@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.gamenative.wow.legacy.mods.AndroWherePatch
 import app.gamenative.wow.legacy.mods.ClientPatch
+import app.gamenative.wow.legacy.mods.PatchRuleSet
 import app.gamenative.wow.legacy.mods.PatchRules
 import app.gamenative.wow.ui.components.FwButton
 import app.gamenative.wow.ui.components.FwButtonKind
@@ -71,9 +72,9 @@ internal fun ClientModsPanel(c: ClientModsController, modifier: Modifier = Modif
             patches == null -> item { Text("Reading the client's Data folder…", style = Fw.Secondary) }
             patches.isEmpty() -> item { Text("No extra patch files in this client.", style = Fw.Secondary) }
             else -> {
-                val names = patches.associate { it.key to it.name }.takeIf { c.hdPack }
+                val names = patches.associate { it.key to it.name }
                 items(patches, key = { it.key }) { patch ->
-                    Toggle(patch.name, detail(patch, names), patch.enabled, { c.setPatch(patch, !patch.enabled) })
+                    Toggle(patch.name, detail(patch, c.rules, names), patch.enabled, { c.setPatch(patch, !patch.enabled) })
                 }
             }
         }
@@ -91,11 +92,11 @@ private fun Toggle(title: String, detail: String, on: Boolean, onToggle: () -> U
     }
 }
 
-/** With [names], the client is the HD pack and the row also says what the patch does and what it needs. */
-private fun detail(patch: ClientPatch, names: Map<String, String>?) =
+/** With [rules], the client is the HD pack and the row also says what the patch does and what it needs. */
+private fun detail(patch: ClientPatch, rules: PatchRuleSet?, names: Map<String, String>) =
     listOfNotNull(
-        names?.let { PatchRules.description(patch.key) },
-        names?.let { PatchRules.hint(patch.key, it) }?.let { "$it." },
+        rules?.let { PatchRules.description(patch.key) },
+        rules?.let { PatchRules.hint(it, patch.key, names) }?.let { "$it." },
         "Patch ${patch.key}, ${size(patch.size)}",
     ).joinToString(" ")
 

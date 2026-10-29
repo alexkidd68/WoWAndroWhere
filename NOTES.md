@@ -2,22 +2,29 @@
 
 Why things are the way they are, newest first.
 
-## 2026-10-28: The WotLK HD pack's patch rules
+## 2026-10-29: The WotLK HD pack's patch rules, checked against the pack
 
-The pack's own patch menu won't let some patches be on alone or together, and our Client tab switches used to ignore that. `PatchRules` now holds the rules and a one-line description per letter, and the Client tab applies them only when the client has the pack's `patchmenu/.config/config_en.json`, since other packs reuse the same letters for other things. The rules are written into the app rather than parsed from the config, because the config's `conditions` format wasn't confirmed when this was built.
+The pack's own patch menu won't let some patches be on alone or together, and our Client tab switches used to ignore that. `PatchRules` reads the rules from the menu's `patchmenu/.config/config_en.json` and only applies them, and the per-patch descriptions, when that file exists, since other packs reuse the same letters for other things. Each patch there has `conditions` like `["a11", "HD characters required"]`: another patch's letter, then the state its data and locale archives must be in (1 on, 0 off). A condition wanting the other patch on is a need, one wanting it off is a conflict. On Daniel's PC on 2026-10-29 that gave: u needs a, n needs m (its locale archive), j and k can't be on together. The same rules are built in for a config that can't be read.
 
-What each patch letter does (from the pack's config and labels, read on Daniel's PC on 2026-10-27):
+The pack's menu locks a switch until its condition holds. The app instead flips the other patches for you: turning one on turns on what it needs and turns off what it conflicts with, turning one off turns off what needs it. The menu also has partial states the app doesn't, like s "Without tables" (data on, locale off): the app shows that as Off and turns both on.
 
-- **a** HD characters. **u** Undead without visible bones; needs a.
-- **f** HD creatures and NPCs. **6** HD world textures. **7** HD armor (the pack marks it dangerous). **8** HD weapons.
-- **j** Mists of Pandaria style character creation. **k** Shadowlands style character creation. Only one of j and k.
-- **9** Restyled interface windows. **d** Cursor and interface art. **i** Icons. **5** Later-expansion interface extras (raid frames, loss of control alerts, level up banner).
-- **s** Spell effects. **t** Trees. **w** Water. **x** Skies. **b** Blood.
-- **m** Dungeon maps. **n** Dungeon minimaps; needs m.
-- **q** Loading screens. **e** Music.
-- **c** The pack's login screens, with its server and account list. Its `interface/loginui.lua` keeps saved account passwords in plain text.
+What each patch letter holds, from the menu config and each archive's file list, read on Daniel's PC on 2026-10-29:
 
-Turning a patch on also turns on what it needs and turns off what it conflicts with; turning one off also turns off what needs it.
+- **a** HD characters: player models for every race, HD helmets and shoulders, baked NPC textures.
+- **u** Undead without bones: new Undead (Scourge) models plus Taunka and Vrykul, and its own character tables. Its locale archive replaces the same character tables a's does, which is why it needs a.
+- **f** HD models and NPCs: creatures, NPCs, doodads and login screen models, with new creature display tables.
+- **6** HD world textures: world and dungeon textures and doodads.
+- **7** HD armor: armor textures and models, plus herb and ore nodes. The menu marks it dangerous.
+- **8** HD weapons: weapons, shields and quivers.
+- **j** Mists of Pandaria character creation and **k** Shadowlands character creation. Both replace `CharacterCreate.lua`, `CharacterCreate.xml` and `GlueParent.lua`, so only one can be on.
+- **9** Interface windows: later-expansion target frame, minimap, spellbook, character pane, transmog and level up display.
+- **d** Cursor and interface: cursors, minimap tracking icons, a few frame textures and the ACP addon manager.
+- **s** New spells: spell models and sounds, with new spell tables in its locale archive.
+- **i** Icons. **t** Trees and bushes from later expansions. **w** Water, lava and slime. **x** Stars and sky lighting.
+- **m** Dungeon maps: world map pages for dungeons and raids, plus the WDM addon. **n** Dungeon minimaps, with its own copy of WDM. The menu marks n dangerous.
+- **5** Addons: CompactRaidFrame, loss of control alerts, unit frame layers, EclipseBarFrame, NewLevelFrame, GarbageProtector and ACP.
+- **q** Loading screens. **e** "New music": mostly new spell sounds, plus some zone and city music. **b** Blood splashes and splats. The menu marks b dangerous.
+- **c** Screens, servers, accounts: login screen models, music and its own login screen code. Its `interface/loginui.lua` keeps saved account passwords in plain text.
 
 ## 2026-10-28: The GitHub addon catalog is the fork's own, with upstream as a fallback
 

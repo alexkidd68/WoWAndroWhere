@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import app.gamenative.wow.legacy.mods.AndroWherePatch
 import app.gamenative.wow.legacy.mods.ClientMods
 import app.gamenative.wow.legacy.mods.ClientPatch
+import app.gamenative.wow.legacy.mods.PatchRuleSet
 import app.gamenative.wow.legacy.mods.PatchRules
 import java.io.File
 import kotlinx.coroutines.CancellationException
@@ -22,8 +23,8 @@ class ClientModsController(val root: File, private val scope: CoroutineScope, pr
         private set
     var patches by mutableStateOf<List<ClientPatch>?>(null)
         private set
-    /** Whether the client is the WotLK HD pack, whose patch rules and descriptions apply. */
-    var hdPack by mutableStateOf(false)
+    /** The WotLK HD pack's patch rules; null when the client isn't that pack, so no rules or descriptions apply. */
+    var rules by mutableStateOf<PatchRuleSet?>(null)
         private set
     var working by mutableStateOf<String?>(null)
         private set
@@ -32,7 +33,7 @@ class ClientModsController(val root: File, private val scope: CoroutineScope, pr
 
     fun refresh() {
         scope.launch {
-            hdPack = withContext(Dispatchers.IO) { PatchRules.applies(root) }
+            rules = withContext(Dispatchers.IO) { PatchRules.read(root) }
             val (installed, found) = withContext(Dispatchers.IO) {
                 AndroWherePatch.entries.associateWith { runCatching { ClientMods.installed(root, it) }.getOrDefault(false) } to
                     runCatching { ClientMods.patches(root) }.onFailure { Timber.w(it, "Listing client patches failed") }.getOrDefault(emptyList())
@@ -50,11 +51,8 @@ class ClientModsController(val root: File, private val scope: CoroutineScope, pr
     fun setPatch(patch: ClientPatch, enabled: Boolean) =
         act(if (enabled) "Turning on ${patch.name}" else "Turning off ${patch.name}") {
             val all = patches.orEmpty()
-            val changes = if (hdPack) {
-                PatchRules.plan(all.associate { it.key to it.enabled }, patch.key, enabled)
-            } else {
-                mapOf(patch.key to enabled)
-            }
+            val changes = rules?.let { PatchRules.plan(it, all.associate { p -> p.key to p.enabled }, patch.key, enabled) }
+                ?: mapOf(patch.key to enabled)
             all.filter { it.key in changes }.forEach { ClientMods.setPatchEnabled(it, changes.getValue(it.key)) }
             ClientMods.refresh(root)
         }
